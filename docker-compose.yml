@@ -1,0 +1,17 @@
+services:
+  # アプリ本体。http://localhost:8080 で開く
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # 周辺データを作り直すときだけ使う（docker compose --profile data run --rm data）
+  # OpenStreetMap・国土地理院・J-SHIS から取得し、data/area.json を上書きする
+  data:
+    image: python:3.12-slim
+    profiles: ["data"]
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "pip install -q --root-user-action=ignore pillow && python scripts/build_area.py"

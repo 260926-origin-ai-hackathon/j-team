@@ -109,6 +109,13 @@
   .ht[aria-pressed="true"] { background: #2f9e5b; color: #fff; }
   .legend .heat-bar { display: inline-block; width: 90px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, rgb(210,60,42), rgb(242,201,76), rgb(47,158,91)); }
   .heat-img { image-rendering: auto; }
+  .kind { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; }
+  .k-real { color: var(--good); } .k-est { color: var(--warn); } .k-own { color: #7a5ac0; } .k-fake { color: var(--muted); border-style: dashed; }
+  .legend .src { color: var(--muted); font-size: 11px; }
+  .data-pop { width: min(460px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; }
+  .data-list { margin: 6px 0 8px; display: grid; gap: 8px; font-size: 12.5px; }
+  .data-list dt { font-weight: 700; }
+  .data-list dd { margin: 2px 0 0; color: var(--muted); }
   .heat-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
   .heat-row i { display: block; height: 10px; border-radius: 3px; margin-bottom: 2px; }
   .legend .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; }
@@ -235,6 +242,13 @@
         <p class="note" style="margin-top:10px">家賃＋管理費の目安は収入の3分の1。超える部屋は地図で薄く表示します。</p>
       </div>
     </div>
+    <div style="position:relative">
+      <button class="chip-btn" id="dataBtn" aria-expanded="false">データについて</button>
+      <div class="panel pop data-pop" id="dataPop" hidden>
+        <div class="eyebrow">この画面の情報の出どころ</div>
+        <div id="dataList"></div>
+      </div>
+    </div>
     <div class="ai-state" id="aiState">AIを確認中…</div>
   </header>
 
@@ -308,6 +322,22 @@
     "SRC造": { full: "SRC造（鉄骨鉄筋コンクリート）", sound: 3, fire: 3, soundText: "壁が厚く、隣の生活音はほとんど気にならない", fireText: "燃えにくく、火事が広がりにくい", note: "高層マンションに多い、いちばん頑丈な構造" },
   };
   const LEVEL3 = ["", "弱い", "ふつう", "強い"];
+  // 画面に出している情報の出どころ。種類は「実データ／推定／独自の目安／一般的な傾向／架空」
+  const KIND_CLASS = { 実データ: "k-real", 推定: "k-est", 独自の目安: "k-own", 一般的な傾向: "k-est", 架空: "k-fake" };
+  const DATA_SOURCES = [
+    ["物件（名前・家賃・間取り・構造・階数・築年数）", "架空", "デモ用に作ったデータ。位置だけ実在の住宅地に置いている"],
+    ["スーパー・コンビニ・ドラッグストア・診療所・病院・駅・道路・線路", "実データ", "OpenStreetMap（© OpenStreetMap contributors、ODbL）。ボランティアが作る地図なので、載っていない店や古い情報もある", "https://www.openstreetmap.org/copyright"],
+    ["洪水の浸水想定", "実データ", "国土地理院「重ねるハザードマップ」洪水浸水想定区域（想定最大規模）。1000年に1度くらいの大雨で川があふれた場合の想定で、過去の実績や予報ではない。側溝や下水があふれる内水氾濫は含まない。地図は50m四方ごとに中心の1点を読み取っている", "https://disaportal.gsi.go.jp/"],
+    ["土砂災害・津波", "実データ", "国土地理院「重ねるハザードマップ」土砂災害警戒区域・津波浸水想定", "https://disaportal.gsi.go.jp/"],
+    ["避難場所", "実データ", "国土地理院 指定緊急避難場所データ（洪水）", "https://www.gsi.go.jp/bousaichiri/hinanbasho.html"],
+    ["地震の確率", "実データ", "防災科学技術研究所 J-SHIS 確率論的地震動予測地図（2020年版）。建物の地点を含む250m四方の値", "https://www.j-shis.bosai.go.jp/"],
+    ["交通量", "推定", "道路の種類（OpenStreetMap）から推定した5段階。実際に測った交通量ではない"],
+    ["徒歩・自転車の分数", "推定", "直線距離×1.3を、徒歩80m/分・自転車250m/分で割った目安"],
+    ["耐震基準", "推定", "築年数（架空）から、建った年を逆算して推定"],
+    ["ヒートマップ", "独自の目安", "上の公開データから、施設や道路までの距離で点数を付けたもの。線引きは独自の基準で、色はこのエリアの中で比べた相対値"],
+    ["構造ごとの特徴・毎月の生活費・初期費用", "一般的な傾向", "一般的な目安。建物や人によって差がある"],
+  ];
+  const badge = (kind) => `<span class="kind ${KIND_CLASS[kind] || ""}">${kind}</span>`;
   const TRAFFIC_COLORS = { 5: "#d23c2a", 4: "#e8892c", 3: "#e7c33a" };
   const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors・国土地理院・J-SHIS';
 
@@ -609,13 +639,14 @@
       (state.layers.has("heat") ? `<div class="heat-themes" role="group" aria-label="ヒートマップのテーマ">${HEAT_THEMES.map((t) => `<button class="ht" data-t="${t.k}" aria-pressed="${state.heatTheme === t.k}">${t.label}</button>`).join("")}</div>` : "");
     const dot = (k) => `<span><i class="dot" style="background:${POI_STYLE[k].c}">${POI_STYLE[k].t}</i>${POI_STYLE[k].label}</span>`;
     const rows = [];
-    if (state.layers.has("shop")) rows.push(["supermarket", "convenience", "chemist"].map(dot).join(""));
-    if (state.layers.has("med")) rows.push(["clinic", "hospital"].map(dot).join(""));
-    if (state.layers.has("traffic")) rows.push(`<span>車の量</span><span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>`);
-    if (state.layers.has("flood")) rows.push(`<span>洪水の浸水想定</span><span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>`);
-    if (state.layers.has("shelter")) rows.push(`${dot("shelter")}<span class="muted">洪水のときの指定緊急避難場所</span>`);
-    if (state.layers.has("heat")) rows.push(`<span>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</span><span class="muted">このエリアの中で 低い</span><span class="heat-bar"></span><span class="muted">高い</span>`);
-    rows.push(`<span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>`);
+    const src = (kind, text) => `<span class="src">${badge(kind)} ${text}</span>`;
+    if (state.layers.has("shop")) rows.push(["supermarket", "convenience", "chemist"].map(dot).join("") + src("実データ", "OpenStreetMap"));
+    if (state.layers.has("med")) rows.push(["clinic", "hospital"].map(dot).join("") + src("実データ", "OpenStreetMap"));
+    if (state.layers.has("traffic")) rows.push(`<span>車の量</span><span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`);
+    if (state.layers.has("flood")) rows.push(`<span>洪水の浸水想定</span><span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`);
+    if (state.layers.has("shelter")) rows.push(`${dot("shelter")}${src("実データ", "国土地理院 指定緊急避難場所（洪水）")}`);
+    if (state.layers.has("heat")) rows.push(`<span>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</span><span class="muted">このエリアの中で 低い</span><span class="heat-bar"></span><span class="muted">高い</span>${src("独自の目安", "公開データから距離で点数化")}`);
+    rows.push(`<span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}`);
     $("legend").innerHTML = rows.map((r) => `<div class="row">${r}</div>`).join("");
   }
 
@@ -665,6 +696,7 @@
         <div class="fact ${tg[0]}"><div class="k">まわりの交通量</div><div class="v">${tg[1]}</div><div class="s">${esc(p.traffic.front)}</div></div>
         <div class="fact ${hg[0]}"><div class="k">災害</div><div class="v">${hg[1]}</div><div class="s">${floodShort(p)}</div></div>
       </div>
+      <div class="small muted">この場所のヒートマップ ${badge("独自の目安")}</div>
       <div class="heat-row">${HEAT_THEMES.map((t) => { const v = heatAt(p.x, p.y, t.k) ?? 0; const [r, g, b] = heatColor(v); return `<div title="${t.label}"><i style="background:rgb(${r},${g},${b})"></i><span>${t.label}</span></div>`; }).join("")}</div>
       <button class="btn" id="openDetail" style="padding:12px">詳しく見る →</button>
       <p class="note">同じ札をもう一度タップしても開きます。地図の何もないところをタップすると選択を外します。</p>`;
@@ -733,7 +765,7 @@
         <dt>地震への備え</dt><dd><b class="${q[0] === "good" ? "t-good" : q[0] === "warn" ? "t-warn" : "t-bad"}">${esc(q[1])}</b><br><span class="small muted">${esc(q[2])}</span></dd>
         <dt>建物</dt><dd>${p.floors}階建ての${p.floor}階・築${p.age}年${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}</dd>
       </dl>
-      <p class="note">構造ごとの特徴は一般的な傾向で、同じ構造でも建物によって差があります。音が気になる人は「内見で聞くこと」のタブも見てください。</p>`;
+      <p class="note">${badge("架空")} 構造・築年数はデモ用のデータ　${badge("推定")} 耐震基準は築年数からの推定　${badge("一般的な傾向")} 構造ごとの特徴は一般的な傾向で、同じ構造でも建物によって差があります。音が気になる人は「内見で聞くこと」のタブも見てください。</p>`;
     }
     if (tab === "life") return `
       <dl class="rows num">
@@ -746,7 +778,7 @@
         <dt>病院</dt><dd>徒歩${n.hospital.min}分　${esc(n.hospital.name)}</dd>
         <dt>夜間の救急</dt><dd>${(n.emergency.m / 1000).toFixed(1)}km　${esc(n.emergency.name)}</dd>
       </dl>
-      <p class="note">徒歩の分数は、直線距離×1.3を80m/分で割った目安です。</p>`;
+      <p class="note">${badge("実データ")} 施設の場所：OpenStreetMap（© OpenStreetMap contributors）　${badge("推定")} 徒歩の分数：直線距離×1.3を80m/分で割った目安</p>`;
     if (tab === "traffic") {
       const [label, desc] = TRAFFIC_TEXT[tr.level];
       return `
@@ -759,7 +791,7 @@
         <dt>線路まで</dt><dd>約${tr.railM}m</dd>
         <dt>夜も開いている店</dt><dd>300m以内にコンビニ ${tr.conv300}軒</dd>
       </dl>
-      <p class="note">道路の種類（OpenStreetMap）から推定した目安で、実際に測った交通量ではありません。左の地図は車の多い道路を色で示しています。</p>`;
+      <p class="note">${badge("推定")} 道路の種類（OpenStreetMap）から推定した目安で、実際に測った交通量ではありません。左の地図は車の多い道路を色で示しています。</p>`;
     }
     if (tab === "hazard") {
       const g = hazardGrade(p);
@@ -773,7 +805,8 @@
         <dt>大きな地震</dt><dd>30年以内に震度6弱以上 ${h.quake60}%（5強以上 ${h.quake55}%）</dd>
         <dt>避難場所</dt><dd>徒歩${n.shelter.min}分　${esc(n.shelter.name)}</dd>
       </dl>
-      <p class="note">浸水は国の「想定最大規模」の雨が前提。左の地図の青いところが浸水想定の区域です。<a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener">重ねるハザードマップ</a>でも確かめられます。</p>`;
+      <p class="note">${badge("実データ")} 浸水・土砂災害・津波：国土地理院「<a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener">重ねるハザードマップ</a>」。浸水は1000年に1度くらいの大雨（想定最大規模）で川があふれた場合の想定で、側溝や下水があふれる内水氾濫は含みません。市のハザードマップもあわせて確かめてください。</p>
+      <p class="note">${badge("実データ")} 地震：防災科学技術研究所 J-SHIS（2020年版）　${badge("実データ")} 避難場所：国土地理院 指定緊急避難場所データ</p>`;
     }
     if (tab === "money") {
       const spend = [
@@ -929,6 +962,13 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       renderBigMap();
     });
     $("sidePanel").addEventListener("click", (e) => { if (e.target.id === "openDetail") go("detail", state.selected); });
+    $("dataBtn").addEventListener("click", () => {
+      const open = $("dataPop").hidden;
+      $("dataPop").hidden = !open; $("dataBtn").setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", (e) => {
+      if (!$("dataPop").hidden && !e.target.closest("#dataPop, #dataBtn")) { $("dataPop").hidden = true; $("dataBtn").setAttribute("aria-expanded", "false"); }
+    });
     $("budgetBtn").addEventListener("click", () => {
       const open = $("budgetPop").hidden;
       $("budgetPop").hidden = !open; $("budgetBtn").setAttribute("aria-expanded", String(open));
@@ -966,6 +1006,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       return;
     }
     $("budgetChip").textContent = man(rentCap());
+    $("dataList").innerHTML = `<dl class="data-list">${DATA_SOURCES.map(([what, kind, how, url]) => `<dt>${badge(kind)} ${esc(what)}</dt><dd>${esc(how)}${url ? `　<a href="${url}" target="_blank" rel="noopener">出典</a>` : ""}</dd>`).join("")}</dl><p class="note">周辺データの取得日 ${esc(state.data.generatedAt)}</p>`;
     routeFromHash();
     try { state.sample = window.claude ? await window.claude.use("sample") : null; } catch { state.sample = null; }
     if (state.sample) {
