@@ -199,6 +199,10 @@
 
   /* 予算のポップオーバー */
   .pop { position: absolute; right: 0; top: 40px; z-index: 900; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .data-pop { width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 90px); overflow-y: auto; overscroll-behavior: contain; }
+  .kind { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; }
+  .k-real { color: var(--good); } .k-est { color: var(--warn); } .k-own { color: #7a5ac0; } .k-fake { color: var(--muted); border-style: dashed; }
+  .heat-img { image-rendering: auto; }
   .pop[hidden] { display: none; }
   .pop label { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-top: 8px; }
   .pop input { text-align: right; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 6px 8px; width: 100%; }
