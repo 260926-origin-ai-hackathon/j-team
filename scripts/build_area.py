@@ -11,8 +11,10 @@
 使い方: python3 scripts/build_area.py   （取得結果は scripts/.cache/ に保存し、再実行時は再利用する）
 """
 
+import csv
 import io
 import json
+import re
 import math
 import random
 import time
@@ -40,6 +42,17 @@ Q_POIS = ('[out:json][timeout:90];(nwr["shop"~"^(supermarket|convenience|chemist
           'nwr["amenity"~"^(clinic|hospital|doctors)$"](%s););out tags center qt;' % (BBOX, BBOX))
 Q_ROADS = ('[out:json][timeout:120];(way["highway"~"^(trunk|primary|secondary|tertiary|unclassified|'
            'residential|living_street)$"](%s);way["railway"="rail"](%s););out tags geom qt;' % (BBOX, BBOX))
+
+Q_POLICE = '[out:json][timeout:60];(nwr["amenity"="police"](%s););out tags center qt;' % BBOX
+
+# 防犯：大阪府警察 犯罪オープンデータ（町丁目ごとの発生）を、Geolonia 住所データの町丁目の代表点に置く
+CRIME_YEAR = 2025
+CRIME_KINDS = {  # ファイル名 → 手口
+    "zitensyatou": "自転車盗", "ootobaitou": "オートバイ盗", "hittakuri": "ひったくり", "syazyounerai": "車上ねらい",
+    "buhinnerai": "部品ねらい", "zidouhanbaikinerai": "自動販売機ねらい", "zidousyatou": "自動車盗",
+}
+CRIME_CITIES = ["東大阪市", "八尾市", "大阪市生野区", "大阪市東成区", "大阪市平野区"]
+CRIME_RADIUS = 500  # 物件のまわり何mの発生を数えるか
 
 # キャンパスの基準点（OSM relation 13854100 の中心付近と、主な出入口）
 CAMPUS = {"name": "近畿大学 東大阪キャンパス", "lat": 34.6514, "lon": 135.5902}
@@ -246,6 +259,84 @@ def hazard_grid(layer, cell, x0, y0, x1, y1, z=15, classify=None):
     return {"cell": cell, "x0": round(x0), "y0": round(y0), "cols": cols, "rows": rows, "cells": cells}
 
 
+# ---------- 防犯 ----------
+
+KANJI_DIGITS = "〇一二三四五六七八九"
+
+
+def kanji_number(n):
+    n = int(n)
+    if n < 10:
+        return KANJI_DIGITS[n]
+    if n < 20:
+        return "十" + (KANJI_DIGITS[n - 10] if n > 10 else "")
+    return KANJI_DIGITS[n // 10] + "十" + (KANJI_DIGITS[n % 10] if n % 10 else "")
+
+
+def normalize_town(t):
+    """府警のデータ（南堀江１丁目）を、Geolonia 住所データの表記（南堀江一丁目）にそろえる。"""
+    t = t.translate(str.maketrans("０１２３４５６７８９", "0123456789")).replace("ケ", "ヶ")
+    return re.sub(r"(\d+)丁目", lambda m: kanji_number(m.group(1)) + "丁目", t)
+
+
+def load_crimes():
+    """町丁目ごとに、手口別の件数と夜（18時〜翌6時）の件数を数え、代表点のメートル座標をつける。"""
+    towns = {}
+    for city in CRIME_CITIES:
+        url = "https://geolonia.github.io/japanese-addresses/api/ja/" + urllib.parse.quote("大阪府") + "/" + urllib.parse.quote(city) + ".json"
+        for a in json.loads(cached(f"addr_{city}.json", lambda: http_get(url))):
+            if a.get("lat") is not None and a.get("lng") is not None:  # 代表点のない町丁目がまれにある
+                towns[(city, a["town"].replace("ケ", "ヶ"))] = to_xy(a["lat"], a["lng"])
+    counts, matched, total = {}, 0, 0
+    for key, kind in CRIME_KINDS.items():
+        name = f"crime/osaka_{CRIME_YEAR}{key}.csv"
+        url = f"https://www.police.pref.osaka.lg.jp/material/files/group/2/osaka_{CRIME_YEAR}{key}.csv"
+        text = cached(name, lambda: urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=60).read()).decode("cp932")
+        for r in csv.DictReader(io.StringIO(text)):
+            city = r["市区町村（発生地）"]
+            if city not in CRIME_CITIES:
+                continue
+            total += 1
+            tk = (city, normalize_town(r["町丁目（発生地）"]))
+            if tk not in towns:
+                continue
+            matched += 1
+            c = counts.setdefault(tk, {"xy": towns[tk], "kinds": {}, "night": 0})
+            c["kinds"][kind] = c["kinds"].get(kind, 0) + 1
+            hour = int(r["発生時（始期）"] or 12) if (r["発生時（始期）"] or "").isdigit() else 12
+            if hour >= 18 or hour < 6:
+                c["night"] += 1
+    print(f"crime: {matched}/{total} 件を町丁目の位置に置いた")
+    return counts
+
+
+def crime_near(p, counts):
+    """物件から CRIME_RADIUS 以内に代表点がある町丁目の件数を足す。"""
+    kinds, night, towns = {}, 0, 0
+    for c in counts.values():
+        if dist(p, c["xy"]) <= CRIME_RADIUS:
+            towns += 1
+            night += c["night"]
+            for k, v in c["kinds"].items():
+                kinds[k] = kinds.get(k, 0) + v
+    total = sum(kinds.values())
+    return {"total": total, "kinds": dict(sorted(kinds.items(), key=lambda kv: -kv[1])), "night": night, "towns": towns}
+
+
+def crime_grid(counts, ext, cell):
+    """マスごとに、物件と同じ数え方（代表点が CRIME_RADIUS 以内の町丁目の件数の合計）で年間の件数を出す。"""
+    cols, rows = math.ceil((ext[2] - ext[0]) / cell), math.ceil((ext[3] - ext[1]) / cell)
+    gx = np.array([ext[0] + (i + .5) * cell for j in range(rows) for i in range(cols)])
+    gy = np.array([ext[1] + (j + .5) * cell for j in range(rows) for i in range(cols)])
+    cx = np.array([c["xy"][0] for c in counts.values()])
+    cy = np.array([c["xy"][1] for c in counts.values()])
+    w = np.array([sum(c["kinds"].values()) for c in counts.values()], dtype=float)
+    d2 = (gx[:, None] - cx[None, :]) ** 2 + (gy[:, None] - cy[None, :]) ** 2
+    near = np.sum(np.where(d2 <= CRIME_RADIUS ** 2, w[None, :], 0), axis=1)
+    return {"cell": cell, "x0": round(ext[0]), "y0": round(ext[1]), "cols": cols, "rows": rows,
+            "near": [int(v) for v in near]}
+
+
 # ---------- 騒音（道路・線路からの屋外の音と、構造ごとの遮音） ----------
 
 # 道路の種類ごとに「道路の端から10mでの昼間の等価騒音レベル（dB）」を仮定する。
@@ -399,6 +490,15 @@ def main():
         pois.append({"kind": kind, "name": name, "xy": to_xy(lat, lon),
                      "hours": t.get("opening_hours", ""), "emergency": emergency})
 
+    for e in overpass("police.json", Q_POLICE)["elements"]:
+        lat = e.get("lat") or e.get("center", {}).get("lat")
+        lon = e.get("lon") or e.get("center", {}).get("lon")
+        if lat is None:
+            continue
+        name = e["tags"].get("name", "")
+        pois.append({"kind": "police", "name": name or "交番", "xy": to_xy(lat, lon), "hours": "", "emergency": False,
+                     "station": name.endswith("警察署")})
+
     shelters = []
     for f in shelters_raw["features"]:
         lon, lat = f["geometry"]["coordinates"]
@@ -463,6 +563,7 @@ def main():
                 "hospital": nearest(p, "hospital"),
                 "emergency": nearest(p, "hospital", lambda q: q["emergency"]),
                 "shelter": nearest(p, "shelter"),
+                "police": nearest(p, "police"),
             },
             "traffic": {"level": traffic, "front": ROAD_LABEL[front["rank"]], "frontName": front["name"],
                         "bigRoads": big_names, "railM": round(rail_d), "conv300": conv_300},
@@ -481,10 +582,19 @@ def main():
     map_pois = [{"k": q["kind"], "n": q["name"], "x": round(q["xy"][0]), "y": round(q["xy"][1]),
                  **({"e": 1} if q.get("emergency") else {})}
                 for q in pois + shelters
-                if q["kind"] in ("supermarket", "convenience", "clinic", "hospital", "chemist", "shelter")
+                if q["kind"] in ("supermarket", "convenience", "clinic", "hospital", "chemist", "shelter", "police")
                 and inside(q["xy"])]
     flood = hazard_grid("01_flood_l2_shinsuishin_data", GRID, *ext, classify=lambda px: flood_level(px)[0])
     slide = hazard_grid("05_dosekiryukeikaikuiki", GRID, *ext)
+
+    # 防犯：物件のまわりの発生件数と、マスごとの密度（ヒートマップ用）
+    crimes = load_crimes()
+    for p in props:
+        p["crime"] = crime_near((p["x"], p["y"]), crimes)
+    crime_towns = [{"x": round(c["xy"][0]), "y": round(c["xy"][1]), "n": sum(c["kinds"].values()),
+                    "bike": c["kinds"].get("自転車盗", 0), "night": c["night"]}
+                   for c in crimes.values()
+                   if ext[0] - 300 <= c["xy"][0] <= ext[2] + 300 and ext[1] - 300 <= c["xy"][1] <= ext[3] + 300]
 
     # 騒音：物件ごとの屋外の音、部屋の中に入ってくる音、隣との遮音。マスごとの屋外の音（ヒートマップ用）
     src = noise_sources(roads)
@@ -518,12 +628,16 @@ def main():
         "hazard": {"flood": flood, "landslide": slide,
                    "floodLegend": [label for _, _, label in FLOOD_LEGEND]},
         "noise": noise_grid,
+        "crime": {"year": CRIME_YEAR, "radius": CRIME_RADIUS, "towns": crime_towns,
+                  "grid": crime_grid(crimes, ext, NOISE_CELL)},
         "sources": [
             "© OpenStreetMap contributors (ODbL)",
             "国土地理院 重ねるハザードマップ（洪水浸水想定区域［想定最大規模］・土砂災害警戒区域・津波浸水想定）",
             "国土地理院 指定緊急避難場所データ（洪水）",
             "防災科学技術研究所 J-SHIS 地震ハザードステーション（確率論的地震動予測地図 2020年版）",
             "騒音・遮音：道路の種類ごとの仮定値からの推定と、python-acoustics（BSD-3）の質量則・ISO 717-1 評価による計算",
+            f"「犯罪発生情報（{CRIME_YEAR}年）」（大阪府警察 犯罪オープンデータ https://www.police.pref.osaka.lg.jp/seikatsu/9290.html）を加工して作成",
+            "町丁目の位置：Geolonia 住所データ（CC BY 4.0） https://github.com/geolonia/japanese-addresses",
         ],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -116,7 +116,7 @@
   .data-list { margin: 6px 0 8px; display: grid; gap: 8px; font-size: 12.5px; }
   .data-list dt { font-weight: 700; }
   .data-list dd { margin: 2px 0 0; color: var(--muted); }
-  .heat-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
+  .heat-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
   .heat-row i { display: block; height: 10px; border-radius: 3px; margin-bottom: 2px; }
   .legend .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; }
   .legend i { display: inline-block; width: 16px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
@@ -199,6 +199,10 @@
   .meter3 i { width: 18px; height: 9px; border-radius: 2px; background: var(--line); }
   .meter3 i.on { background: var(--accent); }
   .t-good { color: var(--good); } .t-warn { color: var(--warn); } .t-bad { color: var(--bad); }
+  .bars { display: grid; gap: 5px; }
+  .bar-row { display: grid; grid-template-columns: 120px 1fr 48px; gap: 8px; align-items: center; font-size: 13.5px; }
+  .bar-row i { display: block; height: 12px; border-radius: 3px; background: #7b3fa8; opacity: .75; }
+  .bar-row b { text-align: right; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .money-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
   .money-bar i { display: block; height: 100%; }
@@ -295,6 +299,7 @@
     clinic: { c: "#c0507a", t: "医", label: "診療所" },
     hospital: { c: "#bf3f2c", t: "病", label: "病院" },
     shelter: { c: "#2e6fb5", t: "避", label: "避難場所" },
+    police: { c: "#1f3a8a", t: "交", label: "交番・警察署" },
   };
   // 地図に重ねる情報（ペルソナが気にしていること）
   const LAYERS = [
@@ -303,22 +308,25 @@
     { k: "traffic", label: "交通量", color: "#d9822b" },
     { k: "flood", label: "浸水想定", color: "#3f8fd6" },
     { k: "shelter", label: "避難場所", color: "#2e6fb5", kinds: ["shelter"] },
+    { k: "crime", label: "防犯", color: "#7b3fa8", kinds: ["police"] },
     { k: "heat", label: "ヒートマップ", color: "#2f9e5b" },
   ];
   // ヒートマップのテーマ。色が緑に近いほどその観点で住みやすい場所
   const HEAT_THEMES = [
     { k: "all", label: "総合" }, { k: "shop", label: "買い物" }, { k: "med", label: "病院" },
     { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
+    { k: "crime", label: "犯罪の少なさ" },
   ];
   const HEAT_CELL = 80;
   // 凡例に出す、テーマごとの色の基準（赤い側、緑の側、出どころ）
   const HEAT_SCALE = {
-    all: ["このエリアの中で低い", "高い", "5テーマの平均をエリア内で比較"],
+    all: ["このエリアの中で低い", "高い", "6テーマの平均をエリア内で比較"],
     shop: ["スーパーまで900m以上", "150m以内", "OpenStreetMapの店の位置から"],
     med: ["診療所まで800m以上", "150m以内", "OpenStreetMapの診療所・病院の位置から"],
     quiet: ["屋外 68dB以上（幹線道路沿い）", "50dB以下（静かな住宅地）", "道路・線路からの騒音を計算"],
     commute: ["キャンパスまで2.5km以上", "300m以内", "キャンパスの出入口から"],
     safety: ["浸水想定 3m以上", "浸水想定なし", "国土地理院 洪水浸水想定区域"],
+    crime: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（街頭犯罪7手口）"],
   };
   const HEAT_STOPS = [[0, [210, 60, 42]], [0.5, [242, 201, 76]], [1, [47, 158, 91]]];
   // 建物の構造ごとの特徴（一般的な傾向。同じ構造でも建物ごとに差がある）
@@ -346,6 +354,9 @@
     ["スーパー・コンビニ・ドラッグストア・診療所・病院・駅・道路・線路", "実データ", "OpenStreetMap（© OpenStreetMap contributors、ODbL）。ボランティアが作る地図なので、載っていない店や古い情報もある", "https://www.openstreetmap.org/copyright"],
     ["洪水の浸水想定", "実データ", "国土地理院「重ねるハザードマップ」洪水浸水想定区域（想定最大規模）。1000年に1度くらいの大雨で川があふれた場合の想定で、過去の実績や予報ではない。側溝や下水があふれる内水氾濫は含まない。地図は50m四方ごとに中心の1点を読み取っている", "https://disaportal.gsi.go.jp/"],
     ["土砂災害・津波", "実データ", "国土地理院「重ねるハザードマップ」土砂災害警戒区域・津波浸水想定", "https://disaportal.gsi.go.jp/"],
+    ["犯罪の発生（自転車盗・オートバイ盗・ひったくり・車上ねらい・部品ねらい・自動販売機ねらい・自動車盗）", "実データ", "「犯罪発生情報（2025年）」（大阪府警察 犯罪オープンデータ）を加工して作成。発生した町丁目ごとの件数で、空き巣などの侵入盗や性犯罪は含まれない。町丁目の代表点に置いて数えるので、境目の近くはずれる", "https://www.police.pref.osaka.lg.jp/seikatsu/9290.html"],
+    ["町丁目の位置", "実データ", "Geolonia 住所データ（CC BY 4.0）の町丁目の代表点", "https://github.com/geolonia/japanese-addresses"],
+    ["交番・警察署", "実データ", "OpenStreetMap（© OpenStreetMap contributors）", "https://www.openstreetmap.org/copyright"],
     ["避難場所", "実データ", "国土地理院 指定緊急避難場所データ（洪水）", "https://www.gsi.go.jp/bousaichiri/hinanbasho.html"],
     ["地震の確率", "実データ", "防災科学技術研究所 J-SHIS 確率論的地震動予測地図（2020年版）。建物の地点を含む250m四方の値", "https://www.j-shis.bosai.go.jp/"],
     ["交通量・屋外の騒音", "推定", "道路の種類（OpenStreetMap）ごとに騒音の大きさを仮定（幹線道路は端から10mで70dBなど、騒音の環境基準を目安にした値）し、20mごとの点に分けて距離による減衰を足し合わせた昼間の目安。実際に測った値ではない"],
@@ -355,6 +366,7 @@
     ["ヒートマップ", "独自の目安", "上の公開データから、施設や道路までの距離で点数を付けたもの。線引きは独自の基準で、色はこのエリアの中で比べた相対値"],
     ["構造ごとの特徴・毎月の生活費・初期費用", "一般的な傾向", "一般的な目安。建物や人によって差がある"],
   ];
+  const CRIME_COLOR = "#7b3fa8";
   const badge = (kind) => `<span class="kind ${KIND_CLASS[kind] || ""}">${kind}</span>`;
   const TRAFFIC_COLORS = { 5: "#d23c2a", 4: "#e8892c", 3: "#e7c33a" };
   const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors・国土地理院・J-SHIS';
@@ -537,7 +549,9 @@
       const fi = Math.floor((x - fl.x0) / fl.cell), fj = Math.floor((y - fl.y0) / fl.cell);
       const safety = [1, 0.75, 0.4, 0.1, 0.05, 0, 0][fcells.get(fi + "," + fj) || 0];
       field.shop[k] = shop; field.med[k] = med; field.quiet[k] = quiet; field.commute[k] = commute; field.safety[k] = safety;
-      field.all[k] = (shop + med + quiet + commute + safety) / 5;
+      const crime = crimeScore(x, y);
+      field.crime[k] = crime;
+      field.all[k] = (shop + med + quiet + commute + safety + crime) / 6;
     }
     // 各テーマは距離やdBの決まった基準で塗る。「総合」だけは5つの平均で差が小さくなるので、
     // エリアの中の下位5%〜上位5%を0〜1に広げて比べやすくする
@@ -548,6 +562,28 @@
     }
     heatCache = { field, cols, rows, x0: ex0, y0: ey0 };
     return heatCache;
+  }
+
+  // マスごとの「まわり500m以内の年間件数」（物件と同じ数え方）。エリアの中の下位10%〜上位10%を「少ない〜多い」とする
+  let crimeRange = null;
+  function crimeDensityAt(x, y) {
+    const g = state.data.crime.grid;
+    const i = Math.floor((x - g.x0) / g.cell), j = Math.floor((y - g.y0) / g.cell);
+    return i < 0 || j < 0 || i >= g.cols || j >= g.rows ? null : g.near[j * g.cols + i];
+  }
+  function crimeScore(x, y) {
+    if (!crimeRange) {
+      const v = state.data.crime.grid.near.slice().sort((a, b) => a - b);
+      crimeRange = [v[Math.floor(v.length * 0.1)], v[Math.floor(v.length * 0.9)]];
+    }
+    const d = crimeDensityAt(x, y) ?? crimeRange[1];
+    return Math.max(0, Math.min(1, (crimeRange[1] - d) / (crimeRange[1] - crimeRange[0])));
+  }
+  function crimeGrade(p) {
+    // 物件の件数そのもので判定する（ヒートマップのマスと同じ物差し）
+    const [lo, hi] = crimeRange || (crimeScore(0, 0), crimeRange);
+    const s = Math.max(0, Math.min(1, (hi - p.crime.total) / (hi - lo)));
+    return s >= 0.6 ? ["good", "少なめ"] : s >= 0.3 ? ["warn", "ふつう"] : ["bad", "多め"];
   }
 
   function heatColor(v) {
@@ -579,6 +615,15 @@
     return field[theme][j * cols + i];
   }
 
+  // 町丁目ごとの年間件数を、面積が件数に比例する円で描く
+  function drawCrime(target) {
+    const renderer = L.canvas({ padding: 0.5 });
+    for (const t of state.data.crime.towns) {
+      if (!t.n) continue;
+      L.circle(ll(t.x, t.y), { renderer, radius: Math.sqrt(t.n) * 14, color: CRIME_COLOR, weight: 1, fillColor: CRIME_COLOR, fillOpacity: 0.22, interactive: false }).addTo(target);
+    }
+  }
+
   // ---------- 大きい地図 ----------
   function buildLayers() {
     for (const ly of LAYERS) {
@@ -586,6 +631,7 @@
       if (ly.kinds) for (const q of state.data.map.pois) if (ly.kinds.includes(q.k)) poiMarker(q).addTo(g);
       if (ly.k === "traffic") drawTraffic(g);
       if (ly.k === "flood") drawFlood(g);
+      if (ly.k === "crime") drawCrime(g);
       if (ly.k === "heat") heatLayer = g;
       layerGroups[ly.k] = g;
     }
@@ -653,6 +699,7 @@
     if (state.layers.has("med")) rows.push(["clinic", "hospital"].map(dot).join("") + src("実データ", "OpenStreetMap"));
     if (state.layers.has("traffic")) rows.push(`<span>車の量</span><span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`);
     if (state.layers.has("flood")) rows.push(`<span>洪水の浸水想定</span><span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`);
+    if (state.layers.has("crime")) rows.push(`<span><i style="background:${CRIME_COLOR};opacity:.35;border-radius:50%;width:12px;height:12px"></i>町丁目ごとの犯罪の件数（円が大きいほど多い）</span>${dot("police")}${src("実データ", "大阪府警察 犯罪オープンデータ（2025年）を加工・交番はOpenStreetMap")}`);
     if (state.layers.has("shelter")) rows.push(`${dot("shelter")}${src("実データ", "国土地理院 指定緊急避難場所（洪水）")}`);
     if (state.layers.has("heat")) {
       const scale = HEAT_SCALE[state.heatTheme];
@@ -697,6 +744,8 @@
         <div class="fact ${lg[0]}"><div class="k">スーパー・病院</div><div class="v">${n.supermarket.min}分・${n.hospital.min}分</div><div class="s">${esc(n.supermarket.name)}</div></div>
         <div class="fact ${tg[0]}"><div class="k">まわりの交通量</div><div class="v">${tg[1]}</div><div class="s">${esc(p.traffic.front)}</div></div>
         <div class="fact ${hg[0]}"><div class="k">災害</div><div class="v">${hg[1]}</div><div class="s">${floodShort(p)}</div></div>
+        <div class="fact ${crimeGrade(p)[0]}"><div class="k">まわりの犯罪</div><div class="v">${crimeGrade(p)[1]}</div><div class="s">500m以内 年${p.crime.total}件・交番${p.near.police.min}分</div></div>
+        <div class="fact ${p.noise.dValue >= 45 ? "good" : p.noise.dValue >= 40 ? "warn" : "bad"}"><div class="k">隣の部屋の音</div><div class="v">D-${p.noise.dValue}</div><div class="s">${esc(p.structure)}</div></div>
       </div>
       <div class="small muted">この場所のヒートマップ ${badge("独自の目安")}</div>
       <div class="heat-row">${HEAT_THEMES.map((t) => { const v = heatAt(p.x, p.y, t.k) ?? 0; const [r, g, b] = heatColor(v); return `<div title="${t.label}"><i style="background:rgb(${r},${g},${b})"></i><span>${t.label}</span></div>`; }).join("")}</div>
@@ -715,7 +764,7 @@
       </div>
       <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
     const tabs = [
-      ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)],
+      ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
       ["money", "お金", moneyGrade(p)], ["check", "内見で聞くこと", null], ["parent", "親に相談", null],
     ];
     $("tabs").innerHTML = tabs.map(([k, label, v]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab === k}">${label}${v ? `<span class="v v-${v[0]}">${v[1]}</span>` : ""}</button>`).join("");
@@ -727,7 +776,7 @@
   function drawMiniMap(p) {
     const el = $("miniMap");
     if (!window.L) { el.innerHTML = `<p style="padding:16px" class="muted">地図を表示できませんでした。</p>`; return; }
-    const mode = state.tab === "hazard" ? "hazard" : state.tab === "traffic" ? "traffic" : "life";
+    const mode = ["hazard", "traffic", "crime"].includes(state.tab) ? state.tab : "life";
     if (maps.mini && maps.mini.pid === p.id && maps.mini.mode === mode) { maps.mini.invalidateSize(); return; }
     if (maps.mini) { maps.mini.remove(); maps.mini = null; }
     const map = newMap(el);
@@ -736,6 +785,10 @@
     // タブに合わせて、地図に重ねる情報を切り替える
     if (mode === "traffic") drawTraffic(map);
     if (mode === "hazard") drawFlood(map);
+    if (mode === "crime") {
+      drawCrime(map);
+      L.circle(ll(p.x, p.y), { radius: state.data.crime.radius, color: CRIME_COLOR, weight: 2, fill: false, interactive: false }).addTo(map);
+    }
     const accent = cssVar("--accent");
     for (const [min, fill] of [[10, 0], [5, 0.07]]) {
       const r = min * 80 / 1.3;
@@ -743,7 +796,7 @@
       L.marker(ll(p.x, p.y + r), { icon: L.divIcon({ className: "", html: "", iconSize: [0, 0] }), interactive: false }).addTo(map)
         .bindTooltip(`徒歩${min}分`, { permanent: true, direction: "top", className: "lbl" });
     }
-    const show = mode === "hazard" ? ["shelter"] : mode === "traffic" ? [] : ["supermarket", "convenience", "chemist", "clinic", "hospital"];
+    const show = mode === "hazard" ? ["shelter"] : mode === "crime" ? ["police"] : mode === "traffic" ? [] : ["supermarket", "convenience", "chemist", "clinic", "hospital"];
     const nearest = new Set(Object.values(p.near).map((q) => q.x + "," + q.y));
     for (const q of state.data.map.pois) {
       if (!show.includes(q.k) || Math.hypot(q.x - p.x, q.y - p.y) > 1000) continue;
@@ -798,6 +851,20 @@
         <dt>夜も開いている店</dt><dd>300m以内にコンビニ ${tr.conv300}軒</dd>
       </dl>
       <p class="note">${badge("推定")} 道路の種類（OpenStreetMap）ごとに騒音の大きさを仮定し、距離による減衰を足し合わせて計算した目安です。実際に測った交通量・騒音ではありません。部屋の中の値は、構造ごとの外壁と窓の遮音を引いたもの（「建物」タブ）。左の地図は車の多い道路を色で示しています。</p>`;
+    }
+    if (tab === "crime") {
+      const c = p.crime, g = crimeGrade(p), max = Math.max(1, ...Object.values(c.kinds));
+      const bike = c.kinds["自転車盗"] || 0;
+      return `
+      <div><div class="eyebrow">まわりの犯罪（500m以内・${state.data.crime.year}年の1年間）</div><div class="big-verdict ${g[0]}">${g[1]}<span class="num" style="font-size:16px;margin-left:10px">年${c.total}件・夜（18〜6時）${c.night}件</span></div></div>
+      <div class="bars">${Object.entries(c.kinds).map(([k, v]) => `<div class="bar-row"><span>${esc(k)}</span><i style="width:${(v / max) * 100}%"></i><b class="num">${v}件</b></div>`).join("") || `<p class="muted">この範囲で発生の記録はありません</p>`}</div>
+      <dl class="rows num">
+        <dt>いちばん近い交番</dt><dd>徒歩${p.near.police.min}分　${esc(p.near.police.name)}</dd>
+        <dt>建物の防犯</dt><dd>${p.autolock ? "オートロックあり" : "オートロックなし"}・${p.floor}階${p.floor === 1 ? "（1階は侵入されやすい）" : ""}</dd>
+        ${bike ? `<dt>気をつけること</dt><dd>いちばん多いのは自転車盗（${bike}件）。鍵を2つ付け、屋根や防犯カメラのある駐輪場か確かめる</dd>` : ""}
+      </dl>
+      <p class="note">${badge("実データ")} 「犯罪発生情報（${state.data.crime.year}年）」（大阪府警察 <a href="https://www.police.pref.osaka.lg.jp/seikatsu/9290.html" target="_blank" rel="noopener">犯罪オープンデータ</a>）を加工して作成。町丁目の位置は Geolonia 住所データ（CC BY 4.0）、交番は OpenStreetMap。</p>
+      <p class="note">${badge("推定")} 発生は町丁目単位なので、町丁目の代表点が物件から500m以内にあるものを数えています。空き巣などの侵入盗や性犯罪は、このデータに含まれません。「少なめ／多め」は、地図のエリア全体で同じように数えた件数と比べた結果です（エリアの中で少ないほうの1割は年${crimeRange[0]}件以下、多いほうの1割は年${crimeRange[1]}件以上）。</p>`;
     }
     if (tab === "hazard") {
       const g = hazardGrade(p);
@@ -860,6 +927,7 @@
     if (quakeStandard(p)[0] !== "good") c.push(["耐震診断や補強をしているか", quakeStandard(p)[1]]);
     if (p.age >= 30) c.push(["水回りのカビ・においと、給湯器の年式", `築${p.age}年。古い給湯器は冬に壊れやすい`]);
     if (!p.autolock) c.push(["玄関の鍵の種類（ディンプルキーか）", "オートロックなし"]);
+    if ((p.crime.kinds["自転車盗"] || 0) >= 50) c.push(["駐輪場に屋根・照明・防犯カメラがあるか", `まわり500mで自転車盗が年${p.crime.kinds["自転車盗"]}件`]);
     if (!p.net) c.push(["ネット回線を自分で引く必要があるか", "無料Wi-Fiなし。工事に数週間かかることがある"]);
     if (p.near.supermarket.min >= 8) c.push(["ネットスーパーの配達エリアか", `一番近いスーパーまで徒歩${p.near.supermarket.min}分`]);
     c.push(["部屋で携帯の電波が入るか", "ビデオ通話中にそのまま確かめられる"]);
@@ -872,7 +940,7 @@
     return [
       ["毎月の家賃", m <= cap ? "good" : m <= cap * 1.15 ? "warn" : "bad", m <= cap ? "払える" : "きつい", `目安 ${man(cap)}`],
       ["初期費用", ic <= 150000 ? "good" : ic <= 220000 ? "warn" : "bad", man(Math.round(ic / 1000) * 1000), "入居前に必要"],
-      ["防犯", p.autolock && p.floor >= 2 ? "good" : p.floor === 1 ? "bad" : "warn", p.autolock ? "オートロック" : p.floor === 1 ? "1階" : `${p.floor}階`, p.autolock ? "" : "オートロックなし"],
+      ["防犯", p.floor === 1 || crimeGrade(p)[0] === "bad" ? "bad" : p.autolock && crimeGrade(p)[0] === "good" ? "good" : "warn", `犯罪${crimeGrade(p)[1]}`, `${p.autolock ? "オートロック" : "オートロックなし"}・${p.floor}階・交番${p.near.police.min}分`],
       ["災害", hazardGrade(p)[0], h.flood ? `浸水${h.floodLabel}` : h.nearFlood ? "近くに浸水想定" : "浸水想定なし", `避難場所 ${n.shelter.min}分`],
       ["病院", n.hospital.min <= 8 ? "good" : "warn", `徒歩${n.hospital.min}分`, n.hospital.name],
     ];
@@ -889,6 +957,7 @@
 ・入居前に約${man(Math.round(ic.total / 1000) * 1000)}かかる。奨学金は入学後に振り込まれるから、ここだけ先に助けてほしい
 ・大学まで歩いて${p.campus.min}分、スーパーは${n.supermarket.min}分、病院（${n.hospital.name}）は${n.hospital.min}分
 ・${h.flood ? `洪水のときは${h.floodLabel}浸水する想定の地域` : h.nearFlood ? `建物の場所は浸水想定の外（すぐ近くに${h.nearFloodLabel}の区域あり）` : "洪水の浸水想定はない地域"}。避難場所は${n.shelter.name}（歩いて${n.shelter.min}分）
+・まわり500mの犯罪は年${p.crime.total}件（ほとんど自転車盗）。交番まで歩いて${p.near.police.min}分
 ・${p.autolock ? "オートロックあり" : "オートロックはない"}${p.floor === 1 ? "。1階なので防犯は不動産屋さんに確認する" : ""}
 
 大丈夫そうなら、オンライン内見を申し込もうと思ってる。`;
@@ -903,6 +972,7 @@
       本人の毎月の収入: `奨学金${inc.scholar}円・仕送り${inc.allow}円・バイト${inc.job}円、家賃予算の目安${rentCap()}円`,
       通学: `大学まで徒歩${p.campus.min}分`,
       暮らし: `スーパー徒歩${n.supermarket.min}分、診療所${n.clinic.min}分、病院「${n.hospital.name}」${n.hospital.min}分、夜間救急「${n.emergency.name}」${(n.emergency.m / 1000).toFixed(1)}km`,
+      防犯: `まわり500mの街頭犯罪 年${p.crime.total}件（${Object.entries(p.crime.kinds).map(([k, v]) => k + v + "件").join("・")}）、このエリアの中では${crimeGrade(p)[1]}、いちばん近い交番「${p.near.police.name}」徒歩${p.near.police.min}分、オートロック${p.autolock ? "あり" : "なし"}`,
       交通量: `屋外の騒音の推定 約${p.noise.outdoor}dB・窓を閉めた部屋の中 約${p.noise.indoor}dB、${TRAFFIC_TEXT[p.traffic.level][0]}（${p.traffic.front}${p.traffic.bigRoads.length ? "、近くに" + p.traffic.bigRoads.join("・") : ""}）`,
       災害: `洪水の浸水想定 建物の場所${h.floodLabel}・50m以内${h.nearFloodLabel}、土砂災害警戒区域${h.landslide ? "内" : "外"}、30年以内に震度6弱以上の確率${h.quake60}%、避難場所「${n.shelter.name}」徒歩${n.shelter.min}分`,
     };
