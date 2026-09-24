@@ -44,19 +44,19 @@ CAMPUS_GATES = [(34.6512, 135.5872), (34.6505, 135.5894), (34.6514, 135.5902), (
 # 物件はデモ用の架空データ。位置だけ実在の住宅地に置く。
 PROPERTIES = [
     dict(id="p1", name="メゾン小若江", lat=34.6498, lon=135.5846, rent=36000, fee=3000, deposit=0, key=1,
-         layout="1K", size=22, age=18, floor=2, floors=3, autolock=False, net=True),
+         layout="1K", size=22, age=18, floor=2, floors=3, autolock=False, net=True, structure="軽量鉄骨造"),
     dict(id="p2", name="レジデンス長瀬", lat=34.6486, lon=135.5790, rent=55000, fee=5000, deposit=1, key=1,
-         layout="1K", size=25, age=6, floor=5, floors=8, autolock=True, net=True),
+         layout="1K", size=25, age=6, floor=5, floors=8, autolock=True, net=True, structure="RC造"),
     dict(id="p3", name="コーポ八戸ノ里", lat=34.6618, lon=135.5878, rent=45000, fee=2000, deposit=1, key=0,
-         layout="1DK", size=28, age=31, floor=1, floors=2, autolock=False, net=False),
+         layout="1DK", size=28, age=31, floor=1, floors=2, autolock=False, net=False, structure="木造"),
     dict(id="p4", name="ハイツ河内小阪", lat=34.6622, lon=135.5818, rent=38000, fee=2000, deposit=0, key=0,
-         layout="1K", size=20, age=35, floor=3, floors=4, autolock=False, net=False),
+         layout="1K", size=20, age=35, floor=3, floors=4, autolock=False, net=False, structure="RC造"),
     dict(id="p5", name="ソレイユ弥刀", lat=34.6430, lon=135.5848, rent=40000, fee=3000, deposit=0, key=1,
-         layout="1K", size=24, age=22, floor=2, floors=3, autolock=False, net=True),
+         layout="1K", size=24, age=22, floor=2, floors=3, autolock=False, net=True, structure="木造"),
     dict(id="p6", name="グランエール菱屋", lat=34.6560, lon=135.5972, rent=58000, fee=4000, deposit=1, key=1,
-         layout="1K", size=26, age=3, floor=7, floors=10, autolock=True, net=True),
+         layout="1K", size=26, age=3, floor=7, floors=10, autolock=True, net=True, structure="SRC造"),
     dict(id="p7", name="プチメゾン小若江", lat=34.6468, lon=135.5905, rent=33000, fee=2000, deposit=0, key=0,
-         layout="1R", size=18, age=40, floor=1, floors=2, autolock=False, net=False),
+         layout="1R", size=18, age=40, floor=1, floors=2, autolock=False, net=False, structure="木造"),
 ]
 
 WALK_M_PER_MIN = 80  # 不動産の表示に関する公正競争規約の「徒歩1分=80m」
@@ -209,6 +209,9 @@ def generate_properties(roads, stations):
         floors = rng.choice([2, 2, 3, 3, 4, 5, 6, 8, 10])
         floor = rng.randint(1, floors)
         autolock = floors >= 4 and age < 25
+        structure = (rng.choice(["RC造", "RC造", "SRC造"]) if floors >= 6 else
+                     rng.choice(["RC造", "鉄骨造"]) if floors >= 4 else
+                     rng.choice(["木造", "木造", "軽量鉄骨造"]))
         rent = 21000 + size * 750 - age * 300 + (4000 if st_min <= 5 else 0) + (5000 if autolock else 0)
         rent = max(28000, int(round(rent / 1000) * 1000))
         lat, lon = from_xy(*c)
@@ -217,7 +220,7 @@ def generate_properties(roads, stations):
             lat=round(lat, 6), lon=round(lon, 6), rent=rent, fee=rng.choice([2000, 3000, 3000, 4000, 5000]),
             deposit=rng.choice([0, 0, 1]), key=rng.choice([0, 1, 1]),
             layout="1R" if size <= 19 else "1DK" if size >= 28 else "1K", size=size, age=age,
-            floor=floor, floors=floors, autolock=autolock, net=rng.random() < 0.5))
+            floor=floor, floors=floors, autolock=autolock, net=rng.random() < 0.5, structure=structure))
     return out
 
 
@@ -351,7 +354,7 @@ def main():
 
         props.append({
             **{k: pr[k] for k in ("id", "name", "rent", "fee", "deposit", "key", "layout", "size",
-                                   "age", "floor", "floors", "autolock", "net")},
+                                   "age", "floor", "floors", "autolock", "net", "structure")},
             "x": round(p[0]), "y": round(p[1]),
             "campus": {"m": round(campus_m), "min": walk_min(campus_m),
                        "bike": max(1, math.ceil(campus_m * DETOUR / 250))},
