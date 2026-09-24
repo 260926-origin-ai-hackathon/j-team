@@ -97,38 +97,46 @@
   .s-map { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
   .mapwrap { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--map-ground); min-height: 0; }
   .map { position: absolute; inset: 0; }
-  .layers { position: absolute; top: 10px; left: 56px; right: 10px; z-index: 600; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
-  .layer { pointer-events: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .layer .sw { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; opacity: .4; }
-  .layer[aria-pressed="true"] { border-color: var(--ink); }
-  .layer[aria-pressed="true"] .sw { opacity: 1; background: currentColor; }
-  .legend { position: absolute; left: 10px; bottom: 10px; z-index: 600; display: grid; gap: 3px; padding: 8px 10px; border-radius: 10px; font-size: 12px; background: var(--surface); border: 1px solid var(--line); max-width: calc(100% - 20px); }
-  .legend:empty { display: none; }
-  .heat-themes { pointer-events: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .ht { border: none; background: none; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; cursor: pointer; font-weight: 700; color: var(--muted); }
-  .ht[aria-pressed="true"] { background: #2f9e5b; color: #fff; }
-  .legend .heat-bar { display: inline-block; width: 90px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, rgb(210,60,42), rgb(242,201,76), rgb(47,158,91)); }
-  .heat-img { image-rendering: auto; }
-  .kind { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; }
-  .k-real { color: var(--good); } .k-est { color: var(--warn); } .k-own { color: #7a5ac0; } .k-fake { color: var(--muted); border-style: dashed; }
-  .legend .src { color: var(--muted); font-size: 11px; }
-  .data-pop { width: min(460px, calc(100vw - 32px)); max-height: 70vh; overflow: auto; }
-  .data-list { margin: 6px 0 8px; display: grid; gap: 8px; font-size: 12.5px; }
-  .data-list dt { font-weight: 700; }
-  .data-list dd { margin: 2px 0 0; color: var(--muted); }
-  .lv { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 700; vertical-align: -3px; margin-right: 3px; text-shadow: 0 0 2px rgba(0,0,0,.35); }
-  .legend .lv-item { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
-  .rank-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  .rank-table th { text-align: left; font-weight: 700; white-space: nowrap; padding: 2px 6px 2px 0; }
-  .rank-table td { padding: 2px 6px 2px 0; white-space: nowrap; }
-  .rank-table td:last-child { font-size: 11px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
-  .rank-table tr + tr { border-top: 1px solid var(--line); }
-  .readout { position: absolute; top: 88px; right: 10px; z-index: 650; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); font-size: 13px; pointer-events: none; }
-  .readout[hidden] { display: none; }
-  .legend .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; }
-  .legend i { display: inline-block; width: 16px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
+  .taskbar { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 700; display: flex; gap: 4px; padding: 5px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0,0,0,.14); }
+  .tb { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; border: none; background: none; border-radius: 12px; padding: 6px 12px 6px 10px; cursor: pointer; color: var(--ink); min-width: 0; }
+  .tb svg { grid-row: 1 / 3; }
+  .tb-label { font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+  .tb-sub { font-size: 11px; color: var(--muted); white-space: nowrap; max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+  .tb:hover { background: var(--surface-2); }
+  .tb[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
+  .sheet { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 720; width: min(560px, calc(100% - 20px)); max-height: calc(100% - 100px); overflow: auto; display: grid; gap: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .sheet[hidden] { display: none; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sheet-head h3 { font-size: 16px; }
+  .sheet-list { display: grid; gap: 6px; }
+  .opt-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 9px 12px; cursor: pointer; }
+  .opt-row.compact { display: inline-grid; grid-template-columns: auto auto; align-items: center; padding: 5px 10px; font-size: 13px; font-weight: 700; }
+  .opt-row[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+  .opt-text { display: grid; gap: 2px; min-width: 0; }
+  .opt-text b { font-size: 14px; }
+  .switch { width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; flex: none; margin-top: 1px; transition: background .15s; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  [aria-pressed="true"] > .switch { background: var(--accent); }
+  [aria-pressed="true"] > .switch::after { transform: translateX(14px); }
+  .legend-row, .sheet .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; font-size: 12px; margin-top: 3px; }
+  .legend-block { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 13px; }
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+  .theme { display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 7px 10px; cursor: pointer; }
+  .theme b { font-size: 13.5px; }
+  .theme span { font-size: 11px; color: var(--muted); }
+  .theme[aria-pressed="true"] { background: #2f9e5b; border-color: #2f9e5b; color: #fff; }
+  .theme[aria-pressed="true"] span { color: rgba(255,255,255,.85); }
+  .heat-strip { position: absolute; top: 10px; left: 52px; z-index: 650; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.1); font-size: 12.5px; cursor: pointer; }
+  .heat-strip[hidden] { display: none; }
+  .heat-strip b { margin-right: 4px; }
+  .heat-strip .lv { margin-right: 0; }
+  .heat-strip .muted { margin-left: 4px; font-size: 11.5px; }
+  .src { color: var(--muted); font-size: 11px; }
+  .lv-item { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
+  @media (max-width: 560px) { .tb { grid-template-columns: auto; justify-items: center; padding: 6px 8px; } .tb svg { grid-row: auto; } .tb-sub { display: none; } }
+  .sheet i:not(.dot) { display: inline-block; width: 16px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
   .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 8px; font-weight: 700; font-style: normal; vertical-align: -2px; margin-right: 3px; }
-  .legend i.dot { width: 13px; height: 13px; border-radius: 50%; }
+  .sheet i.dot { width: 13px; height: 13px; border-radius: 50%; }
 
   .side { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
   .side .panel { display: grid; align-content: start; gap: 9px; overflow: auto; }
@@ -138,7 +146,7 @@
   .intro li::before { content: ""; width: 6px; height: 6px; border-radius: 2px; background: var(--accent); flex: none; transform: translateY(-2px); }
   .howto { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 13.5px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); }
   .howto b { font-family: var(--display); color: var(--accent); }
-  .sources { font-size: 11px; color: var(--muted); }
+  .sources { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
   .sources ul { margin: 2px 0 0; padding-left: 16px; }
   .demo-flag { display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 4px; border: 1px dashed var(--muted); color: var(--muted); vertical-align: middle; font-weight: 400; font-family: var(--body); letter-spacing: 0; }
 
@@ -268,8 +276,9 @@
     <section class="screen s-map" data-screen="map" hidden>
       <div class="mapwrap">
         <div class="map" id="bigMap"></div>
-        <div class="layers" id="layers"></div>
-        <div class="legend" id="legend"></div>
+        <button class="heat-strip" id="heatStrip" hidden></button>
+        <div class="panel sheet" id="sheet" hidden></div>
+        <nav class="taskbar" id="taskbar" aria-label="地図の表示の切り替え"></nav>
         <div class="readout" id="readout" hidden></div>
       </div>
       <aside class="side"><div class="panel" id="sidePanel"></div></aside>
@@ -391,7 +400,7 @@
   // ---------- 状態 ----------
   const state = {
     data: null, screen: "map", selected: null, tab: "building",
-    layers: new Set(["heat"]), heatTheme: "all",
+    layers: new Set(["heat"]), heatTheme: "all", sheet: null,
     sample: null,
   };
   const maps = { big: null, mini: null };
@@ -693,7 +702,7 @@
       maps.big.focus = L.layerGroup().addTo(maps.big);
       const ext = state.data.map.extent;
       maps.big.fitBounds([ll(ext[0] + 400, ext[1] + 400), ll(ext[2] - 400, ext[3] - 400)]);
-      maps.big.on("click", (e) => { showReadout(e.latlng); if (state.selected) { state.selected = null; renderSide(); drawPins(); } });
+      maps.big.on("click", (e) => { if (state.sheet) { state.sheet = null; renderLayerChips(); } showReadout(e.latlng); if (state.selected) { state.selected = null; renderSide(); drawPins(); } });
       maps.big.on("mousemove", (e) => showReadout(e.latlng));
       maps.big.on("mouseout", () => { $("readout").hidden = true; });
     }
@@ -749,27 +758,78 @@
     maps.big.panTo(ll(p.x, p.y), { animate: true });
   }
 
+  // ---------- 地図のタスクバー ----------
+  // 地図の下に「地図に重ねる／ヒートマップ／凡例」の3つだけを置き、タップするとそのカテゴリの中身を開く
+  const ICONS = {
+    layers: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 2.5 6.3 10 10l7.5-3.7L10 2.5Z"/><path d="m2.5 10 7.5 3.7 7.5-3.7"/><path d="m2.5 13.7 7.5 3.8 7.5-3.8"/></svg>`,
+    heat: `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="7.5" height="7.5" rx="1.5" fill="rgb(47,158,91)"/><rect x="10.5" y="2" width="7.5" height="7.5" rx="1.5" fill="rgb(231,195,58)"/><rect x="2" y="10.5" width="7.5" height="7.5" rx="1.5" fill="rgb(140,193,82)"/><rect x="10.5" y="10.5" width="7.5" height="7.5" rx="1.5" fill="rgb(200,65,47)"/></svg>`,
+    legend: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 5h10M7 10h10M7 15h10"/><circle cx="3.5" cy="5" r="1" fill="currentColor"/><circle cx="3.5" cy="10" r="1" fill="currentColor"/><circle cx="3.5" cy="15" r="1" fill="currentColor"/></svg>`,
+  };
+  const src = (kind, text) => `<span class="src">${badge(kind)} ${text}</span>`;
+  const dot = (k) => `<span><i class="dot" style="background:${POI_STYLE[k].c}">${POI_STYLE[k].t}</i>${POI_STYLE[k].label}</span>`;
+
+  // レイヤーごとの凡例（色・記号の意味と出どころ）
+  function legendFor(k) {
+    return {
+      shop: ["supermarket", "convenience", "chemist"].map(dot).join("") + src("実データ", "OpenStreetMap"),
+      med: ["clinic", "hospital"].map(dot).join("") + src("実データ", "OpenStreetMap"),
+      traffic: `<span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`,
+      flood: `<span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`,
+      crime: `<span><i style="background:${CRIME_COLOR};opacity:.35;border-radius:50%;width:12px;height:12px"></i>町丁目ごとの犯罪の件数（円が大きいほど多い）</span>${dot("police")}${src("実データ", "大阪府警察 犯罪オープンデータ（2025年）を加工・交番はOpenStreetMap")}`,
+      shelter: `${dot("shelter")}<span class="muted">洪水のとき</span>${src("実データ", "国土地理院 指定緊急避難場所")}`,
+    }[k] || "";
+  }
+  const THEME_HINT = {
+    all: "6つのテーマの平均", shop: "スーパーが近いほど緑", med: "診療所が近いほど緑", quiet: "車や電車の音が小さいほど緑",
+    commute: "大学が近いほど緑", safety: "浸水しにくいほど緑", crime: "犯罪が少ないほど緑",
+  };
+  const LAYER_DESC = {
+    shop: "スーパー・コンビニ・ドラッグストアの場所", med: "診療所・病院の場所", traffic: "車の多い道路を色分け",
+    flood: "大雨で川があふれたときの浸水想定", crime: "町丁目ごとの犯罪の件数と交番", shelter: "洪水のときの避難場所",
+  };
+
+  function heatLegend() {
+    const scale = HEAT_SCALE[state.heatTheme], share = levelShares(state.heatTheme);
+    return `<div class="row">${LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${l.label}<span class="muted num" style="font-weight:400">（${share[n]}%）</span></span>`).join("")}</div>
+      <p class="note">（　）は、このエリアのうちその段階にあたる場所の割合。×：${scale[0]}　◎：${scale[1]}</p>
+      <div class="row">${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}</div>`;
+  }
+  const pinLegend = () => `<div class="row"><span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}</div>`;
+
   function renderLayerChips() {
-    $("layers").innerHTML = LAYERS.map((ly) => `<button class="layer" data-k="${ly.k}" aria-pressed="${state.layers.has(ly.k)}" style="color:${ly.color}"><span class="sw"></span><span style="color:var(--ink)">${ly.label}</span></button>`).join("") +
-      (state.layers.has("heat") ? `<div class="heat-themes" role="group" aria-label="ヒートマップのテーマ">${HEAT_THEMES.map((t) => `<button class="ht" data-t="${t.k}" aria-pressed="${state.heatTheme === t.k}">${t.label}</button>`).join("")}</div>` : "");
-    const dot = (k) => `<span><i class="dot" style="background:${POI_STYLE[k].c}">${POI_STYLE[k].t}</i>${POI_STYLE[k].label}</span>`;
-    const rows = [];
-    const src = (kind, text) => `<span class="src">${badge(kind)} ${text}</span>`;
-    if (state.layers.has("shop")) rows.push(["supermarket", "convenience", "chemist"].map(dot).join("") + src("実データ", "OpenStreetMap"));
-    if (state.layers.has("med")) rows.push(["clinic", "hospital"].map(dot).join("") + src("実データ", "OpenStreetMap"));
-    if (state.layers.has("traffic")) rows.push(`<span>車の量</span><span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`);
-    if (state.layers.has("flood")) rows.push(`<span>洪水の浸水想定</span><span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`);
-    if (state.layers.has("crime")) rows.push(`<span><i style="background:${CRIME_COLOR};opacity:.35;border-radius:50%;width:12px;height:12px"></i>町丁目ごとの犯罪の件数（円が大きいほど多い）</span>${dot("police")}${src("実データ", "大阪府警察 犯罪オープンデータ（2025年）を加工・交番はOpenStreetMap")}`);
-    if (state.layers.has("shelter")) rows.push(`${dot("shelter")}${src("実データ", "国土地理院 指定緊急避難場所（洪水）")}`);
-    if (state.layers.has("heat")) {
-      const scale = HEAT_SCALE[state.heatTheme];
-      rows.push(`<span><b>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</b>　色は5段階（緑ほど住みやすい）</span>`);
-      const share = levelShares(state.heatTheme);
-      rows.push(LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${l.label}<span class="muted num" style="font-weight:400">（${share[n]}%）</span></span>`).join("") + `<span class="muted">（　）はエリアのうちその段階の割合</span>`);
-      rows.push(`<span class="muted">×：${scale[0]}　◎：${scale[1]}</span>${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}`);
+    const overlays = LAYERS.filter((ly) => ly.k !== "heat");
+    const on = overlays.filter((ly) => state.layers.has(ly.k)).length, heatOn = state.layers.has("heat");
+    const theme = HEAT_THEMES.find((t) => t.k === state.heatTheme).label;
+    const btn = (k, label, sub) => `<button class="tb" data-sheet="${k}" aria-expanded="${state.sheet === k}">${ICONS[k]}<span class="tb-label">${label}</span><span class="tb-sub">${sub}</span></button>`;
+    $("taskbar").innerHTML = btn("layers", "地図に重ねる", on ? `${on}つ表示中` : "なし") + btn("heat", "ヒートマップ", heatOn ? theme : "オフ") + btn("legend", "凡例", "色と記号の意味");
+
+    // ヒートマップの5段階だけは、いつも地図の上に小さく出す
+    $("heatStrip").hidden = !heatOn;
+    if (heatOn) $("heatStrip").innerHTML = `<b>${theme}</b> ${LEVELS.map((l) => levelChip(l)).join("")}<span class="muted">左ほど良い</span>`;
+
+    const el = $("sheet");
+    el.hidden = !state.sheet;
+    if (state.sheet === "layers") {
+      el.innerHTML = `<div class="sheet-head"><h3>地図に重ねる情報</h3><span class="muted small">いくつでも選べます</span></div>
+        <div class="sheet-list">${overlays.map((ly) => `
+          <button class="opt-row" data-k="${ly.k}" aria-pressed="${state.layers.has(ly.k)}">
+            <span class="switch" aria-hidden="true"></span>
+            <span class="opt-text"><b style="--c:${ly.color}">${ly.label}</b><span class="muted small">${LAYER_DESC[ly.k]}</span>
+            ${state.layers.has(ly.k) ? `<span class="legend-row">${legendFor(ly.k)}</span>` : ""}</span>
+          </button>`).join("")}</div>`;
+    } else if (state.sheet === "heat") {
+      el.innerHTML = `<div class="sheet-head"><h3>ヒートマップ</h3>
+          <button class="opt-row compact" data-k="heat" aria-pressed="${heatOn}"><span class="switch" aria-hidden="true"></span><span>${heatOn ? "表示中" : "オフ"}</span></button></div>
+        <p class="small muted">何を基準に住みやすさを塗るかを選びます。</p>
+        <div class="theme-grid">${HEAT_THEMES.map((t) => `<button class="theme" data-t="${t.k}" aria-pressed="${heatOn && state.heatTheme === t.k}"><b>${t.label}</b><span>${THEME_HINT[t.k]}</span></button>`).join("")}</div>
+        ${heatLegend()}`;
+    } else if (state.sheet === "legend") {
+      const active = overlays.filter((ly) => state.layers.has(ly.k));
+      el.innerHTML = `<div class="sheet-head"><h3>凡例</h3><span class="muted small">いま地図に出ているもの</span></div>
+        ${pinLegend()}
+        ${heatOn ? `<div class="legend-block"><b>ヒートマップ「${theme}」</b>${heatLegend()}</div>` : ""}
+        ${active.map((ly) => `<div class="legend-block"><b>${ly.label}</b><div class="row">${legendFor(ly.k)}</div></div>`).join("") || (heatOn ? "" : `<p class="small muted">重ねている情報はありません。「地図に重ねる」から選べます。</p>`)}`;
     }
-    rows.push(`<span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}`);
-    $("legend").innerHTML = rows.map((r) => `<div class="row">${r}</div>`).join("");
   }
 
   // ---------- 右側（使い方／選んだ物件の概要） ----------
@@ -783,7 +843,7 @@
           <h2>気になる場所をタップして、部屋を選ぶ</h2>
         </div>
         <div class="howto">
-          <b>1</b><span>地図の上のボタンで、スーパー・病院・交通量・浸水想定・避難場所を重ねる</span>
+          <b>1</b><span>地図の下のタスクバーで、ヒートマップのテーマや、スーパー・病院・交通量・浸水想定・防犯などを切り替える</span>
           <b>2</b><span>気になる場所にある物件（金額の札）をタップ</span>
           <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
         </div>
@@ -1096,15 +1156,21 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
   function bind() {
     $("backBtn").addEventListener("click", () => go("map"));
     window.addEventListener("popstate", routeFromHash);
-    $("layers").addEventListener("click", (e) => {
-      const b = e.target.closest(".layer");
-      const ht = e.target.closest(".ht");
-      if (ht) { state.heatTheme = ht.dataset.t; state.layers.add("heat"); renderBigMap(); return; }
+    $("taskbar").addEventListener("click", (e) => {
+      const b = e.target.closest(".tb"); if (!b) return;
+      state.sheet = state.sheet === b.dataset.sheet ? null : b.dataset.sheet;
+      renderLayerChips();
+    });
+    $("heatStrip").addEventListener("click", () => { state.sheet = "heat"; renderLayerChips(); });
+    $("sheet").addEventListener("click", (e) => {
+      const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
+      if (t) { state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap(); return; }
       if (!b) return;
       const k = b.dataset.k;
       state.layers.has(k) ? state.layers.delete(k) : state.layers.add(k);
       renderBigMap();
     });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sheet) { state.sheet = null; renderLayerChips(); } });
     $("sidePanel").addEventListener("click", (e) => { if (e.target.id === "openDetail") go("detail", state.selected); });
     $("dataBtn").addEventListener("click", () => {
       const open = $("dataPop").hidden;
