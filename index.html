@@ -116,15 +116,22 @@
   .data-list { margin: 6px 0 8px; display: grid; gap: 8px; font-size: 12.5px; }
   .data-list dt { font-weight: 700; }
   .data-list dd { margin: 2px 0 0; color: var(--muted); }
-  .heat-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
-  .heat-row i { display: block; height: 10px; border-radius: 3px; margin-bottom: 2px; }
+  .lv { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 700; vertical-align: -3px; margin-right: 3px; text-shadow: 0 0 2px rgba(0,0,0,.35); }
+  .legend .lv-item { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .rank-table th { text-align: left; font-weight: 700; white-space: nowrap; padding: 2px 6px 2px 0; }
+  .rank-table td { padding: 2px 6px 2px 0; white-space: nowrap; }
+  .rank-table td:last-child { font-size: 11px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+  .rank-table tr + tr { border-top: 1px solid var(--line); }
+  .readout { position: absolute; top: 88px; right: 10px; z-index: 650; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); font-size: 13px; pointer-events: none; }
+  .readout[hidden] { display: none; }
   .legend .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; }
   .legend i { display: inline-block; width: 16px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
   .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 8px; font-weight: 700; font-style: normal; vertical-align: -2px; margin-right: 3px; }
   .legend i.dot { width: 13px; height: 13px; border-radius: 50%; }
 
   .side { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
-  .side .panel { display: grid; align-content: start; gap: 12px; overflow: auto; }
+  .side .panel { display: grid; align-content: start; gap: 9px; overflow: auto; }
   .intro h2 { font-size: 21px; }
   .intro ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; }
   .intro li { display: flex; gap: 8px; align-items: baseline; }
@@ -140,9 +147,9 @@
   .pv-price { text-align: right; white-space: nowrap; }
   .pv-price strong { font-family: var(--display); font-size: 26px; font-weight: 900; }
   .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .fact { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); min-width: 0; }
+  .fact { padding: 6px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); min-width: 0; }
   .fact .k { font-size: 11.5px; color: var(--muted); }
-  .fact .v { font-family: var(--display); font-size: 17px; font-weight: 900; }
+  .fact .v { font-family: var(--display); font-size: 16px; font-weight: 900; line-height: 1.35; }
   .fact .s { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fact.good .v { color: var(--good); } .fact.warn .v { color: var(--warn); } .fact.bad .v { color: var(--bad); }
   .budget-line { font-size: 13px; padding: 6px 10px; border-radius: 8px; }
@@ -263,6 +270,7 @@
         <div class="map" id="bigMap"></div>
         <div class="layers" id="layers"></div>
         <div class="legend" id="legend"></div>
+        <div class="readout" id="readout" hidden></div>
       </div>
       <aside class="side"><div class="panel" id="sidePanel"></div></aside>
     </section>
@@ -328,7 +336,16 @@
     safety: ["浸水想定 3m以上", "浸水想定なし", "国土地理院 洪水浸水想定区域"],
     crime: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（街頭犯罪7手口）"],
   };
-  const HEAT_STOPS = [[0, [210, 60, 42]], [0.5, [242, 201, 76]], [1, [47, 158, 91]]];
+  // 評価は5段階。点（0〜1）を20点刻みで区切り、記号・言葉・色をいつも同じ組み合わせで使う
+  const LEVELS = [
+    { min: 0.8, mark: "◎", label: "とても良い", color: [47, 158, 91] },
+    { min: 0.6, mark: "○", label: "良い", color: [140, 193, 82] },
+    { min: 0.4, mark: "△", label: "ふつう", color: [231, 195, 58] },
+    { min: 0.2, mark: "▲", label: "やや悪い", color: [232, 137, 44] },
+    { min: -1, mark: "×", label: "悪い", color: [200, 65, 47] },
+  ];
+  const levelOf = (v) => LEVELS.find((l) => v >= l.min);
+  const rgb = (c) => `rgb(${c.join(",")})`;
   // 建物の構造ごとの特徴（一般的な傾向。同じ構造でも建物ごとに差がある）
   // sound / fire は 1〜3（3が強い）
   const STRUCTURES = {
@@ -539,18 +556,23 @@
       return i < 0 || j < 0 || i >= nz.cols || j >= nz.rows ? 55 : nz.db[j * nz.cols + i];
     };
     const lin = (dist, good, bad) => Math.max(0, Math.min(1, (bad - dist) / (bad - good)));
-    const field = {}; for (const t of HEAT_THEMES) field[t.k] = new Float32Array(cols * rows);
+    const field = {}, raw = {};
+    for (const t of HEAT_THEMES) { field[t.k] = new Float32Array(cols * rows); raw[t.k] = new Float32Array(cols * rows); }
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       const x = ex0 + (i + 0.5) * C, y = ey0 + (j + 0.5) * C, k = j * cols + i;
-      const shop = lin(near(x, y, supers), 150, 900) * 0.8 + lin(near(x, y, convs), 100, 500) * 0.2;
-      const med = lin(near(x, y, clinics), 150, 800) * 0.6 + lin(near(x, y, hosps), 300, 1500) * 0.4;
-      const quiet = Math.max(0, Math.min(1, (68 - noiseAt(x, y)) / 18)); // 屋外の騒音の推定 50dB以下で満点、68dB以上で0点
-      const commute = lin(near(x, y, gates), 300, 2500);
+      const dSuper = near(x, y, supers), dClinic = near(x, y, clinics), db = noiseAt(x, y), dGate = near(x, y, gates);
+      const shop = lin(dSuper, 150, 900) * 0.8 + lin(near(x, y, convs), 100, 500) * 0.2;
+      const med = lin(dClinic, 150, 800) * 0.6 + lin(near(x, y, hosps), 300, 1500) * 0.4;
+      const quiet = Math.max(0, Math.min(1, (68 - db) / 18)); // 屋外の騒音の推定 50dB以下で満点、68dB以上で0点
+      const commute = lin(dGate, 300, 2500);
+      raw.shop[k] = dSuper; raw.med[k] = dClinic; raw.quiet[k] = db; raw.commute[k] = dGate;
       const fi = Math.floor((x - fl.x0) / fl.cell), fj = Math.floor((y - fl.y0) / fl.cell);
       const safety = [1, 0.75, 0.4, 0.1, 0.05, 0, 0][fcells.get(fi + "," + fj) || 0];
+      raw.safety[k] = fcells.get(fi + "," + fj) || 0;
       field.shop[k] = shop; field.med[k] = med; field.quiet[k] = quiet; field.commute[k] = commute; field.safety[k] = safety;
       const crime = crimeScore(x, y);
       field.crime[k] = crime;
+      raw.crime[k] = crimeDensityAt(x, y) ?? 0;
       field.all[k] = (shop + med + quiet + commute + safety + crime) / 6;
     }
     // 各テーマは距離やdBの決まった基準で塗る。「総合」だけは5つの平均で差が小さくなるので、
@@ -560,7 +582,11 @@
       const lo = sorted[Math.floor(sorted.length * 0.05)], hi = sorted[Math.floor(sorted.length * 0.95)];
       for (let n = 0; n < a.length; n++) a[n] = hi > lo ? Math.max(0, Math.min(1, (a[n] - lo) / (hi - lo))) : a[n];
     }
-    heatCache = { field, cols, rows, x0: ex0, y0: ey0 };
+    for (let n = 0; n < field.all.length; n++) raw.all[n] = field.all[n];
+    // 「エリアの中で上位何%か」を出すために、テーマごとに点を並べておく
+    const sorted = {};
+    for (const t of HEAT_THEMES) sorted[t.k] = Array.from(field[t.k]).sort((a, b) => a - b);
+    heatCache = { field, raw, sorted, cols, rows, x0: ex0, y0: ey0 };
     return heatCache;
   }
 
@@ -586,13 +612,34 @@
     return s >= 0.6 ? ["good", "少なめ"] : s >= 0.3 ? ["warn", "ふつう"] : ["bad", "多め"];
   }
 
-  function heatColor(v) {
-    for (let i = 1; i < HEAT_STOPS.length; i++) {
-      const [p1, c1] = HEAT_STOPS[i], [p0, c0] = HEAT_STOPS[i - 1];
-      if (v <= p1) { const t = (v - p0) / (p1 - p0); return c0.map((c, n) => Math.round(c + (c1[n] - c) * t)); }
-    }
-    return HEAT_STOPS[HEAT_STOPS.length - 1][1];
+  function heatColor(v) { return levelOf(v).color; }
+
+  // その地点の評価：5段階、エリアの中での順位、実際の値
+  function heatInfo(x, y, theme) {
+    const h = heatField();
+    const i = Math.floor((x - h.x0) / HEAT_CELL), j = Math.floor((y - h.y0) / HEAT_CELL);
+    if (i < 0 || j < 0 || i >= h.cols || j >= h.rows) return null;
+    const k = j * h.cols + i, v = h.field[theme][k], arr = h.sorted[theme];
+    let lo = 0, hi = arr.length; // v より大きいマスの数を二分探索で数える
+    while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] <= v) lo = m + 1; else hi = m; }
+    const top = Math.max(1, Math.round(((arr.length - lo) + 1) / arr.length * 100));
+    return { v, level: levelOf(v), top, text: rawText(theme, h.raw[theme][k]) };
   }
+  function rawText(theme, r) {
+    const m = (d) => d >= 1000 ? `約${(d / 1000).toFixed(1)}km` : `約${Math.round(d / 10) * 10}m`;
+    return {
+      all: "6テーマの平均", shop: `スーパーまで${m(r)}`, med: `診療所まで${m(r)}`, quiet: `屋外 約${Math.round(r)}dB`,
+      commute: `キャンパスまで${m(r)}`, safety: r ? `浸水想定 ${state.data.hazard.floodLegend[r - 1]}` : "浸水想定なし",
+      crime: `500m以内 年${Math.round(r)}件`,
+    }[theme];
+  }
+  // テーマごとに、エリアのマスが5段階それぞれにどれだけあるか（%）
+  function levelShares(theme) {
+    const vals = heatField().field[theme], cnt = LEVELS.map(() => 0);
+    for (const v of vals) cnt[LEVELS.indexOf(levelOf(v))]++;
+    return cnt.map((c) => Math.round((c / vals.length) * 100));
+  }
+  const levelChip = (lv) => `<span class="lv" style="background:${rgb(lv.color)}">${lv.mark}</span>`;
 
   function drawHeat() {
     if (!heatLayer) return;
@@ -602,7 +649,7 @@
     const ctx = cv.getContext("2d"), img = ctx.createImageData(cols, rows);
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       const v = vals[j * cols + i], [r, g, b] = heatColor(v), o = ((rows - 1 - j) * cols + i) * 4;
-      img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 170;
+      img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 175;
     }
     ctx.putImageData(img, 0, 0);
     L.imageOverlay(cv.toDataURL(), [ll(x0, y0), ll(x0 + cols * HEAT_CELL, y0 + rows * HEAT_CELL)], { opacity: 0.72, interactive: false, className: "heat-img" }).addTo(heatLayer);
@@ -646,7 +693,9 @@
       maps.big.focus = L.layerGroup().addTo(maps.big);
       const ext = state.data.map.extent;
       maps.big.fitBounds([ll(ext[0] + 400, ext[1] + 400), ll(ext[2] - 400, ext[3] - 400)]);
-      maps.big.on("click", () => { if (state.selected) { state.selected = null; renderSide(); drawPins(); } });
+      maps.big.on("click", (e) => { showReadout(e.latlng); if (state.selected) { state.selected = null; renderSide(); drawPins(); } });
+      maps.big.on("mousemove", (e) => showReadout(e.latlng));
+      maps.big.on("mouseout", () => { $("readout").hidden = true; });
     }
     maps.big.invalidateSize();
     for (const ly of LAYERS) {
@@ -680,6 +729,17 @@
     }
   }
 
+  // カーソル（スマホではタップ）の地点の評価を、地図の右上に出す
+  function showReadout(latlng) {
+    const el = $("readout");
+    if (!state.layers.has("heat")) { el.hidden = true; return; }
+    const hi = heatInfo(latlng.lng, latlng.lat, state.heatTheme);
+    if (!hi) { el.hidden = true; return; }
+    const t = HEAT_THEMES.find((x) => x.k === state.heatTheme);
+    el.innerHTML = `<div class="small muted">この地点の「${t.label}」</div><div>${levelChip(hi.level)} <b>${hi.level.label}</b>　<span class="num">エリアの上位${hi.top}%</span></div><div class="small muted num">${esc(hi.text)}</div>`;
+    el.hidden = false;
+  }
+
   function selectPin(id) {
     if (state.selected === id) { go("detail", id); return; }
     state.selected = id;
@@ -703,7 +763,10 @@
     if (state.layers.has("shelter")) rows.push(`${dot("shelter")}${src("実データ", "国土地理院 指定緊急避難場所（洪水）")}`);
     if (state.layers.has("heat")) {
       const scale = HEAT_SCALE[state.heatTheme];
-      rows.push(`<span>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</span><span class="muted">${scale[0]}</span><span class="heat-bar"></span><span class="muted">${scale[1]}</span>${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}`);
+      rows.push(`<span><b>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</b>　色は5段階（緑ほど住みやすい）</span>`);
+      const share = levelShares(state.heatTheme);
+      rows.push(LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${l.label}<span class="muted num" style="font-weight:400">（${share[n]}%）</span></span>`).join("") + `<span class="muted">（　）はエリアのうちその段階の割合</span>`);
+      rows.push(`<span class="muted">×：${scale[0]}　◎：${scale[1]}</span>${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}`);
     }
     rows.push(`<span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}`);
     $("legend").innerHTML = rows.map((r) => `<div class="row">${r}</div>`).join("");
@@ -747,10 +810,14 @@
         <div class="fact ${crimeGrade(p)[0]}"><div class="k">まわりの犯罪</div><div class="v">${crimeGrade(p)[1]}</div><div class="s">500m以内 年${p.crime.total}件・交番${p.near.police.min}分</div></div>
         <div class="fact ${p.noise.dValue >= 45 ? "good" : p.noise.dValue >= 40 ? "warn" : "bad"}"><div class="k">隣の部屋の音</div><div class="v">D-${p.noise.dValue}</div><div class="s">${esc(p.structure)}</div></div>
       </div>
-      <div class="small muted">この場所のヒートマップ ${badge("独自の目安")}</div>
-      <div class="heat-row">${HEAT_THEMES.map((t) => { const v = heatAt(p.x, p.y, t.k) ?? 0; const [r, g, b] = heatColor(v); return `<div title="${t.label}"><i style="background:rgb(${r},${g},${b})"></i><span>${t.label}</span></div>`; }).join("")}</div>
+      <div class="small muted">この場所の評価（地図のエリア全体の中での順位） ${badge("独自の目安")}</div>
+      <table class="rank-table num">${HEAT_THEMES.map((t) => {
+        const hi = heatInfo(p.x, p.y, t.k);
+        if (!hi) return "";
+        return `<tr title="${esc(hi.text)}"><th>${t.label}</th><td>${levelChip(hi.level)} ${hi.level.label}</td><td class="muted">上位${hi.top}%</td><td class="muted">${esc(hi.text)}</td></tr>`;
+      }).join("")}</table>
       <button class="btn" id="openDetail" style="padding:12px">詳しく見る →</button>
-      <p class="note">同じ札をもう一度タップしても開きます。地図の何もないところをタップすると選択を外します。</p>`;
+      <p class="note">同じ札をもう一度タップしても開きます。</p>`;
   }
 
   // ---------- 詳しい住宅情報 ----------
