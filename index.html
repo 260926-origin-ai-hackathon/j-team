@@ -26,8 +26,10 @@
     --bad: #bf3f2c;
     --map-ground: #f7f9f7;
     --map-road: #c3ccc6;
-    --map-road-big: #e39b3a;
     --map-rail: #6d7a74;
+    --flood-1: #8ec3ee;
+    --flood-2: #3f8fd6;
+    --flood-3: #1f5fa8;
     --display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
     --body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
   }
@@ -37,7 +39,8 @@
       --bg: #111715; --surface: #19211e; --surface-2: #1f2925; --ink: #e4ece8; --muted: #9aa9a2;
       --line: #2e3a35; --accent: #3cc3a2; --accent-soft: #173b33; --on-accent: #0b1411; --mark: #cdb03a;
       --good: #58c083; --warn: #e0a044; --bad: #ef7461;
-      --map-ground: #151c19; --map-road: #3a4842; --map-road-big: #c0842f; --map-rail: #8b9993;
+      --map-ground: #151c19; --map-road: #3a4842; --map-rail: #8b9993;
+      --flood-1: #2d5f8c; --flood-2: #3f86c9; --flood-3: #7fb6ea;
     }
   }
   :root[data-theme="dark"] {
@@ -45,7 +48,8 @@
     --bg: #111715; --surface: #19211e; --surface-2: #1f2925; --ink: #e4ece8; --muted: #9aa9a2;
     --line: #2e3a35; --accent: #3cc3a2; --accent-soft: #173b33; --on-accent: #0b1411; --mark: #cdb03a;
     --good: #58c083; --warn: #e0a044; --bad: #ef7461;
-    --map-ground: #151c19; --map-road: #3a4842; --map-road-big: #c0842f; --map-rail: #8b9993;
+    --map-ground: #151c19; --map-road: #3a4842; --map-rail: #8b9993;
+    --flood-1: #2d5f8c; --flood-2: #3f86c9; --flood-3: #7fb6ea;
   }
 
   * { box-sizing: border-box; }
@@ -61,101 +65,93 @@
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .muted { color: var(--muted); }
   .small { font-size: 13px; }
-  .hl { background: linear-gradient(transparent 60%, var(--mark) 60%); }
 
-  /* ---- アプリの枠：画面の高さぴったり ---- */
-  .app { height: 100%; max-width: 1180px; margin: 0 auto; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
-  header.top { display: flex; align-items: center; gap: 16px; padding-block: 12px 10px; }
-  .logo { font-family: var(--display); font-weight: 900; font-size: 22px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-  .steps { display: flex; gap: 4px; list-style: none; margin: 0 auto; padding: 0; }
-  .steps li { font-size: 12px; padding: 3px 10px; border-radius: 999px; color: var(--muted); border: 1px solid transparent; white-space: nowrap; }
-  .steps li.done { color: var(--accent); }
-  .steps li.now { color: var(--on-accent); background: var(--accent); font-weight: 700; }
-  .ai-state { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  /* ---- 枠 ---- */
+  .app { height: 100%; max-width: 1400px; margin: 0 auto; display: grid; grid-template-rows: auto minmax(0, 1fr); padding-bottom: 14px; }
+  header.top { display: flex; align-items: center; gap: 12px; padding-block: 10px; min-width: 0; }
+  .logo { font-family: var(--display); font-weight: 900; font-size: 21px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .logo[hidden] { display: none; }
+  .tagline { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .spacer { flex: 1; }
+  .chip-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .chip-btn b { font-family: var(--display); color: var(--accent); }
+  .ai-state { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
   .ai-state.on { color: var(--accent); border-color: var(--accent); }
-  @media (max-width: 980px) { .steps li:not(.now) { display: none; } }
+  @media (max-width: 720px) { .tagline, .ai-state { display: none; } }
 
-  main.stage { position: relative; min-height: 0; }
-  .screen { position: absolute; inset: 0; display: grid; gap: 16px; min-height: 0; overflow: auto; }
+  .stage { position: relative; min-height: 0; }
+  .screen { position: absolute; inset: 0; min-height: 0; }
   .screen[hidden] { display: none !important; }
   @media (prefers-reduced-motion: no-preference) {
-    .screen { animation: in .28s ease both; }
-    @keyframes in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+    .screen { animation: in .25s ease both; }
+    @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   }
 
-  nav.bar { display: flex; align-items: center; gap: 12px; padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); }
-  nav.bar .hint { flex: 1; font-size: 13px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 700; border-radius: 10px; padding: 10px 20px; cursor: pointer; white-space: nowrap; }
+  .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 700; border-radius: 10px; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
   .btn.ghost { background: transparent; color: var(--accent); }
-  .btn.big { font-size: 16px; padding: 12px 28px; }
   .btn:disabled { opacity: .55; cursor: progress; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-height: 0; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
 
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; min-height: 0; }
-  .eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
-  .title { font-size: clamp(22px, 3vw, 30px); font-weight: 900; }
-
-  /* ---- 1. はじめに ---- */
-  .s-start { grid-template-columns: 1.2fr 1fr; align-content: center; }
-  .hero h1 { font-size: clamp(28px, 3.8vw, 44px); font-weight: 900; line-height: 1.25; }
-  .hero p { margin-top: 14px; font-size: 16px; color: var(--muted); max-width: 30em; }
-  .persona ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
-  .persona li { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
-  .persona li::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--accent); flex: none; transform: translateY(-2px); }
-  .field { display: grid; gap: 4px; margin-top: 16px; }
-  .field label { font-size: 13px; color: var(--muted); }
-  select, .input { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); padding: 10px 12px; }
-  @media (max-width: 760px) { .s-start { grid-template-columns: 1fr; align-content: start; } }
-
-  /* ---- 2. お金 ---- */
-  .s-money { grid-template-columns: 1fr 1fr; align-content: center; }
-  .money-in { display: grid; gap: 12px; margin-top: 16px; }
-  .money-in label { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 10px; font-weight: 700; }
-  .money-in input { text-align: right; font-size: 20px; font-family: var(--display); }
-  .cap-big { font-family: var(--display); font-size: clamp(40px, 6vw, 64px); font-weight: 900; line-height: 1.1; color: var(--accent); }
-  @media (max-width: 760px) { .s-money { grid-template-columns: 1fr; align-content: start; } }
-
-  /* ---- 3. 質問 ---- */
-  .s-ask { grid-template-rows: auto 1fr auto; }
-  .qs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-height: 0; }
-  .q h3 { font-size: 17px; margin-bottom: 10px; }
-  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
-  .opt { border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
-  .opt[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
-  .ask-free { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
-  .ask-free textarea { width: 100%; height: 56px; resize: none; }
-  .ai-note { font-size: 13px; padding: 6px 10px; border-radius: 8px; background: var(--accent-soft); grid-column: 1 / -1; }
-  @media (max-width: 760px) { .qs { grid-template-columns: 1fr; } }
-
-  /* ---- 4. 候補 ---- */
-  .s-list { grid-template-columns: 400px minmax(0, 1fr); }
-  .cards { display: grid; grid-template-rows: auto repeat(3, minmax(0, 1fr)) auto; gap: 10px; min-height: 0; }
-  .card { text-align: left; width: 100%; display: grid; grid-template-columns: 1fr auto; align-content: start; gap: 2px 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; min-height: 0; overflow: hidden; }
-  .card:hover, .card.hover { border-color: var(--accent); }
-  .card h3 { font-size: 17px; }
-  .card .rent { font-size: 13px; color: var(--muted); }
-  .card .why { grid-column: 1 / -1; font-size: 12.5px; color: var(--accent); margin-top: 2px; }
-  .card .tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-  .tag { font-size: 12px; padding: 0 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
-  .tag.warn { border-color: var(--warn); color: var(--warn); }
-  .tag.bad { border-color: var(--bad); color: var(--bad); }
-  .score { grid-row: 1 / 3; grid-column: 2; display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; font-family: var(--display); font-weight: 900; font-size: 18px; border: 3px solid var(--accent); color: var(--accent); }
-  .rank { font-size: 11px; color: var(--muted); }
-  .pager { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
-  .linkbtn { background: none; border: none; color: var(--accent); font-weight: 700; cursor: pointer; padding: 4px 0; }
-  .linkbtn:disabled { color: var(--muted); opacity: .5; cursor: default; }
+  /* ---- 地図の画面 ---- */
+  .s-map { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
   .mapwrap { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--map-ground); min-height: 0; }
-  .mapwrap .map { position: absolute; inset: 0; }
-  .map-legend { position: absolute; left: 8px; bottom: 8px; z-index: 500; display: flex; flex-wrap: wrap; gap: 3px 10px; max-width: calc(100% - 16px); padding: 5px 9px; border-radius: 8px; font-size: 11.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); }
-  .map-legend span { display: inline-flex; align-items: center; gap: 4px; }
-  .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 8px; font-weight: 700; }
-  @media (max-width: 860px) { .s-list { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 200px; } }
+  .map { position: absolute; inset: 0; }
+  .layers { position: absolute; top: 10px; left: 56px; right: 10px; z-index: 600; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+  .layer { pointer-events: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px 5px 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .layer .sw { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; opacity: .4; }
+  .layer[aria-pressed="true"] { border-color: var(--ink); }
+  .layer[aria-pressed="true"] .sw { opacity: 1; background: currentColor; }
+  .legend { position: absolute; left: 10px; bottom: 10px; z-index: 600; display: grid; gap: 3px; padding: 8px 10px; border-radius: 10px; font-size: 12px; background: var(--surface); border: 1px solid var(--line); max-width: calc(100% - 20px); }
+  .legend:empty { display: none; }
+  .heat-themes { pointer-events: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .ht { border: none; background: none; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; cursor: pointer; font-weight: 700; color: var(--muted); }
+  .ht[aria-pressed="true"] { background: #2f9e5b; color: #fff; }
+  .legend .heat-bar { display: inline-block; width: 90px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, rgb(210,60,42), rgb(242,201,76), rgb(47,158,91)); }
+  .heat-img { image-rendering: auto; }
+  .heat-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; color: var(--muted); text-align: center; }
+  .heat-row i { display: block; height: 10px; border-radius: 3px; margin-bottom: 2px; }
+  .legend .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; }
+  .legend i { display: inline-block; width: 16px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 8px; font-weight: 700; font-style: normal; vertical-align: -2px; margin-right: 3px; }
+  .legend i.dot { width: 13px; height: 13px; border-radius: 50%; }
 
-  /* Leaflet に載せる目印 */
+  .side { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+  .side .panel { display: grid; align-content: start; gap: 12px; overflow: auto; }
+  .intro h2 { font-size: 21px; }
+  .intro ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; }
+  .intro li { display: flex; gap: 8px; align-items: baseline; }
+  .intro li::before { content: ""; width: 6px; height: 6px; border-radius: 2px; background: var(--accent); flex: none; transform: translateY(-2px); }
+  .howto { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 13.5px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); }
+  .howto b { font-family: var(--display); color: var(--accent); }
+  .sources { font-size: 11px; color: var(--muted); }
+  .sources ul { margin: 2px 0 0; padding-left: 16px; }
+  .demo-flag { display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 4px; border: 1px dashed var(--muted); color: var(--muted); vertical-align: middle; font-weight: 400; font-family: var(--body); letter-spacing: 0; }
+
+  .pv-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .pv-head h2 { font-size: 22px; }
+  .pv-price { text-align: right; white-space: nowrap; }
+  .pv-price strong { font-family: var(--display); font-size: 26px; font-weight: 900; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fact { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); min-width: 0; }
+  .fact .k { font-size: 11.5px; color: var(--muted); }
+  .fact .v { font-family: var(--display); font-size: 17px; font-weight: 900; }
+  .fact .s { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fact.good .v { color: var(--good); } .fact.warn .v { color: var(--warn); } .fact.bad .v { color: var(--bad); }
+  .budget-line { font-size: 13px; padding: 6px 10px; border-radius: 8px; }
+  .budget-line.ok { background: var(--accent-soft); } .budget-line.over { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+  @media (max-width: 860px) {
+    .s-map { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+    .side .panel { max-height: 46vh; }
+  }
+
+  /* 地図の目印 */
   .leaflet-container { background: var(--map-ground); font-family: var(--body); }
+  .price-pin { font-family: var(--display); font-weight: 900; font-size: 12.5px; padding: 2px 8px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 2px solid var(--ink); white-space: nowrap; width: max-content; transform: translate(-50%, -50%); box-shadow: 0 2px 6px rgba(0,0,0,.18); cursor: pointer; }
+  .price-pin.over { border-color: var(--muted); color: var(--muted); opacity: .8; }
+  .price-pin.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); transform: translate(-50%, -50%) scale(1.25); }
   .pin { display: grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; border: 2px solid var(--map-ground); box-shadow: 0 1px 3px rgba(0,0,0,.25); }
   .home-pin { width: 34px; height: 34px; border-radius: 50%; background: var(--mark); border: 3px solid var(--ink); display: grid; place-items: center; }
-  .home-pin.small { width: 26px; height: 26px; font-family: var(--display); font-weight: 900; font-size: 13px; color: #1b2521; border-width: 2px; }
-  .home-pin.small.on { transform: scale(1.3); background: var(--accent); color: var(--on-accent); }
   .st-pin { background: var(--ink); color: var(--bg); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; white-space: nowrap; width: max-content; }
   .campus-pin { background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; width: max-content; }
   .leaflet-tooltip.lbl { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: none; font-size: 12px; font-weight: 700; padding: 1px 6px; }
@@ -164,201 +160,101 @@
   .leaflet-control-attribution a { color: var(--accent); }
   .leaflet-bar a { background: var(--surface); color: var(--ink); border-color: var(--line); }
 
-  /* ---- 5. カルテ ---- */
-  .s-karte { grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; }
-  .karte-head { display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: flex-end; }
-  .karte-head h2 { font-size: clamp(22px, 3vw, 28px); font-weight: 900; }
-  .spec { color: var(--muted); font-size: 14px; }
-  .price { margin-left: auto; text-align: right; }
-  .price strong { font-family: var(--display); font-size: 28px; font-weight: 900; }
-  .demo-flag { display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 4px; border: 1px dashed var(--muted); color: var(--muted); vertical-align: middle; }
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
-  .tab { border: none; background: none; padding: 8px 14px; cursor: pointer; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
+  /* 予算のポップオーバー */
+  .pop { position: absolute; right: 0; top: 40px; z-index: 900; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .pop[hidden] { display: none; }
+  .pop label { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-top: 8px; }
+  .pop input { text-align: right; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 6px 8px; width: 100%; }
+
+  /* ---- 詳しい住宅情報の画面 ---- */
+  .s-detail { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); grid-template-rows: auto minmax(0, 1fr); gap: 12px 16px; }
+  .d-head { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 18px; }
+  .d-head h2 { font-size: clamp(22px, 2.6vw, 28px); font-weight: 900; }
+  .d-head .spec { color: var(--muted); font-size: 14px; }
+  .d-head .pv-price { margin-left: auto; }
+  .d-body { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { border: none; background: none; padding: 8px 12px; cursor: pointer; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; font-size: 14px; }
   .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-  .tab .v { font-family: var(--display); margin-left: 6px; font-size: 12px; padding: 0 6px; border-radius: 999px; color: #fff; }
+  .tab .v { margin-left: 5px; font-size: 11px; padding: 0 6px; border-radius: 999px; color: #fff; }
   .v-good { background: var(--good); } .v-warn { background: var(--warn); } .v-bad { background: var(--bad); }
-  #tabBody > .panel { align-self: start; }
-  .tabpanel[hidden] { display: none !important; }
-  .split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; min-height: 0; }
-  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+  .tabbody { min-height: 0; overflow: auto; padding-top: 14px; display: grid; align-content: start; gap: 12px; }
   dl.rows { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; font-size: 14.5px; align-content: start; }
   dl.rows dt { color: var(--muted); white-space: nowrap; }
   dl.rows dd { margin: 0; }
-  .note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
-  .big-verdict { font-family: var(--display); font-size: 26px; font-weight: 900; margin-bottom: 10px; }
+  .note { font-size: 12.5px; color: var(--muted); }
+  .big-verdict { font-family: var(--display); font-size: 24px; font-weight: 900; }
   .big-verdict.good { color: var(--good); } .big-verdict.warn { color: var(--warn); } .big-verdict.bad { color: var(--bad); }
-  .meter { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 6px 0 12px; }
-  .meter i { height: 12px; border-radius: 3px; background: var(--line); }
+  .meter { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .meter i { height: 10px; border-radius: 3px; background: var(--line); }
   .meter i.on { background: var(--warn); }
-  .money-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 8px 0 6px; border: 1px solid var(--line); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .money-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
   .money-bar i { display: block; height: 100%; }
-  .money-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12.5px; color: var(--muted); }
+  .money-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--muted); }
   .money-legend b { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-  .explain { display: grid; gap: 10px; align-content: start; }
-  .ex-row { display: grid; grid-template-columns: 110px 1fr 60px; gap: 10px; align-items: center; font-size: 14px; }
-  .ex-bar { height: 14px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
-  .ex-bar i { display: block; height: 100%; background: var(--accent); }
-  .ex-desc { grid-column: 2 / -1; font-size: 12.5px; color: var(--muted); margin-top: -6px; }
-
-  /* ---- 6. 内見チェック ---- */
-  .s-check { grid-template-rows: auto minmax(0, 1fr); }
-  .checklist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; align-content: start; }
-  .checklist li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 14.5px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
-  .checklist input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--accent); }
-  .checklist .why { display: block; font-size: 12.5px; color: var(--muted); }
-  @media (max-width: 760px) { .checklist { grid-template-columns: 1fr; } }
-
-  /* ---- 7. 親に相談 ---- */
-  .s-parent { grid-template-columns: 320px minmax(0, 1fr); }
-  .pchecks { display: grid; gap: 8px; align-content: start; }
-  .pcheck { display: grid; grid-template-columns: 1fr auto; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-size: 13px; }
-  .pcheck b { font-size: 15px; text-align: right; }
-  .pcheck .sub { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .checklist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .checklist li { display: grid; grid-template-columns: 20px 1fr; gap: 6px; font-size: 13.5px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); line-height: 1.5; }
+  .checklist input { width: 17px; height: 17px; margin-top: 2px; accent-color: var(--accent); }
+  .checklist .why { display: block; font-size: 12px; color: var(--muted); }
+  .pchecks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .pcheck { padding: 7px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-size: 12px; min-width: 0; }
+  .pcheck b { display: block; font-size: 14px; }
+  .pcheck span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pcheck.good b { color: var(--good); } .pcheck.warn b { color: var(--warn); } .pcheck.bad b { color: var(--bad); }
-  .letter-box { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px; min-height: 0; }
-  .letter { width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface-2); line-height: 1.8; resize: none; }
+  .letter { width: 100%; height: 230px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); line-height: 1.75; resize: none; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .status { font-size: 13px; color: var(--muted); }
-  @media (max-width: 760px) { .s-parent { grid-template-columns: 1fr; } }
-
-  .sources { font-size: 11.5px; color: var(--muted); margin-top: 14px; }
-  .sources ul { margin: 2px 0 0; padding-left: 16px; }
+  @media (max-width: 860px) {
+    .s-detail { grid-template-columns: 1fr; grid-template-rows: auto 180px minmax(0, 1fr); }
+    .two, .checklist { grid-template-columns: 1fr; }
+    .pchecks { grid-template-columns: repeat(3, 1fr); }
+  }
 </style>
 
 <div class="app">
   <header class="top">
-    <div class="logo">
+    <button class="btn ghost" id="backBtn" hidden>← 地図に戻る</button>
+    <div class="logo" id="logo">
       <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="4" width="24" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9 4v-2M21 4v-2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M8 14h14M8 20h9" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/></svg>
       ヘヤカルテ
     </div>
-    <ol class="steps" id="steps" aria-label="進みぐあい"></ol>
+    <div class="tagline">内見に行く前に、部屋の「まわり」まで分かる</div>
+    <div class="spacer"></div>
+    <div style="position:relative">
+      <button class="chip-btn" id="budgetBtn" aria-expanded="false">家賃の目安 <b class="num" id="budgetChip"></b> ✎</button>
+      <div class="panel pop" id="budgetPop" hidden>
+        <div class="eyebrow">毎月入ってくるお金</div>
+        <label for="inScholar">奨学金<input id="inScholar" class="num" type="number" step="1000" min="0" value="50000"><span>円</span></label>
+        <label for="inAllow">仕送り<input id="inAllow" class="num" type="number" step="1000" min="0" value="30000"><span>円</span></label>
+        <label for="inJob">バイト<input id="inJob" class="num" type="number" step="1000" min="0" value="40000"><span>円</span></label>
+        <p class="note" style="margin-top:10px">家賃＋管理費の目安は収入の3分の1。超える部屋は地図で薄く表示します。</p>
+      </div>
+    </div>
     <div class="ai-state" id="aiState">AIを確認中…</div>
   </header>
 
   <main class="stage">
-    <!-- 1. はじめに -->
-    <section class="screen s-start" data-screen="start" hidden>
-      <div class="hero">
-        <div class="eyebrow">大学進学ではじめての一人暮らし</div>
-        <h1>内見に行く前に、<br>部屋の<span class="hl">「まわり」</span>まで分かる。</h1>
-        <p>スーパーや病院までの距離、家の前の車の多さ、災害のリスク、毎月のお金。気になることを1枚のカルテにして、親への相談までまとめます。</p>
+    <!-- 地図 -->
+    <section class="screen s-map" data-screen="map" hidden>
+      <div class="mapwrap">
+        <div class="map" id="bigMap"></div>
+        <div class="layers" id="layers"></div>
+        <div class="legend" id="legend"></div>
       </div>
-      <div class="panel persona">
-        <div class="eyebrow">こんな人のためのアプリです</div>
-        <ul>
-          <li>西日本から、大阪の大学に進学する</li>
-          <li>内見に何度も行くのはめんどくさい</li>
-          <li>奨学金で大学に通う</li>
-          <li>スーパーや病院の場所を知りたい</li>
-          <li>まわりの交通量が気になる</li>
-          <li>災害のことも押さえておきたい</li>
-          <li>親も一緒に決める</li>
-        </ul>
-        <div class="field">
-          <label for="univ">通う大学</label>
-          <select id="univ">
-            <option value="kindai" selected>近畿大学 東大阪キャンパス</option>
-            <option disabled>ほかの大学（準備中）</option>
-          </select>
-        </div>
-      </div>
+      <aside class="side"><div class="panel" id="sidePanel"></div></aside>
     </section>
 
-    <!-- 2. お金 -->
-    <section class="screen s-money" data-screen="money" hidden>
-      <div class="panel">
-        <div class="eyebrow">STEP 1</div>
-        <h2 class="title">毎月、いくら入ってくる？</h2>
-        <div class="money-in">
-          <label for="inScholar">奨学金<input id="inScholar" class="input num" type="number" step="1000" min="0" value="50000"><span>円</span></label>
-          <label for="inAllow">仕送り<input id="inAllow" class="input num" type="number" step="1000" min="0" value="30000"><span>円</span></label>
-          <label for="inJob">バイト<input id="inJob" class="input num" type="number" step="1000" min="0" value="40000"><span>円</span></label>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="eyebrow">家賃＋管理費の目安（収入の3分の1）</div>
-        <div class="cap-big num" id="capBig"></div>
-        <p class="muted" id="capSub" style="margin-top:8px"></p>
-        <p class="note" style="margin-top:16px">奨学金の最初の振込は入学した後です。入居前のお金と最初の家賃は、仕送りや親の援助で先に用意しておく必要があります。</p>
-      </div>
-    </section>
-
-    <!-- 3. 質問 -->
-    <section class="screen s-ask" data-screen="ask" hidden>
-      <div>
-        <div class="eyebrow">STEP 2</div>
-        <h2 class="title">4つだけ答えてください</h2>
-      </div>
-      <div class="qs" id="qs"></div>
-      <div class="panel ask-free" style="padding:14px 16px">
-        <div>
-          <label for="askBox" class="small muted">ほかにもあれば、ひとことで（AIが読み取って順番に反映します）</label>
-          <textarea id="askBox" class="input" placeholder="例：夜うるさいのは無理。親は地震を心配してる"></textarea>
-        </div>
-        <span class="status" id="askStatus"></span>
-        <div class="ai-note" id="askNote" hidden></div>
-      </div>
-    </section>
-
-    <!-- 4. 候補 -->
-    <section class="screen s-list" data-screen="list" hidden>
-      <div class="cards">
-        <div>
-          <div class="eyebrow">STEP 3</div>
-          <h2 style="font-size:20px">あなたに合う部屋</h2>
-        </div>
-        <div id="cardSlots" style="display:contents"></div>
-        <div class="pager">
-          <button class="linkbtn" id="prevPage">← 前の3件</button>
-          <span class="muted num" id="pageInfo"></span>
-          <button class="linkbtn" id="nextPage">次の3件 →</button>
-        </div>
-      </div>
-      <div class="mapwrap"><div class="map" id="listMap"></div></div>
-    </section>
-
-    <!-- 5. カルテ -->
-    <section class="screen s-karte" data-screen="karte" hidden>
-      <div class="karte-head" id="karteHead"></div>
-      <div class="tabs" role="tablist" id="tabs"></div>
-      <div id="tabBody" style="min-height:0;display:grid"></div>
-    </section>
-
-    <!-- 6. 内見チェック -->
-    <section class="screen s-check" data-screen="check" hidden>
-      <div>
-        <div class="eyebrow">内見に行かなくていい</div>
-        <h2 class="title">オンライン内見で、これだけ聞けばOK</h2>
-        <p class="muted small" id="checkSub" style="margin-top:4px"></p>
-      </div>
-      <ul class="checklist" id="checklist"></ul>
-    </section>
-
-    <!-- 7. 親に相談 -->
-    <section class="screen s-parent" data-screen="parent" hidden>
-      <div>
-        <div class="eyebrow">親も一緒に決める</div>
-        <h2 style="font-size:20px;margin-bottom:10px">親が気にする5つのこと</h2>
-        <div class="pchecks" id="pchecks"></div>
-      </div>
-      <div class="letter-box">
-        <label for="letter" class="small muted">親に送るメッセージ（LINEにそのまま貼れます）</label>
-        <textarea class="letter" id="letter"></textarea>
-        <div class="row">
-          <button class="btn" id="letterBtn">親に送る文章を作る</button>
-          <button class="btn ghost" id="copyBtn">コピー</button>
-          <button class="btn ghost" id="stopBtn" hidden>止める</button>
-          <span class="status" id="letterStatus"></span>
-        </div>
+    <!-- 詳しい住宅情報 -->
+    <section class="screen s-detail" data-screen="detail" hidden>
+      <div class="d-head" id="dHead"></div>
+      <div class="mapwrap"><div class="map" id="miniMap"></div></div>
+      <div class="d-body">
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <div class="tabbody" id="tabBody"></div>
       </div>
     </section>
   </main>
-
-  <nav class="bar" aria-label="画面の移動">
-    <button class="btn ghost" id="backBtn">← 戻る</button>
-    <div class="hint" id="hint"></div>
-    <button class="btn big" id="nextBtn">次へ</button>
-  </nav>
 </div>
 
 <script>
@@ -366,34 +262,6 @@
   "use strict";
 
   // ---------- 定数 ----------
-  const SCREENS = [
-    { id: "start", label: "はじめに", next: "はじめる", hint: "" },
-    { id: "money", label: "お金", next: "次へ", hint: "あとから変えられます" },
-    { id: "ask", label: "質問", next: "部屋を探す", hint: "答えなくても進めます" },
-    { id: "list", label: "候補", next: "1位の部屋を見る", hint: "部屋をタップするとカルテが開きます" },
-    { id: "karte", label: "カルテ", next: "内見で聞くことへ", hint: "" },
-    { id: "check", label: "内見チェック", next: "親に相談する", hint: "ビデオ通話で不動産会社に聞くだけ" },
-    { id: "parent", label: "親に相談", next: "ほかの部屋も見る", hint: "" },
-  ];
-  const AXES = [
-    { k: "cost", label: "家賃" },
-    { k: "commute", label: "通学" },
-    { k: "life", label: "買い物・病院" },
-    { k: "quiet", label: "静かさ" },
-    { k: "safety", label: "災害" },
-  ];
-  // radcrew/real-estate-consultant（MIT）の「ガイド付きヒアリング」の考え方：
-  // 条件を入力させるのではなく、答えやすい質問から重みを決める
-  const QUESTIONS = [
-    { id: "commute", q: "大学へはどうやって通う？", opts: [
-      ["歩いて近いのがいい", { commute: 4 }], ["自転車でもOK", { commute: 2 }], ["電車でもいい", { commute: 0.5 }]] },
-    { id: "food", q: "ごはんはどうする？", opts: [
-      ["自炊が多い", { life: 4 }], ["コンビニ・外食が多い", { life: 1.5 }], ["まだ分からない", { life: 2.5 }]] },
-    { id: "noise", q: "車の音は気になる？", opts: [
-      ["すごく気になる", { quiet: 4 }], ["少しなら平気", { quiet: 2 }], ["気にしない", { quiet: 0.5 }]] },
-    { id: "parent", q: "親がいちばん心配していることは？", opts: [
-      ["お金", { cost: 4 }], ["地震や水害", { safety: 4 }], ["防犯", { safety: 2, security: 1 }], ["特にない", {}]] },
-  ];
   const LIVING = { utility: 10000, phone: 5000, food: 30000, daily: 15000, social: 10000 };
   const TRAFFIC_TEXT = {
     1: ["少ない", "細い生活道路。車はほとんど通らない想定"],
@@ -405,30 +273,48 @@
   const POI_STYLE = {
     supermarket: { c: "#2f8a52", t: "ス", label: "スーパー" },
     convenience: { c: "#6b7f3a", t: "コ", label: "コンビニ" },
+    chemist: { c: "#8a5ac0", t: "薬", label: "ドラッグストア" },
     clinic: { c: "#c0507a", t: "医", label: "診療所" },
     hospital: { c: "#bf3f2c", t: "病", label: "病院" },
-    chemist: { c: "#8a5ac0", t: "薬", label: "ドラッグストア" },
-    shelter: { c: "#3a7dbf", t: "避", label: "避難場所" },
+    shelter: { c: "#2e6fb5", t: "避", label: "避難場所" },
   };
+  // 地図に重ねる情報（ペルソナが気にしていること）
+  const LAYERS = [
+    { k: "shop", label: "スーパー・買い物", color: "#2f8a52", kinds: ["supermarket", "convenience", "chemist"] },
+    { k: "med", label: "病院", color: "#bf3f2c", kinds: ["clinic", "hospital"] },
+    { k: "traffic", label: "交通量", color: "#d9822b" },
+    { k: "flood", label: "浸水想定", color: "#3f8fd6" },
+    { k: "shelter", label: "避難場所", color: "#2e6fb5", kinds: ["shelter"] },
+    { k: "heat", label: "ヒートマップ", color: "#2f9e5b" },
+  ];
+  // ヒートマップのテーマ。色が緑に近いほどその観点で住みやすい場所
+  const HEAT_THEMES = [
+    { k: "all", label: "総合" }, { k: "shop", label: "買い物" }, { k: "med", label: "病院" },
+    { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
+  ];
+  const HEAT_CELL = 80;
+  const HEAT_STOPS = [[0, [210, 60, 42]], [0.5, [242, 201, 76]], [1, [47, 158, 91]]];
+  const TRAFFIC_COLORS = { 5: "#d23c2a", 4: "#e8892c", 3: "#e7c33a" };
   const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors・国土地理院・J-SHIS';
 
   // ---------- 状態 ----------
   const state = {
-    data: null, screen: "start",
-    answers: { commute: 1, food: 0, noise: 1, parent: 1 },
-    aiWeights: null, aiText: "",
-    selected: null, page: 0, tab: "map",
+    data: null, screen: "map", selected: null, tab: "life",
+    layers: new Set(["heat"]), heatTheme: "all",
     sample: null,
   };
-  const maps = {};
+  const maps = { big: null, mini: null };
+  const layerGroups = {};
+  let heatLayer = null, heatCache = null;
 
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const yen = (n) => Math.round(n).toLocaleString("ja-JP") + "円";
   const man = (n) => (n / 10000).toFixed(n % 10000 ? 1 : 0) + "万円";
-  const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+  const manShort = (n) => (n / 10000).toFixed(1).replace(/\.0$/, "") + "万";
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const current = () => state.data.properties.find((x) => x.id === state.selected);
+  const byId = (id) => state.data.properties.find((x) => x.id === id);
+  const ll = (x, y) => [y, x];
 
   function income() {
     const v = (id) => Math.max(0, Number($(id).value) || 0);
@@ -436,279 +322,24 @@
   }
   const incomeTotal = () => Object.values(income()).reduce((a, b) => a + b, 0);
   const rentCap = () => Math.floor(incomeTotal() / 3 / 1000) * 1000;
+  const overBudget = (p) => p.rent + p.fee > rentCap();
 
-  // ---------- 採点 ----------
-  function scores(p) {
-    const ratio = (p.rent + p.fee) / Math.max(1, incomeTotal());
-    const n = p.near, h = p.hazard;
-    const cost = clamp(((0.45 - ratio) / 0.2) * 100);
-    const commute = clamp(100 - (p.campus.min - 5) * 5);
-    const life = clamp(100 - (n.supermarket.min - 2) * 9) * 0.55 + clamp(100 - (n.clinic.min - 2) * 7) * 0.25 + clamp(100 - (n.hospital.min - 3) * 5) * 0.2;
-    const quiet = clamp([0, 100, 85, 65, 40, 15][p.traffic.level] - (p.traffic.railM < 80 ? 15 : 0));
-    let safety = [100, p.floor >= 2 ? 92 : 75, p.floor >= 2 ? 65 : 35, p.floor >= 3 ? 45 : 15, 10, 5, 0][h.flood];
-    if (h.landslide) safety -= 30;
-    if (h.tsunami) safety -= 20;
-    if (n.shelter.min > 10) safety -= 10;
-    safety -= Math.max(0, h.quake60 - 15) * 0.8;
-    if (weights().security && (p.floor === 1 || !p.autolock)) safety -= p.floor === 1 ? 20 : 8;
-    return { cost, commute, life, quiet, safety: clamp(safety) };
+  // ---------- 判定 ----------
+  function lifeGrade(p) { const n = p.near; const m = Math.max(n.supermarket.min, Math.min(n.clinic.min, n.hospital.min)); return m <= 5 ? ["good", "安心"] : m <= 10 ? ["warn", "ふつう"] : ["bad", "遠い"]; }
+  function trafficGrade(p) { const l = p.traffic.level; return [l <= 2 ? "good" : l <= 3 ? "warn" : "bad", TRAFFIC_TEXT[l][0]]; }
+  function hazardGrade(p) {
+    const h = p.hazard;
+    if (h.landslide || h.tsunami || (h.flood >= 2 && p.floor === 1) || h.flood >= 3) return ["bad", "要確認"];
+    if (h.flood >= 1 || h.nearFlood >= 1 || p.near.shelter.min > 10) return ["warn", "注意"];
+    return ["good", "安心"];
   }
-
-  function weights() {
-    if (state.aiWeights) return state.aiWeights;
-    const w = { cost: 1, commute: 1, life: 1, quiet: 1, safety: 1 };
-    for (const q of QUESTIONS) {
-      const i = state.answers[q.id];
-      if (i == null) continue;
-      for (const [k, v] of Object.entries(q.opts[i][1])) w[k] = k === "security" ? v : Math.max(w[k], v);
-    }
-    return w;
+  function floodShort(p) {
+    const h = p.hazard;
+    if (h.flood) return `浸水 ${h.floodLabel}`;
+    return h.nearFlood ? `すぐ近くに浸水想定 ${h.nearFloodLabel}` : "浸水想定なし";
   }
-
-  // AleksNeStu/ai-real-estate-assistant（MIT）の RankingExplainer の考え方：
-  // 点数を「観点ごとの点 × 重み ＝ 寄与」に分解して、順位の理由を見せる
-  function explain(p) {
-    const s = scores(p), w = weights();
-    const ws = AXES.reduce((a, x) => a + (w[x.k] ?? 1), 0);
-    const parts = AXES.map((a) => ({ ...a, value: s[a.k], weight: w[a.k] ?? 1, contribution: (s[a.k] * (w[a.k] ?? 1)) / ws, desc: axisDesc(p, a.k) }));
-    return { total: Math.round(parts.reduce((a, x) => a + x.contribution, 0)), parts };
-  }
-  const total = (p) => explain(p).total;
-
-  function axisDesc(p, k) {
-    const n = p.near;
-    return {
-      cost: `家賃＋管理費 ${yen(p.rent + p.fee)}（目安 ${yen(rentCap())}）`,
-      commute: `大学まで徒歩${p.campus.min}分`,
-      life: `スーパー${n.supermarket.min}分・診療所${n.clinic.min}分・病院${n.hospital.min}分`,
-      quiet: `交通量 ${TRAFFIC_TEXT[p.traffic.level][0]}（${p.traffic.front}）`,
-      safety: `浸水 ${p.hazard.floodLabel}・震度6弱以上 ${p.hazard.quake60}%・${p.floor}階`,
-    }[k];
-  }
-
-  function whyLine(p) {
-    const top = explain(p).parts.filter((x) => x.weight >= 2).sort((a, b) => b.value - a.value).slice(0, 2);
-    const good = top.filter((x) => x.value >= 70).map((x) => x.label);
-    return good.length ? `あなたが大事にしている「${good.join("」「")}」が強い` : "バランス型";
-  }
-
-  function ranked() {
-    return state.data.properties.map((p) => ({ p, t: total(p) })).sort((a, b) => b.t - a.t);
-  }
-
-  // ---------- 画面の移動 ----------
-  function go(id, { push = true } = {}) {
-    if (!SCREENS.some((s) => s.id === id)) id = "start";
-    if ((id === "karte" || id === "check" || id === "parent") && !state.selected) id = "list";
-    state.screen = id;
-    document.querySelectorAll(".screen").forEach((el) => { el.hidden = el.dataset.screen !== id; });
-    const idx = SCREENS.findIndex((s) => s.id === id), sc = SCREENS[idx];
-    $("steps").innerHTML = SCREENS.map((s, i) => `<li class="${i < idx ? "done" : i === idx ? "now" : ""}">${i + 1}. ${s.label}</li>`).join("");
-    $("backBtn").style.visibility = idx === 0 ? "hidden" : "visible";
-    $("nextBtn").textContent = sc.next;
-    $("hint").textContent = sc.hint;
-    if (push && location.hash.slice(1) !== id) { try { history.pushState(null, "", "#" + id); } catch { /* 表示先によっては履歴を触れない */ } }
-    render(id);
-  }
-
-  function render(id) {
-    if (id === "money") renderCap();
-    if (id === "ask") renderQuestions();
-    if (id === "list") renderList();
-    if (id === "karte") renderKarte();
-    if (id === "check") renderCheck();
-    if (id === "parent") renderParent();
-    const p = state.selected && current();
-    if (p && (id === "karte" || id === "check" || id === "parent")) $("hint").textContent = p.name;
-  }
-
-  async function next() {
-    const s = state.screen;
-    if (s === "start") go("money");
-    else if (s === "money") go("ask");
-    else if (s === "ask") { await readFreeText(); state.page = 0; state.selected = null; go("list"); }
-    else if (s === "list") { state.selected = ranked()[0].p.id; state.tab = "map"; go("karte"); }
-    else if (s === "karte") go("check");
-    else if (s === "check") go("parent");
-    else if (s === "parent") go("list");
-  }
-  function back() {
-    const i = SCREENS.findIndex((x) => x.id === state.screen);
-    go(SCREENS[Math.max(0, i - 1)].id);
-  }
-
-  // ---------- 2. お金 ----------
-  function renderCap() {
-    $("capBig").textContent = man(rentCap()) + " まで";
-    $("capSub").textContent = `毎月 ${yen(incomeTotal())} 入ってくる場合`;
-  }
-
-  // ---------- 3. 質問 ----------
-  function renderQuestions() {
-    $("qs").innerHTML = QUESTIONS.map((q) => `
-      <div class="panel q"><h3>${q.q}</h3><div class="opts">
-        ${q.opts.map(([label], i) => `<button class="opt" data-q="${q.id}" data-i="${i}" aria-pressed="${state.answers[q.id] === i}">${label}</button>`).join("")}
-      </div></div>`).join("");
-  }
-
-  function keywordWeights(text, base) {
-    const w = { ...base };
-    const rules = [
-      ["cost", /安|節約|家賃|お金|予算|奨学金/], ["commute", /通学|朝|遅刻|大学に近/],
-      ["life", /スーパー|自炊|病院|買い物|ドラッグ|コンビニ/], ["quiet", /静か|うるさ|音|騒/],
-      ["safety", /災害|地震|水害|浸水|洪水|避難|心配/],
-    ];
-    for (const [k, re] of rules) if (re.test(text)) w[k] = Math.max(w[k] ?? 1, 4);
-    return w;
-  }
-
-  async function readFreeText() {
-    const text = $("askBox").value.trim();
-    state.aiWeights = null;
-    $("askNote").hidden = true;
-    if (!text) return;
-    const base = weights();
-    if (!state.sample) { state.aiWeights = keywordWeights(text, base); return; }
-    $("nextBtn").disabled = true; $("askStatus").textContent = "AIが読み取っています…";
-    try {
-      const out = await state.sample.json(
-        `部屋探しをしている大学新入生の希望文を読み、5つの観点の重要度を0〜5の整数で付けてください。
-観点: cost=家賃の安さ, commute=大学への近さ, life=スーパー・病院の近さ, quiet=車の音の少なさ, safety=災害リスクの低さ
-質問への回答からの現在の重要度: ${JSON.stringify(base)}
-希望文で強調されていない観点は現在の値を保ってください。親の意見も本人の優先度として扱ってください。
-JSONだけを返す: {"weights":{"cost":0,"commute":0,"life":0,"quiet":0,"safety":0},"summary":"読み取った内容を本人に語りかける1文（40字以内）"}
-
-希望文: """${text.slice(0, 600)}"""`, { modelTier: "quick" });
-      const w = { ...base };
-      for (const a of AXES) if (out?.weights?.[a.k] != null) w[a.k] = clamp(Number(out.weights[a.k]) || 0, 0, 5) + 0.5;
-      state.aiWeights = w;
-      state.aiText = String(out?.summary || "");
-      $("askStatus").textContent = "";
-    } catch (e) {
-      state.aiWeights = keywordWeights(text, base);
-      $("askStatus").textContent = errorText(e);
-      if (FATAL.includes(e?.code)) disableAI();
-    } finally {
-      $("nextBtn").disabled = false;
-    }
-  }
-
-  // ---------- 4. 候補 ----------
-  function tagsFor(p) {
-    const t = [[`通学 徒歩${p.campus.min}分`, p.campus.min > 15 ? "warn" : ""], [`スーパー ${p.near.supermarket.min}分`, p.near.supermarket.min > 8 ? "warn" : ""],
-      [`交通量 ${TRAFFIC_TEXT[p.traffic.level][0]}`, p.traffic.level >= 5 ? "bad" : p.traffic.level >= 4 ? "warn" : ""]];
-    if (p.hazard.flood) t.push([`浸水 ${p.hazard.floodLabel}`, p.floor === 1 ? "bad" : "warn"]);
-    if (p.rent + p.fee > rentCap()) t.push(["予算オーバー", "bad"]);
-    return t.map(([s, c]) => `<span class="tag ${c}">${esc(s)}</span>`).join("");
-  }
-
-  function renderList() {
-    const r = ranked(), pages = Math.ceil(r.length / 3);
-    state.page = clamp(state.page, 0, pages - 1);
-    const shown = r.slice(state.page * 3, state.page * 3 + 3);
-    const slots = [];
-    for (let i = 0; i < 3; i++) {
-      const it = shown[i];
-      if (!it) { slots.push("<div></div>"); continue; }
-      const { p, t } = it, rank = state.page * 3 + i + 1;
-      slots.push(`<button class="card" data-id="${p.id}">
-        <div><span class="rank">${rank}位</span><h3>${esc(p.name)}</h3></div>
-        <div class="score num" aria-label="相性 ${t}点">${t}</div>
-        <div class="rent num">${man(p.rent)}＋管理費${yen(p.fee)}・${p.layout} ${p.size}㎡・築${p.age}年</div>
-        <div class="why">${esc(whyLine(p))}</div>
-        <div class="tags">${tagsFor(p)}</div>
-      </button>`);
-    }
-    $("cardSlots").innerHTML = slots.join("");
-    $("pageInfo").textContent = `${state.page + 1} / ${pages}ページ（全${r.length}件）`;
-    $("prevPage").disabled = state.page === 0;
-    $("nextPage").disabled = state.page >= pages - 1;
-    if (state.aiText && state.page === 0) $("hint").textContent = "AIの読み取り：" + state.aiText;
-    drawListMap(r, shown.map((x) => x.p.id));
-  }
-
-  // ---------- 地図（Leaflet） ----------
-  // Leaflet（BSD-2-Clause）で、OpenStreetMap から作ったベクターデータを描く。
-  // 表示先がタイル画像を読めないので、背景タイルは使わず道路・線路を線として描く。
-  const ll = (x, y) => [y, x];
-
-  function baseLayers(map) {
-    const d = state.data, renderer = L.canvas({ padding: 0.5 });
-    const road = cssVar("--map-road"), big = cssVar("--map-road-big"), rail = cssVar("--map-rail"), ground = cssVar("--map-ground");
-    for (const w of d.map.ways.slice().sort((a, b) => a.r - b.r)) {
-      const pts = [];
-      for (let i = 0; i < w.p.length; i += 2) pts.push(ll(w.p[i], w.p[i + 1]));
-      if (w.k === "rail") {
-        L.polyline(pts, { renderer, color: rail, weight: 5, interactive: false }).addTo(map);
-        L.polyline(pts, { renderer, color: ground, weight: 2.5, dashArray: "8 8", interactive: false }).addTo(map);
-      } else {
-        L.polyline(pts, { renderer, color: w.r >= 4 ? big : road, weight: [1.5, 2, 2.5, 4, 6, 8][w.r], interactive: false, lineCap: "round" }).addTo(map);
-      }
-    }
-    for (const s of d.stations) {
-      L.marker(ll(s.x, s.y), { icon: L.divIcon({ className: "", html: `<div class="st-pin">${esc(s.line)} ${esc(s.name)}</div>`, iconSize: null, iconAnchor: [0, 10] }), interactive: false }).addTo(map);
-    }
-    const g = d.campus.gates[0];
-    L.marker(ll(g[0], g[1]), { icon: L.divIcon({ className: "", html: `<div class="campus-pin">近大キャンパス</div>`, iconSize: null, iconAnchor: [50, 12] }), interactive: false }).addTo(map);
-  }
-
-  function newMap(el) {
-    const map = L.map(el, { crs: L.CRS.Simple, minZoom: -3.5, maxZoom: 1.5, zoomSnap: 0.25, zoomDelta: 0.5, attributionControl: true });
-    map.attributionControl.setPrefix(false).addAttribution(ATTRIBUTION);
-    baseLayers(map);
-    return map;
-  }
-
-  function drawListMap(r, onPage) {
-    if (!window.L) return fallbackMap($("listMap"), null);
-    if (!maps.list) { maps.list = newMap($("listMap")); maps.list.pins = L.layerGroup().addTo(maps.list); }
-    const map = maps.list;
-    map.invalidateSize();
-    map.pins.clearLayers();
-    r.forEach(({ p }, i) => {
-      const on = onPage.includes(p.id);
-      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="home-pin small ${on ? "on" : ""}">${i + 1}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }), zIndexOffset: on ? 1000 : 0, title: p.name });
-      m.on("click", () => openKarte(p.id));
-      m.on("mouseover", () => document.querySelector(`.card[data-id="${p.id}"]`)?.classList.add("hover"));
-      m.on("mouseout", () => document.querySelector(`.card[data-id="${p.id}"]`)?.classList.remove("hover"));
-      m.addTo(map.pins);
-    });
-    const pts = state.data.properties.map((p) => ll(p.x, p.y)).concat([ll(...state.data.campus.gates[0])]);
-    map.fitBounds(L.latLngBounds(pts).pad(0.15));
-  }
-
-  function drawKarteMap(p) {
-    const el = $("karteMap");
-    if (!el) return;
-    if (!window.L) return fallbackMap(el, p);
-    if (maps.karte) { maps.karte.remove(); maps.karte = null; }
-    const map = newMap(el);
-    maps.karte = map;
-    const accent = cssVar("--accent");
-    for (const [min, fill] of [[10, 0], [5, 0.07]]) {
-      const r = min * 80 / 1.3;
-      L.circle(ll(p.x, p.y), { radius: r, color: accent, weight: 2, dashArray: "6 8", fillColor: accent, fillOpacity: fill, interactive: false }).addTo(map);
-      L.marker(ll(p.x, p.y + r), { icon: L.divIcon({ className: "", html: "", iconSize: [0, 0] }), interactive: false }).addTo(map)
-        .bindTooltip(`徒歩${min}分`, { permanent: true, direction: "top", className: "lbl" });
-    }
-    const nearest = new Set(Object.values(p.near).map((q) => q.x + "," + q.y));
-    for (const q of state.data.map.pois) {
-      const st = POI_STYLE[q.k];
-      if (!st || Math.hypot(q.x - p.x, q.y - p.y) > 900) continue;
-      const big = nearest.has(q.x + "," + q.y), sz = big ? 24 : 16;
-      const m = L.marker(ll(q.x, q.y), { icon: L.divIcon({ className: "", html: `<div class="pin" style="width:${sz}px;height:${sz}px;background:${st.c};font-size:${big ? 12 : 9}px;opacity:${big ? 1 : .8}">${st.t}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), zIndexOffset: big ? 500 : 0 }).addTo(map);
-      m.bindTooltip(esc(q.n || st.label), { permanent: big, direction: "right", className: "lbl", offset: [8, 0] });
-    }
-    L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="home-pin"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M1 8 8 1l7 7v7H1z" fill="#1b2521"/></svg></div>`, iconSize: [34, 34], iconAnchor: [17, 17] }), zIndexOffset: 2000, title: p.name }).addTo(map);
-    map.setView(ll(p.x, p.y), -0.75);
-  }
-
-  function fallbackMap(el, p) {
-    el.innerHTML = `<p style="padding:16px" class="muted">地図を表示できませんでした（地図ライブラリを読み込めませんでした）。${p ? `近大まで徒歩${p.campus.min}分、${esc(p.station.name)}駅まで徒歩${p.station.min}分です。` : ""}</p>`;
-  }
-
-  // ---------- 5. カルテ ----------
-  const verdict = (v) => v >= 70 ? ["good", "安心"] : v >= 45 ? ["warn", "注意"] : ["bad", "要確認"];
+  function moneyLeft(p) { return incomeTotal() - (p.rent + p.fee + LIVING.food + LIVING.utility + LIVING.phone + (p.net ? 0 : 4000) + LIVING.daily + LIVING.social); }
+  function moneyGrade(p) { const l = moneyLeft(p); return l >= 10000 ? ["good", "OK"] : l >= 0 ? ["warn", "ギリギリ"] : ["bad", "赤字"]; }
 
   function initialCost(p) {
     const items = [
@@ -718,137 +349,431 @@ JSONだけを返す: {"weights":{"cost":0,"commute":0,"life":0,"quiet":0,"safety
     return { items, total: items.reduce((a, [, v]) => a + v, 0) };
   }
 
-  function openKarte(id) { state.selected = id; state.tab = "map"; go("karte"); }
+  // ---------- 画面の移動 ----------
+  function go(screen, id, { push = true } = {}) {
+    if (screen === "detail" && !(id && byId(id))) screen = "map";
+    state.screen = screen;
+    if (id) state.selected = id;
+    document.querySelectorAll(".screen").forEach((el) => { el.hidden = el.dataset.screen !== screen; });
+    $("backBtn").hidden = screen !== "detail";
+    $("logo").hidden = screen === "detail";
+    const hash = screen === "detail" ? "home-" + id : "map";
+    if (push && location.hash.slice(1) !== hash) { try { history.pushState(null, "", "#" + hash); } catch { /* 表示先によっては履歴を触れない */ } }
+    if (screen === "map") { renderBigMap(); renderSide(); }
+    else renderDetail();
+  }
+  function routeFromHash() {
+    const h = location.hash.slice(1);
+    if (h.startsWith("home-")) go("detail", h.slice(5), { push: false });
+    else go("map", null, { push: false });
+  }
 
-  function renderKarte() {
-    const p = current(), s = scores(p), ex = explain(p);
-    $("karteHead").innerHTML = `
-      <div>
-        <div class="eyebrow">部屋のカルテ <span class="demo-flag">物件はデモ用の架空データ</span></div>
-        <h2>${esc(p.name)}</h2>
-        <div class="spec num">${p.layout}・${p.size}㎡・築${p.age}年・${p.floor}階／${p.floors}階建て${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}</div>
+  // ---------- 地図の共通部品 ----------
+  function newMap(el) {
+    const map = L.map(el, { crs: L.CRS.Simple, minZoom: -3.5, maxZoom: 1.5, zoomSnap: 0.25, zoomDelta: 0.5 });
+    map.attributionControl.setPrefix(false).addAttribution(ATTRIBUTION);
+    drawBase(map);
+    return map;
+  }
+
+  function drawBase(map) {
+    const d = state.data, renderer = L.canvas({ padding: 0.5 });
+    const road = cssVar("--map-road"), rail = cssVar("--map-rail"), ground = cssVar("--map-ground");
+    for (const w of d.map.ways) {
+      const pts = [];
+      for (let i = 0; i < w.p.length; i += 2) pts.push(ll(w.p[i], w.p[i + 1]));
+      if (w.k === "rail") {
+        L.polyline(pts, { renderer, color: rail, weight: 5, interactive: false }).addTo(map);
+        L.polyline(pts, { renderer, color: ground, weight: 2.5, dashArray: "8 8", interactive: false }).addTo(map);
+      } else {
+        L.polyline(pts, { renderer, color: road, weight: [1.5, 1.5, 2, 3, 5, 7][w.r], interactive: false, lineCap: "round" }).addTo(map);
+      }
+    }
+    for (const s of d.stations) {
+      L.marker(ll(s.x, s.y), { icon: L.divIcon({ className: "", html: `<div class="st-pin">${esc(s.line)} ${esc(s.name)}</div>`, iconSize: null, iconAnchor: [0, 10] }), interactive: false }).addTo(map);
+    }
+    const g = d.campus.gates[0];
+    L.marker(ll(g[0], g[1]), { icon: L.divIcon({ className: "", html: `<div class="campus-pin">近大キャンパス</div>`, iconSize: null, iconAnchor: [50, 12] }), interactive: false, zIndexOffset: 100 }).addTo(map);
+  }
+
+  function poiMarker(q, big = false) {
+    const st = POI_STYLE[q.k], sz = big ? 24 : 17;
+    const m = L.marker(ll(q.x, q.y), { icon: L.divIcon({ className: "", html: `<div class="pin" style="width:${sz}px;height:${sz}px;background:${st.c};font-size:${big ? 12 : 9}px">${st.t}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), zIndexOffset: big ? 500 : 0 });
+    m.bindTooltip(esc(q.n || st.label) + (q.e ? "（夜間救急）" : ""), { direction: "right", className: "lbl", offset: [8, 0], permanent: big });
+    return m;
+  }
+
+  // 重ねる情報（交通量・浸水想定）の線や面を、指定した地図に描く
+  function drawTraffic(target) {
+    const renderer = L.canvas({ padding: 0.5 });
+    for (const w of state.data.map.ways) {
+      if (w.k === "rail" || w.r < 3) continue;
+      const pts = [];
+      for (let i = 0; i < w.p.length; i += 2) pts.push(ll(w.p[i], w.p[i + 1]));
+      L.polyline(pts, { renderer, color: TRAFFIC_COLORS[Math.min(5, w.r)], weight: [0, 0, 0, 4, 7, 9][w.r], opacity: 0.9, interactive: false, lineCap: "round" }).addTo(target);
+    }
+  }
+  function drawFlood(target) {
+    // 同じ段階が横に続くマスは1つの長方形にまとめて描く
+    const fg = state.data.hazard.flood, renderer = L.canvas({ padding: 0.5 });
+    const colors = { 1: cssVar("--flood-1"), 2: cssVar("--flood-2"), 3: cssVar("--flood-3") };
+    const rows = new Map();
+    for (const [i, j, v] of fg.cells) { if (!rows.has(j)) rows.set(j, []); rows.get(j).push([i, Math.min(3, v)]); }
+    for (const [j, arr] of rows) {
+      arr.sort((a, b) => a[0] - b[0]);
+      let start = null, prev = null;
+      const flush = () => {
+        if (!start) return;
+        const x0 = fg.x0 + start[0] * fg.cell, x1 = fg.x0 + (prev[0] + 1) * fg.cell, y0 = fg.y0 + j * fg.cell;
+        L.rectangle([ll(x0, y0), ll(x1, y0 + fg.cell)], { renderer, stroke: false, fillColor: colors[start[1]], fillOpacity: 0.42, interactive: false }).addTo(target);
+      };
+      for (const cur of arr) {
+        if (start && cur[0] === prev[0] + 1 && cur[1] === start[1]) { prev = cur; continue; }
+        flush(); start = cur; prev = cur;
+      }
+      flush();
+    }
+  }
+
+  // ---------- ヒートマップ ----------
+  // 地図全体を80m四方のマスに区切り、マスごとに観点別の住みやすさ（0〜1）を計算する。
+  // 小さな画像にして地図に重ね、ブラウザの拡大補間でなめらかに見せる。
+  function heatField() {
+    if (heatCache) return heatCache;
+    const d = state.data, [ex0, ey0, ex1, ey1] = d.map.extent, C = HEAT_CELL;
+    const cols = Math.ceil((ex1 - ex0) / C), rows = Math.ceil((ey1 - ey0) / C);
+    const pts = (kinds) => d.map.pois.filter((q) => kinds.includes(q.k)).map((q) => [q.x, q.y]);
+    const segs = (pred) => {
+      const out = [];
+      for (const w of d.map.ways) if (pred(w)) for (let i = 0; i + 3 < w.p.length; i += 2) out.push([w.p[i], w.p[i + 1], w.p[i + 2], w.p[i + 3]]);
+      return out;
+    };
+    const supers = pts(["supermarket"]), convs = pts(["convenience"]), clinics = pts(["clinic"]), hosps = pts(["hospital"]);
+    const big = segs((w) => w.k !== "rail" && w.r >= 4), mid = segs((w) => w.k !== "rail" && w.r === 3), rail = segs((w) => w.k === "rail");
+    const gates = d.campus.gates;
+    const fl = d.hazard.flood, fcells = new Map(fl.cells.map(([i, j, v]) => [i + "," + j, v]));
+    const near = (x, y, arr) => { let m = Infinity; for (const [a, b] of arr) m = Math.min(m, (a - x) ** 2 + (b - y) ** 2); return Math.sqrt(m); };
+    const segD = (x, y, arr) => {
+      let m = Infinity;
+      for (const [ax, ay, bx, by] of arr) {
+        const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+        const t = L2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)) : 0;
+        m = Math.min(m, (x - ax - t * dx) ** 2 + (y - ay - t * dy) ** 2);
+      }
+      return Math.sqrt(m);
+    };
+    const lin = (dist, good, bad) => Math.max(0, Math.min(1, (bad - dist) / (bad - good)));
+    const field = {}; for (const t of HEAT_THEMES) field[t.k] = new Float32Array(cols * rows);
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const x = ex0 + (i + 0.5) * C, y = ey0 + (j + 0.5) * C, k = j * cols + i;
+      const shop = lin(near(x, y, supers), 150, 900) * 0.8 + lin(near(x, y, convs), 100, 500) * 0.2;
+      const med = lin(near(x, y, clinics), 150, 800) * 0.6 + lin(near(x, y, hosps), 300, 1500) * 0.4;
+      const quiet = Math.min(1, Math.max(0, (segD(x, y, big) - 20) / 200)) * 0.7 + Math.min(1, Math.max(0, (segD(x, y, mid) - 10) / 100)) * 0.2 + Math.min(1, Math.max(0, (segD(x, y, rail) - 20) / 150)) * 0.1;
+      const commute = lin(near(x, y, gates), 300, 2500);
+      const fi = Math.floor((x - fl.x0) / fl.cell), fj = Math.floor((y - fl.y0) / fl.cell);
+      const safety = [1, 0.75, 0.4, 0.1, 0.05, 0, 0][fcells.get(fi + "," + fj) || 0];
+      field.shop[k] = shop; field.med[k] = med; field.quiet[k] = quiet; field.commute[k] = commute; field.safety[k] = safety;
+      field.all[k] = (shop + med + quiet + commute + safety) / 5;
+    }
+    // エリアの中で比べやすいよう、テーマごとに下位5%〜上位5%を0〜1に広げる
+    for (const t of HEAT_THEMES) {
+      const a = field[t.k], sorted = Array.from(a).sort((x, y) => x - y);
+      const lo = sorted[Math.floor(sorted.length * 0.05)], hi = sorted[Math.floor(sorted.length * 0.95)];
+      for (let n = 0; n < a.length; n++) a[n] = hi > lo ? Math.max(0, Math.min(1, (a[n] - lo) / (hi - lo))) : a[n];
+    }
+    heatCache = { field, cols, rows, x0: ex0, y0: ey0 };
+    return heatCache;
+  }
+
+  function heatColor(v) {
+    for (let i = 1; i < HEAT_STOPS.length; i++) {
+      const [p1, c1] = HEAT_STOPS[i], [p0, c0] = HEAT_STOPS[i - 1];
+      if (v <= p1) { const t = (v - p0) / (p1 - p0); return c0.map((c, n) => Math.round(c + (c1[n] - c) * t)); }
+    }
+    return HEAT_STOPS[HEAT_STOPS.length - 1][1];
+  }
+
+  function drawHeat() {
+    if (!heatLayer) return;
+    heatLayer.clearLayers();
+    const { field, cols, rows, x0, y0 } = heatField(), vals = field[state.heatTheme];
+    const cv = document.createElement("canvas"); cv.width = cols; cv.height = rows;
+    const ctx = cv.getContext("2d"), img = ctx.createImageData(cols, rows);
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const v = vals[j * cols + i], [r, g, b] = heatColor(v), o = ((rows - 1 - j) * cols + i) * 4;
+      img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 170;
+    }
+    ctx.putImageData(img, 0, 0);
+    L.imageOverlay(cv.toDataURL(), [ll(x0, y0), ll(x0 + cols * HEAT_CELL, y0 + rows * HEAT_CELL)], { opacity: 0.72, interactive: false, className: "heat-img" }).addTo(heatLayer);
+  }
+
+  function heatAt(x, y, theme = "all") {
+    const { field, cols, rows, x0, y0 } = heatField();
+    const i = Math.floor((x - x0) / HEAT_CELL), j = Math.floor((y - y0) / HEAT_CELL);
+    if (i < 0 || j < 0 || i >= cols || j >= rows) return null;
+    return field[theme][j * cols + i];
+  }
+
+  // ---------- 大きい地図 ----------
+  function buildLayers() {
+    for (const ly of LAYERS) {
+      const g = L.layerGroup();
+      if (ly.kinds) for (const q of state.data.map.pois) if (ly.kinds.includes(q.k)) poiMarker(q).addTo(g);
+      if (ly.k === "traffic") drawTraffic(g);
+      if (ly.k === "flood") drawFlood(g);
+      if (ly.k === "heat") heatLayer = g;
+      layerGroups[ly.k] = g;
+    }
+  }
+
+  function renderBigMap() {
+    if (!window.L) { $("bigMap").innerHTML = `<p style="padding:16px" class="muted">地図ライブラリを読み込めませんでした。通信状況を確かめて、ページを開き直してください。</p>`; return; }
+    if (!maps.big) {
+      maps.big = newMap($("bigMap"));
+      buildLayers();
+      maps.big.pins = L.layerGroup().addTo(maps.big);
+      maps.big.focus = L.layerGroup().addTo(maps.big);
+      const ext = state.data.map.extent;
+      maps.big.fitBounds([ll(ext[0] + 400, ext[1] + 400), ll(ext[2] - 400, ext[3] - 400)]);
+      maps.big.on("click", () => { if (state.selected) { state.selected = null; renderSide(); drawPins(); } });
+    }
+    maps.big.invalidateSize();
+    for (const ly of LAYERS) {
+      const g = layerGroups[ly.k];
+      if (state.layers.has(ly.k)) g.addTo(maps.big); else g.remove();
+    }
+    if (state.layers.has("heat")) drawHeat();
+    maps.big.pins.remove().addTo(maps.big); // 札をいつもいちばん上に
+    renderLayerChips();
+    drawPins();
+  }
+
+  function drawPins() {
+    const map = maps.big;
+    if (!map) return;
+    map.pins.clearLayers();
+    map.focus.clearLayers();
+    for (const p of state.data.properties) {
+      const on = p.id === state.selected, cls = on ? "on" : overBudget(p) ? "over" : "";
+      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
+      m.on("click", (e) => { L.DomEvent.stopPropagation(e); selectPin(p.id); });
+      m.addTo(map.pins);
+    }
+    const p = state.selected && byId(state.selected);
+    if (p) {
+      const accent = cssVar("--accent");
+      for (const [min, fill] of [[10, 0], [5, 0.08]]) {
+        const r = min * 80 / 1.3;
+        L.circle(ll(p.x, p.y), { radius: r, color: accent, weight: 2, dashArray: "6 8", fillColor: accent, fillOpacity: fill, interactive: false }).addTo(map.focus);
+      }
+    }
+  }
+
+  function selectPin(id) {
+    if (state.selected === id) { go("detail", id); return; }
+    state.selected = id;
+    drawPins();
+    renderSide();
+    const p = byId(id);
+    maps.big.panTo(ll(p.x, p.y), { animate: true });
+  }
+
+  function renderLayerChips() {
+    $("layers").innerHTML = LAYERS.map((ly) => `<button class="layer" data-k="${ly.k}" aria-pressed="${state.layers.has(ly.k)}" style="color:${ly.color}"><span class="sw"></span><span style="color:var(--ink)">${ly.label}</span></button>`).join("") +
+      (state.layers.has("heat") ? `<div class="heat-themes" role="group" aria-label="ヒートマップのテーマ">${HEAT_THEMES.map((t) => `<button class="ht" data-t="${t.k}" aria-pressed="${state.heatTheme === t.k}">${t.label}</button>`).join("")}</div>` : "");
+    const dot = (k) => `<span><i class="dot" style="background:${POI_STYLE[k].c}">${POI_STYLE[k].t}</i>${POI_STYLE[k].label}</span>`;
+    const rows = [];
+    if (state.layers.has("shop")) rows.push(["supermarket", "convenience", "chemist"].map(dot).join(""));
+    if (state.layers.has("med")) rows.push(["clinic", "hospital"].map(dot).join(""));
+    if (state.layers.has("traffic")) rows.push(`<span>車の量</span><span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>`);
+    if (state.layers.has("flood")) rows.push(`<span>洪水の浸水想定</span><span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>`);
+    if (state.layers.has("shelter")) rows.push(`${dot("shelter")}<span class="muted">洪水のときの指定緊急避難場所</span>`);
+    if (state.layers.has("heat")) rows.push(`<span>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</span><span class="muted">このエリアの中で 低い</span><span class="heat-bar"></span><span class="muted">高い</span>`);
+    rows.push(`<span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>`);
+    $("legend").innerHTML = rows.map((r) => `<div class="row">${r}</div>`).join("");
+  }
+
+  // ---------- 右側（使い方／選んだ物件の概要） ----------
+  function renderSide() {
+    const p = state.selected && byId(state.selected);
+    if (!p) {
+      const inBudget = state.data.properties.filter((x) => !overBudget(x)).length;
+      $("sidePanel").innerHTML = `
+        <div class="intro">
+          <div class="eyebrow">大学進学ではじめての一人暮らし</div>
+          <h2>気になる場所をタップして、部屋を選ぶ</h2>
+        </div>
+        <div class="howto">
+          <b>1</b><span>地図の上のボタンで、スーパー・病院・交通量・浸水想定・避難場所を重ねる</span>
+          <b>2</b><span>気になる場所にある物件（金額の札）をタップ</span>
+          <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
+        </div>
+        <p class="small">いまの予算（家賃＋管理費 <b class="num">${man(rentCap())}</b> まで）に合う部屋は <b class="num">${inBudget}件</b>／全${state.data.properties.length}件</p>
+        <div class="intro">
+          <div class="eyebrow">こんな人のためのアプリです</div>
+          <ul>
+            <li>西日本から、大阪の大学に進学する</li>
+            <li>内見に何度も行くのはめんどくさい</li>
+            <li>奨学金で大学に通う</li>
+            <li>スーパーや病院の場所、まわりの交通量、災害が気になる</li>
+            <li>親も一緒に決める</li>
+          </ul>
+        </div>
+        <div class="sources">物件（名前・家賃・間取り）はデモ用の架空データ。周辺の情報は次のオープンデータから：<ul>${state.data.sources.map((s) => `<li>${esc(s)}</li>`).join("")}</ul></div>`;
+      return;
+    }
+    const n = p.near, lg = lifeGrade(p), tg = trafficGrade(p), hg = hazardGrade(p), over = overBudget(p);
+    $("sidePanel").innerHTML = `
+      <div class="pv-head">
+        <div>
+          <div class="eyebrow">選んだ物件 <span class="demo-flag">架空データ</span></div>
+          <h2>${esc(p.name)}</h2>
+          <div class="small muted num">${p.layout}・${p.size}㎡・築${p.age}年・${p.floor}階</div>
+        </div>
+        <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
       </div>
-      <div class="score num" style="width:58px;height:58px;font-size:21px" aria-label="相性 ${ex.total}点">${ex.total}</div>
-      <div class="price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
-    const left = moneyLeft(p);
+      <div class="budget-line ${over ? "over" : "ok"} num">${over ? `予算（${man(rentCap())}）を ${yen(p.rent + p.fee - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}</div>
+      <div class="facts num">
+        <div class="fact"><div class="k">大学まで</div><div class="v">徒歩${p.campus.min}分</div><div class="s">自転車 約${p.campus.bike}分</div></div>
+        <div class="fact ${lg[0]}"><div class="k">スーパー・病院</div><div class="v">${n.supermarket.min}分・${n.hospital.min}分</div><div class="s">${esc(n.supermarket.name)}</div></div>
+        <div class="fact ${tg[0]}"><div class="k">まわりの交通量</div><div class="v">${tg[1]}</div><div class="s">${esc(p.traffic.front)}</div></div>
+        <div class="fact ${hg[0]}"><div class="k">災害</div><div class="v">${hg[1]}</div><div class="s">${floodShort(p)}</div></div>
+      </div>
+      <div class="heat-row">${HEAT_THEMES.map((t) => { const v = heatAt(p.x, p.y, t.k) ?? 0; const [r, g, b] = heatColor(v); return `<div title="${t.label}"><i style="background:rgb(${r},${g},${b})"></i><span>${t.label}</span></div>`; }).join("")}</div>
+      <button class="btn" id="openDetail" style="padding:12px">詳しく見る →</button>
+      <p class="note">同じ札をもう一度タップしても開きます。地図の何もないところをタップすると選択を外します。</p>`;
+  }
+
+  // ---------- 詳しい住宅情報 ----------
+  function renderDetail() {
+    const p = byId(state.selected);
+    $("dHead").innerHTML = `
+      <div>
+        <div class="eyebrow">詳しい住宅情報 <span class="demo-flag">物件はデモ用の架空データ</span></div>
+        <h2>${esc(p.name)}</h2>
+        <div class="spec num">${p.layout}・${p.size}㎡・築${p.age}年・${p.floor}階／${p.floors}階建て${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}・${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</div>
+      </div>
+      <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
     const tabs = [
-      ["map", "まわりの地図", null],
-      ["life", "暮らし", verdict(s.life)],
-      ["traffic", "交通量", verdict(s.quiet)],
-      ["hazard", "災害", verdict(s.safety)],
-      ["money", "お金", left >= 10000 ? ["good", "OK"] : left >= 0 ? ["warn", "ギリ"] : ["bad", "赤字"]],
-      ["why", "なぜこの順位？", null],
+      ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)],
+      ["money", "お金", moneyGrade(p)], ["check", "内見で聞くこと", null], ["parent", "親に相談", null],
     ];
     $("tabs").innerHTML = tabs.map(([k, label, v]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab === k}">${label}${v ? `<span class="v v-${v[0]}">${v[1]}</span>` : ""}</button>`).join("");
-    $("tabBody").innerHTML = tabPanel(p, state.tab);
-    if (state.tab === "map") drawKarteMap(p);
+    $("tabBody").innerHTML = tabContent(p, state.tab);
+    if (state.tab === "parent") { $("letter").value = letterTemplate(p); $("letterBtn").textContent = state.sample ? "AIで文章を整える" : "ひな形に戻す"; }
+    drawMiniMap(p);
   }
 
-  function moneyLeft(p) {
-    const spend = p.rent + p.fee + LIVING.food + LIVING.utility + LIVING.phone + (p.net ? 0 : 4000) + LIVING.daily + LIVING.social;
-    return incomeTotal() - spend;
+  function drawMiniMap(p) {
+    const el = $("miniMap");
+    if (!window.L) { el.innerHTML = `<p style="padding:16px" class="muted">地図を表示できませんでした。</p>`; return; }
+    const mode = state.tab === "hazard" ? "hazard" : state.tab === "traffic" ? "traffic" : "life";
+    if (maps.mini && maps.mini.pid === p.id && maps.mini.mode === mode) { maps.mini.invalidateSize(); return; }
+    if (maps.mini) { maps.mini.remove(); maps.mini = null; }
+    const map = newMap(el);
+    map.pid = p.id; map.mode = mode;
+    maps.mini = map;
+    // タブに合わせて、地図に重ねる情報を切り替える
+    if (mode === "traffic") drawTraffic(map);
+    if (mode === "hazard") drawFlood(map);
+    const accent = cssVar("--accent");
+    for (const [min, fill] of [[10, 0], [5, 0.07]]) {
+      const r = min * 80 / 1.3;
+      L.circle(ll(p.x, p.y), { radius: r, color: accent, weight: 2, dashArray: "6 8", fillColor: accent, fillOpacity: fill, interactive: false }).addTo(map);
+      L.marker(ll(p.x, p.y + r), { icon: L.divIcon({ className: "", html: "", iconSize: [0, 0] }), interactive: false }).addTo(map)
+        .bindTooltip(`徒歩${min}分`, { permanent: true, direction: "top", className: "lbl" });
+    }
+    const show = mode === "hazard" ? ["shelter"] : mode === "traffic" ? [] : ["supermarket", "convenience", "chemist", "clinic", "hospital"];
+    const nearest = new Set(Object.values(p.near).map((q) => q.x + "," + q.y));
+    for (const q of state.data.map.pois) {
+      if (!show.includes(q.k) || Math.hypot(q.x - p.x, q.y - p.y) > 1000) continue;
+      poiMarker(q, nearest.has(q.x + "," + q.y)).addTo(map);
+    }
+    L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="home-pin"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M1 8 8 1l7 7v7H1z" fill="#1b2521"/></svg></div>`, iconSize: [34, 34], iconAnchor: [17, 17] }), zIndexOffset: 2000, title: p.name }).addTo(map);
+    map.setView(ll(p.x, p.y), -0.9);
   }
 
-  function tabPanel(p, tab) {
+  function tabContent(p, tab) {
     const n = p.near, h = p.hazard, tr = p.traffic, inc = income(), incT = incomeTotal();
-    if (tab === "map") return `
-      <div class="mapwrap"><div class="map" id="karteMap"></div>
-        <div class="map-legend">${Object.values(POI_STYLE).map((st) => `<span><i class="dot" style="background:${st.c}">${st.t}</i>${st.label}</span>`).join("")}
-          <span><svg width="20" height="8" aria-hidden="true"><path d="M0 4H20" stroke="var(--map-road-big)" stroke-width="5"/></svg>交通量が多い道路</span><span>点線の輪＝徒歩5分・10分</span></div>
-      </div>`;
     if (tab === "life") return `
-      <div class="panel split">
-        <dl class="rows num">
-          <dt>スーパー</dt><dd>徒歩${n.supermarket.min}分　${esc(n.supermarket.name)}${n.supermarket.hours === "24/7" ? "（24時間）" : ""}</dd>
-          <dt>コンビニ</dt><dd>徒歩${n.convenience.min}分　${esc(n.convenience.name)}</dd>
-          <dt>ドラッグストア</dt><dd>徒歩${n.chemist.min}分　${esc(n.chemist.name)}</dd>
-          <dt>診療所</dt><dd>徒歩${n.clinic.min}分　${esc(n.clinic.name)}</dd>
-          <dt>病院</dt><dd>徒歩${n.hospital.min}分　${esc(n.hospital.name)}</dd>
-          <dt>夜間の救急</dt><dd>${(n.emergency.m / 1000).toFixed(1)}km　${esc(n.emergency.name)}</dd>
-        </dl>
-        <dl class="rows num">
-          <dt>通学</dt><dd>近大まで徒歩${p.campus.min}分<br><span class="muted small">自転車なら約${p.campus.bike}分</span></dd>
-          <dt>最寄り駅</dt><dd>${esc(p.station.line)} ${esc(p.station.name)}<br><span class="muted small">徒歩${p.station.min}分</span></dd>
-        </dl>
-      </div>`;
+      <dl class="rows num">
+        <dt>大学まで</dt><dd>徒歩${p.campus.min}分（自転車 約${p.campus.bike}分）</dd>
+        <dt>最寄り駅</dt><dd>${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</dd>
+        <dt>スーパー</dt><dd>徒歩${n.supermarket.min}分　${esc(n.supermarket.name)}${n.supermarket.hours === "24/7" ? "（24時間）" : ""}</dd>
+        <dt>コンビニ</dt><dd>徒歩${n.convenience.min}分　${esc(n.convenience.name)}</dd>
+        <dt>ドラッグストア</dt><dd>徒歩${n.chemist.min}分　${esc(n.chemist.name)}</dd>
+        <dt>診療所</dt><dd>徒歩${n.clinic.min}分　${esc(n.clinic.name)}</dd>
+        <dt>病院</dt><dd>徒歩${n.hospital.min}分　${esc(n.hospital.name)}</dd>
+        <dt>夜間の救急</dt><dd>${(n.emergency.m / 1000).toFixed(1)}km　${esc(n.emergency.name)}</dd>
+      </dl>
+      <p class="note">徒歩の分数は、直線距離×1.3を80m/分で割った目安です。</p>`;
     if (tab === "traffic") {
-      const [label, desc] = TRAFFIC_TEXT[tr.level], v = verdict(scores(p).quiet)[0];
+      const [label, desc] = TRAFFIC_TEXT[tr.level];
       return `
-      <div class="panel split">
-        <div>
-          <div class="eyebrow">家のまわりの車の量</div>
-          <div class="big-verdict ${v}">${label}</div>
-          <div class="meter" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= tr.level ? "on" : ""}"></i>`).join("")}</div>
-          <p>${desc}</p>
-          <p class="note">道路の種類（OpenStreetMap）から推定した目安で、実際に測った交通量ではありません。</p>
-        </div>
-        <dl class="rows num">
-          <dt>家の前の道</dt><dd>${esc(tr.front)}${tr.frontName ? `（${esc(tr.frontName)}）` : ""}</dd>
-          <dt>120m以内の大きな道</dt><dd>${tr.bigRoads.length ? tr.bigRoads.map(esc).join("、") : "なし"}</dd>
-          <dt>線路まで</dt><dd>約${tr.railM}m</dd>
-          <dt>夜も開いている店</dt><dd>300m以内にコンビニ ${tr.conv300}軒</dd>
-        </dl>
-      </div>`;
+      <div><div class="eyebrow">家のまわりの車の量</div><div class="big-verdict ${trafficGrade(p)[0]}">${label}</div></div>
+      <div class="meter" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= tr.level ? "on" : ""}"></i>`).join("")}</div>
+      <p>${desc}</p>
+      <dl class="rows num">
+        <dt>家の前の道</dt><dd>${esc(tr.front)}${tr.frontName ? `（${esc(tr.frontName)}）` : ""}</dd>
+        <dt>120m以内の大きな道</dt><dd>${tr.bigRoads.length ? tr.bigRoads.map(esc).join("、") : "なし"}</dd>
+        <dt>線路まで</dt><dd>約${tr.railM}m</dd>
+        <dt>夜も開いている店</dt><dd>300m以内にコンビニ ${tr.conv300}軒</dd>
+      </dl>
+      <p class="note">道路の種類（OpenStreetMap）から推定した目安で、実際に測った交通量ではありません。左の地図は車の多い道路を色で示しています。</p>`;
     }
     if (tab === "hazard") {
-      const v = verdict(scores(p).safety);
+      const g = hazardGrade(p);
       return `
-      <div class="panel split">
-        <div>
-          <div class="eyebrow">災害のリスク</div>
-          <div class="big-verdict ${v[0]}">${v[1]}</div>
-          <p>${h.flood ? `大雨で川があふれたとき、${h.floodLabel}浸水する想定の地域です。部屋は${p.floor}階です。` : "洪水で浸水する想定のない地域です。"}
-          避難場所は「${esc(n.shelter.name)}」、歩いて${n.shelter.min}分です。</p>
-          <p class="note">浸水は国の「想定最大規模」の雨が前提。地図で確かめる：<a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener">重ねるハザードマップ</a></p>
-        </div>
-        <dl class="rows num">
-          <dt>洪水の浸水想定</dt><dd>${esc(h.floodLabel)}</dd>
-          <dt>土砂災害</dt><dd>${h.landslide ? "警戒区域に入る" : "警戒区域の外"}</dd>
-          <dt>津波</dt><dd>${h.tsunami ? "浸水想定あり" : "浸水想定なし"}</dd>
-          <dt>大きな地震</dt><dd>30年以内に震度6弱以上 ${h.quake60}%<br><span class="muted small">震度5強以上は ${h.quake55}%</span></dd>
-          <dt>避難場所</dt><dd>徒歩${n.shelter.min}分　${esc(n.shelter.name)}</dd>
-        </dl>
-      </div>`;
+      <div><div class="eyebrow">災害のリスク</div><div class="big-verdict ${g[0]}">${g[1]}</div></div>
+      <p>${h.flood ? `大雨で川があふれたとき、${h.floodLabel}浸水する想定の地域です。部屋は${p.floor}階です。` : h.nearFlood ? `建物の場所は浸水想定の外ですが、すぐ近く（50m以内）に${h.nearFloodLabel}浸水する想定の区域があります。` : "洪水で浸水する想定のない地域です。"}避難場所は「${esc(n.shelter.name)}」、歩いて${n.shelter.min}分です。</p>
+      <dl class="rows num">
+        <dt>洪水の浸水想定</dt><dd>建物の場所 ${esc(h.floodLabel)}／すぐ近く ${esc(h.nearFloodLabel)}</dd>
+        <dt>土砂災害</dt><dd>${h.landslide ? "警戒区域に入る" : "警戒区域の外"}</dd>
+        <dt>津波</dt><dd>${h.tsunami ? "浸水想定あり" : "浸水想定なし"}</dd>
+        <dt>大きな地震</dt><dd>30年以内に震度6弱以上 ${h.quake60}%（5強以上 ${h.quake55}%）</dd>
+        <dt>避難場所</dt><dd>徒歩${n.shelter.min}分　${esc(n.shelter.name)}</dd>
+      </dl>
+      <p class="note">浸水は国の「想定最大規模」の雨が前提。左の地図の青いところが浸水想定の区域です。<a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener">重ねるハザードマップ</a>でも確かめられます。</p>`;
     }
     if (tab === "money") {
       const spend = [
         ["家賃・管理費", p.rent + p.fee, "var(--accent)"], ["食費", LIVING.food, "#2f8a52"], ["光熱費", LIVING.utility, "#c47a16"],
         ["スマホ・ネット", LIVING.phone + (p.net ? 0 : 4000), "#8a5ac0"], ["日用品・交際費", LIVING.daily + LIVING.social, "#6d7a74"],
       ];
-      const spendT = spend.reduce((a, [, v]) => a + v, 0), left = incT - spendT, scale = Math.max(incT, spendT);
-      const ic = initialCost(p);
+      const spendT = spend.reduce((a, [, v]) => a + v, 0), left = incT - spendT, scale = Math.max(incT, spendT), ic = initialCost(p);
       return `
-      <div class="panel split">
-        <div>
-          <div class="eyebrow">毎月</div>
-          <div class="big-verdict ${left >= 10000 ? "good" : left >= 0 ? "warn" : "bad"} num">${left >= 0 ? "残り " + yen(left) : yen(-left) + " 足りない"}</div>
-          <div class="money-bar">${spend.map(([k, v, c]) => `<i title="${k} ${yen(v)}" style="width:${(v / scale) * 100}%;background:${c}"></i>`).join("")}</div>
-          <div class="money-legend num">${spend.map(([k, v, c]) => `<span><b style="background:${c}"></b>${k} ${yen(v)}</span>`).join("")}</div>
-          <p class="note num">入ってくるお金 ${yen(incT)}（奨学金 ${yen(inc.scholar)}・仕送り ${yen(inc.allow)}・バイト ${yen(inc.job)}）</p>
-        </div>
-        <div>
-          <div class="eyebrow">入居前に必要</div>
-          <div class="big-verdict num">${yen(Math.round(ic.total / 100) * 100)}</div>
-          <dl class="rows num small">${ic.items.map(([k, v]) => `<dt>${k}</dt><dd>${yen(Math.round(v / 100) * 100)}</dd>`).join("")}</dl>
-          <p class="note">奨学金は入学後に振り込まれるので、ここは先に用意が必要。${inc.scholar ? `貸与型なら4年間で約${man(inc.scholar * 48)}を卒業後に返します。` : ""}</p>
-        </div>
-      </div>`;
+      <div><div class="eyebrow">毎月</div><div class="big-verdict ${moneyGrade(p)[0]} num">${left >= 0 ? "残り " + yen(left) : yen(-left) + " 足りない"}</div></div>
+      <div class="money-bar">${spend.map(([k, v, c]) => `<i title="${k} ${yen(v)}" style="width:${(v / scale) * 100}%;background:${c}"></i>`).join("")}</div>
+      <div class="money-legend num">${spend.map(([k, v, c]) => `<span><b style="background:${c}"></b>${k} ${yen(v)}</span>`).join("")}</div>
+      <p class="note num">入ってくるお金 ${yen(incT)}（奨学金 ${yen(inc.scholar)}・仕送り ${yen(inc.allow)}・バイト ${yen(inc.job)}）。右上の「家賃の目安」から変えられます。</p>
+      <div class="two">
+        <div><div class="eyebrow">入居前に必要</div><div class="big-verdict num">${yen(Math.round(ic.total / 100) * 100)}</div></div>
+        <dl class="rows num small">${ic.items.map(([k, v]) => `<dt>${k}</dt><dd>${yen(Math.round(v / 100) * 100)}</dd>`).join("")}</dl>
+      </div>
+      <p class="note">奨学金は入学後に振り込まれるので、入居前のお金は先に用意が必要です。${inc.scholar ? `貸与型なら4年間で約${man(inc.scholar * 48)}を卒業後に返します。` : ""}</p>`;
     }
-    const ex = explain(p);
+    if (tab === "check") {
+      const c = checklist(p);
+      return `
+      <p class="small muted">内見に行かなくても、オンライン内見（ビデオ通話）で不動産会社にこれだけ聞けばOK。この部屋の条件から${c.length}個に絞りました。</p>
+      <ul class="checklist">${c.map(([q, why], i) => `<li><input type="checkbox" id="ck-${p.id}-${i}"><label for="ck-${p.id}-${i}">${esc(q)}<span class="why">${esc(why)}</span></label></li>`).join("")}</ul>`;
+    }
     return `
-      <div class="panel explain">
-        <p class="small muted">相性の点数は「観点ごとの点 × あなたにとっての大事さ」の合計です。</p>
-        ${ex.parts.map((x) => `
-          <div class="ex-row"><b>${x.label}</b><div class="ex-bar"><i style="width:${x.value}%"></i></div><span class="num">${Math.round(x.value)}点×${(+x.weight).toFixed(1)}</span></div>
-          <div class="ex-row" style="margin-top:-8px"><span></span><span class="ex-desc" style="grid-column:2/-1;margin:0">${esc(x.desc)}</span></div>`).join("")}
+      <div class="pchecks">${parentChecks(p).map(([k, c, v, sub]) => `<div class="pcheck ${c}"><span class="muted">${k}</span><b class="num">${esc(v)}</b><span class="muted">${esc(sub)}</span></div>`).join("")}</div>
+      <label for="letter" class="small muted">親に送るメッセージ（LINEにそのまま貼れます）</label>
+      <textarea class="letter" id="letter"></textarea>
+      <div class="row">
+        <button class="btn" id="letterBtn">親に送る文章を作る</button>
+        <button class="btn ghost" id="copyBtn">コピー</button>
+        <button class="btn ghost" id="stopBtn" hidden>止める</button>
+        <span class="status" id="letterStatus"></span>
       </div>`;
   }
 
-  // ---------- 6. 内見チェック ----------
   function checklist(p) {
     const c = [];
     if (p.floor === 1) c.push(["1階の防犯：窓に面格子や補助錠があるか", "1階は空き巣・のぞきの被害が多い。親が一番気にするポイント"]);
-    if (p.hazard.flood && p.floor <= 2) c.push(["過去にこの建物で浸水したことがあるか", `洪水の浸水想定 ${p.hazard.floodLabel} の区域`]);
+    if (p.hazard.nearFlood && p.floor <= 2) c.push(["過去にこの建物やまわりの道が浸水したことがあるか", p.hazard.flood ? `洪水の浸水想定 ${p.hazard.floodLabel} の区域` : `すぐ近くに浸水想定 ${p.hazard.nearFloodLabel} の区域`]);
     if (p.traffic.level >= 4) c.push(["窓を閉めたときの車の音（動画で送ってもらう）", `${p.traffic.bigRoads.join("・") || "大きな道路"}が近い`]);
     if (p.traffic.railM < 150) c.push(["電車が通るときの音と揺れ", `線路まで約${p.traffic.railM}m`]);
     if (p.age >= 30) c.push(["水回りのカビ・においと、給湯器の年式", `築${p.age}年。古い給湯器は冬に壊れやすい`]);
@@ -859,31 +784,19 @@ JSONだけを返す: {"weights":{"cost":0,"commute":0,"life":0,"quiet":0,"safety
     c.push(["日当たり（何時ごろまで日が入るか）", "写真では分かりにくい"]);
     return c;
   }
-  function renderCheck() {
-    const p = current(), c = checklist(p);
-    $("checkSub").textContent = `${p.name} の条件から、確かめることを${c.length}個に絞りました。`;
-    $("checklist").innerHTML = c.map(([q, why], i) => `<li><input type="checkbox" id="ck-${p.id}-${i}"><label for="ck-${p.id}-${i}">${esc(q)}<span class="why">${esc(why)}</span></label></li>`).join("");
-  }
 
-  // ---------- 7. 親に相談 ----------
   function parentChecks(p) {
     const cap = rentCap(), m = p.rent + p.fee, ic = initialCost(p).total, n = p.near, h = p.hazard;
     return [
-      ["毎月の家賃", m <= cap ? "good" : m <= cap * 1.15 ? "warn" : "bad", m <= cap ? "払える" : "きつい", `${yen(m)}（目安 ${yen(cap)}）`],
+      ["毎月の家賃", m <= cap ? "good" : m <= cap * 1.15 ? "warn" : "bad", m <= cap ? "払える" : "きつい", `目安 ${man(cap)}`],
       ["初期費用", ic <= 150000 ? "good" : ic <= 220000 ? "warn" : "bad", man(Math.round(ic / 1000) * 1000), "入居前に必要"],
       ["防犯", p.autolock && p.floor >= 2 ? "good" : p.floor === 1 ? "bad" : "warn", p.autolock ? "オートロック" : p.floor === 1 ? "1階" : `${p.floor}階`, p.autolock ? "" : "オートロックなし"],
-      ["災害", h.flood === 0 && !h.landslide ? "good" : (h.flood >= 2 && p.floor === 1) ? "bad" : "warn", h.flood ? `浸水${h.floodLabel}` : "浸水想定なし", `避難場所まで徒歩${n.shelter.min}分`],
+      ["災害", hazardGrade(p)[0], h.flood ? `浸水${h.floodLabel}` : h.nearFlood ? "近くに浸水想定" : "浸水想定なし", `避難場所 ${n.shelter.min}分`],
       ["病院", n.hospital.min <= 8 ? "good" : "warn", `徒歩${n.hospital.min}分`, n.hospital.name],
     ];
   }
-  function renderParent() {
-    const p = current();
-    $("pchecks").innerHTML = parentChecks(p).map(([k, c, v, sub]) => `<div class="pcheck ${c}"><span>${k}</span><b class="num">${esc(v)}</b><span class="sub">${esc(sub)}</span></div>`).join("");
-    $("letter").value = letterTemplate(p);
-    $("letterStatus").textContent = "";
-    $("letterBtn").textContent = state.sample ? "AIで文章を整える" : "ひな形に戻す";
-  }
 
+  // ---------- 親へのメッセージ ----------
   function letterTemplate(p) {
     const n = p.near, h = p.hazard, ic = initialCost(p);
     return `お母さん、お父さんへ
@@ -893,7 +806,7 @@ JSONだけを返す: {"weights":{"cost":0,"commute":0,"life":0,"quiet":0,"safety
 ・家賃 ${yen(p.rent)}＋管理費 ${yen(p.fee)}（毎月の予算 ${yen(rentCap())} 以内${p.rent + p.fee <= rentCap() ? "に収まる" : "を少し超える"}）
 ・入居前に約${man(Math.round(ic.total / 1000) * 1000)}かかる。奨学金は入学後に振り込まれるから、ここだけ先に助けてほしい
 ・大学まで歩いて${p.campus.min}分、スーパーは${n.supermarket.min}分、病院（${n.hospital.name}）は${n.hospital.min}分
-・${h.flood ? `洪水のときは${h.floodLabel}浸水する想定の地域` : "洪水の浸水想定はない地域"}。避難場所は${n.shelter.name}（歩いて${n.shelter.min}分）
+・${h.flood ? `洪水のときは${h.floodLabel}浸水する想定の地域` : h.nearFlood ? `建物の場所は浸水想定の外（すぐ近くに${h.nearFloodLabel}の区域あり）` : "洪水の浸水想定はない地域"}。避難場所は${n.shelter.name}（歩いて${n.shelter.min}分）
 ・${p.autolock ? "オートロックあり" : "オートロックはない"}${p.floor === 1 ? "。1階なので防犯は不動産屋さんに確認する" : ""}
 
 大丈夫そうなら、オンライン内見を申し込もうと思ってる。`;
@@ -909,7 +822,7 @@ JSONだけを返す: {"weights":{"cost":0,"commute":0,"life":0,"quiet":0,"safety
       通学: `大学まで徒歩${p.campus.min}分`,
       暮らし: `スーパー徒歩${n.supermarket.min}分、診療所${n.clinic.min}分、病院「${n.hospital.name}」${n.hospital.min}分、夜間救急「${n.emergency.name}」${(n.emergency.m / 1000).toFixed(1)}km`,
       交通量: `${TRAFFIC_TEXT[p.traffic.level][0]}（${p.traffic.front}${p.traffic.bigRoads.length ? "、近くに" + p.traffic.bigRoads.join("・") : ""}）`,
-      災害: `洪水の浸水想定 ${h.floodLabel}、土砂災害警戒区域${h.landslide ? "内" : "外"}、30年以内に震度6弱以上の確率${h.quake60}%、避難場所「${n.shelter.name}」徒歩${n.shelter.min}分`,
+      災害: `洪水の浸水想定 建物の場所${h.floodLabel}・50m以内${h.nearFloodLabel}、土砂災害警戒区域${h.landslide ? "内" : "外"}、30年以内に震度6弱以上の確率${h.quake60}%、避難場所「${n.shelter.name}」徒歩${n.shelter.min}分`,
     };
     return `大阪の大学に進学して一人暮らしをする新入生が、実家の親にLINEで送るメッセージを書いてください。
 目的：この部屋に決めてよいか親に相談し、入居前の費用の援助をお願いすること。
@@ -923,7 +836,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
 
   let letterCtl = null;
   async function makeLetter() {
-    const p = current();
+    const p = byId(state.selected);
     if (!state.sample) { $("letter").value = letterTemplate(p); $("letterStatus").textContent = "ひな形に戻しました"; return; }
     letterCtl = new AbortController();
     $("letterBtn").disabled = true; $("stopBtn").hidden = false;
@@ -931,63 +844,74 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     try {
       await state.sample(letterPrompt(p), {
         signal: letterCtl.signal, cache: false,
-        onText: ({ text }) => { $("letter").value = text; $("letterStatus").textContent = "書いています…"; },
+        onText: ({ text }) => { if ($("letter")) $("letter").value = text; if ($("letterStatus")) $("letterStatus").textContent = "書いています…"; },
       });
-      $("letterStatus").textContent = "できました。気になるところは直してから送ってください";
+      if ($("letterStatus")) $("letterStatus").textContent = "できました。気になるところは直してから送ってください";
     } catch (e) {
+      if (!$("letter")) return;
       if (e?.text) $("letter").value = e.text;
       $("letterStatus").textContent = e?.code === "cancelled" ? "止めました" : errorText(e);
       if (FATAL.includes(e?.code)) disableAI();
     } finally {
-      $("letterBtn").disabled = false; $("stopBtn").hidden = true;
+      if ($("letterBtn")) { $("letterBtn").disabled = false; $("stopBtn").hidden = true; }
     }
   }
 
-  // ---------- AI の状態 ----------
   const FATAL = ["not_granted", "sampling_disabled", "capability_disabled", "not_declared", "capability_removed"];
   function errorText(e) {
     return {
       rate_limited: "AIが混み合っています。少し待ってからもう一度どうぞ",
-      not_granted: "AIの利用が許可されなかったので、AIなしで進めます",
-      invalid_json: "うまく読み取れなかったので、言葉から判断しました",
+      not_granted: "AIの利用が許可されなかったので、ひな形を使ってください",
       refused: "この内容はAIが扱えませんでした",
       session_expired: "サインインし直してください",
-    }[e?.code] || "AIがうまく動かなかったので、AIなしで進めます";
+    }[e?.code] || "AIがうまく動きませんでした。ひな形を使ってください";
   }
   function disableAI() {
     state.sample = null;
-    $("aiState").textContent = "AIなし（簡易版）";
+    $("aiState").textContent = "AIなし（ひな形で動作）";
     $("aiState").classList.remove("on");
-    if (state.screen === "parent") $("letterBtn").textContent = "ひな形に戻す";
+    if ($("letterBtn")) $("letterBtn").textContent = "ひな形に戻す";
   }
 
   // ---------- イベント ----------
   function bind() {
-    $("nextBtn").addEventListener("click", next);
-    $("backBtn").addEventListener("click", back);
-    window.addEventListener("popstate", () => go(location.hash.slice(1) || "start", { push: false }));
-    for (const id of ["inScholar", "inAllow", "inJob"]) $(id).addEventListener("input", renderCap);
-    $("qs").addEventListener("click", (e) => {
-      const b = e.target.closest(".opt"); if (!b) return;
-      const i = Number(b.dataset.i);
-      state.answers[b.dataset.q] = state.answers[b.dataset.q] === i ? null : i;
-      renderQuestions();
+    $("backBtn").addEventListener("click", () => go("map"));
+    window.addEventListener("popstate", routeFromHash);
+    $("layers").addEventListener("click", (e) => {
+      const b = e.target.closest(".layer");
+      const ht = e.target.closest(".ht");
+      if (ht) { state.heatTheme = ht.dataset.t; state.layers.add("heat"); renderBigMap(); return; }
+      if (!b) return;
+      const k = b.dataset.k;
+      state.layers.has(k) ? state.layers.delete(k) : state.layers.add(k);
+      renderBigMap();
     });
-    $("cardSlots").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) openKarte(c.dataset.id); });
-    $("prevPage").addEventListener("click", () => { state.page--; renderList(); });
-    $("nextPage").addEventListener("click", () => { state.page++; renderList(); });
+    $("sidePanel").addEventListener("click", (e) => { if (e.target.id === "openDetail") go("detail", state.selected); });
+    $("budgetBtn").addEventListener("click", () => {
+      const open = $("budgetPop").hidden;
+      $("budgetPop").hidden = !open; $("budgetBtn").setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", (e) => {
+      if (!$("budgetPop").hidden && !e.target.closest("#budgetPop, #budgetBtn")) { $("budgetPop").hidden = true; $("budgetBtn").setAttribute("aria-expanded", "false"); }
+    });
+    for (const id of ["inScholar", "inAllow", "inJob"]) $(id).addEventListener("input", () => {
+      $("budgetChip").textContent = man(rentCap());
+      if (state.screen === "map") { drawPins(); renderSide(); } else renderDetail();
+    });
     $("tabs").addEventListener("click", (e) => {
       const t = e.target.closest(".tab"); if (!t) return;
-      state.tab = t.dataset.tab; renderKarte();
+      state.tab = t.dataset.tab; renderDetail();
     });
-    $("letterBtn").addEventListener("click", makeLetter);
-    $("stopBtn").addEventListener("click", () => letterCtl?.abort());
-    $("copyBtn").addEventListener("click", async () => {
-      const ta = $("letter");
-      try { await navigator.clipboard.writeText(ta.value); $("letterStatus").textContent = "コピーしました"; }
-      catch { ta.focus(); ta.select(); $("letterStatus").textContent = "選択しました。コピーして貼り付けてください"; }
+    $("tabBody").addEventListener("click", async (e) => {
+      if (e.target.id === "letterBtn") makeLetter();
+      if (e.target.id === "stopBtn") letterCtl?.abort();
+      if (e.target.id === "copyBtn") {
+        const ta = $("letter");
+        try { await navigator.clipboard.writeText(ta.value); $("letterStatus").textContent = "コピーしました"; }
+        catch { ta.focus(); ta.select(); $("letterStatus").textContent = "選択しました。コピーして貼り付けてください"; }
+      }
     });
-    window.addEventListener("resize", () => { maps.list?.invalidateSize(); maps.karte?.invalidateSize(); });
+    window.addEventListener("resize", () => { maps.big?.invalidateSize(); maps.mini?.invalidateSize(); });
   }
 
   // ---------- 起動 ----------
@@ -999,13 +923,13 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       document.querySelector(".stage").innerHTML = `<div class="panel" style="margin-top:20px">周辺データ（data/area.json）を読み込めませんでした。ファイルを直接開いている場合は、ローカルサーバー経由で開いてください。</div>`;
       return;
     }
-    const start = document.querySelector('[data-screen="start"] .persona');
-    start.insertAdjacentHTML("beforeend", `<div class="sources">物件（名前・家賃・間取り）はデモ用の架空データ。周辺情報は次のオープンデータから計算：<ul>${state.data.sources.map((s) => `<li>${esc(s)}</li>`).join("")}</ul></div>`);
-    go(location.hash.slice(1) || "start", { push: false });
-
+    $("budgetChip").textContent = man(rentCap());
+    routeFromHash();
     try { state.sample = window.claude ? await window.claude.use("sample") : null; } catch { state.sample = null; }
-    if (state.sample) { $("aiState").textContent = "AI 使用可"; $("aiState").classList.add("on"); if (state.screen === "parent") renderParent(); }
-    else disableAI();
+    if (state.sample) {
+      $("aiState").textContent = "AI 使用可"; $("aiState").classList.add("on");
+      if ($("letterBtn")) $("letterBtn").textContent = "AIで文章を整える";
+    } else disableAI();
   }
   start();
 })();

@@ -14,6 +14,7 @@
 import io
 import json
 import math
+import random
 import time
 import urllib.parse
 import urllib.request
@@ -60,7 +61,8 @@ PROPERTIES = [
 
 WALK_M_PER_MIN = 80  # 不動産の表示に関する公正競争規約の「徒歩1分=80m」
 DETOUR = 1.3  # 直線距離を道なりに直す係数（目安）
-MAP_RADIUS = 700  # 物件ごとの地図に含める範囲（m）
+MAP_MARGIN = 500  # 物件のいちばん外側から、地図に含める余白（m）
+GRID = 50  # 浸水想定を塗るマスの大きさ（m）
 
 
 # ---------- 取得 ----------
@@ -166,6 +168,75 @@ def to_xy(lat, lon):
     return (lon - CAMPUS["lon"]) * kx, (lat - CAMPUS["lat"]) * 110574
 
 
+def from_xy(x, y):
+    kx = 111320 * math.cos(math.radians(CAMPUS["lat"]))
+    return CAMPUS["lat"] + y / 110574, CAMPUS["lon"] + x / kx
+
+
+# 手で置いた7件に加えて、地図を埋めるための架空物件を自動で置く（乱数は固定）
+NAME_HEAD = ["アーバン", "ヴィラ", "パレス", "シャトー", "フォレスト", "サンライズ", "リバティ", "カーサ",
+             "エスポワール", "ルミエール", "セレーノ", "クレスト", "アルファ", "ベルデ", "ノース"]
+NAME_TAIL = ["ハイツ", "コート", "レジデンス", "メゾン", "ハウス", "テラス"]
+EXTRA_COUNT = 15
+MIN_SPACING = 260
+
+
+def generate_properties(roads, stations):
+    rng = random.Random(20260925)
+    placed = [to_xy(p["lat"], p["lon"]) for p in PROPERTIES]
+    gates = [to_xy(*g) for g in CAMPUS_GATES]
+    cands = []
+    for r in roads:
+        if r["kind"] not in ("residential", "unclassified"):
+            continue
+        x, y = r["pts"][len(r["pts"]) // 2]
+        if -1900 < x < 1250 and -1600 < y < 2100 and min(dist((x, y), g) for g in gates) > 260:
+            cands.append((x, y))
+    rng.shuffle(cands)
+    heads = NAME_HEAD[:]
+    rng.shuffle(heads)
+    out = []
+    for c in cands:
+        if len(out) >= EXTRA_COUNT:
+            break
+        if min(dist(c, q) for q in placed) < MIN_SPACING:
+            continue
+        placed.append(c)
+        st = min(stations, key=lambda s: dist(c, s["xy"]))
+        st_min = walk_min(dist(c, st["xy"]))
+        size = rng.choice([18, 20, 21, 22, 23, 24, 25, 26, 28, 30])
+        age = rng.randint(1, 42)
+        floors = rng.choice([2, 2, 3, 3, 4, 5, 6, 8, 10])
+        floor = rng.randint(1, floors)
+        autolock = floors >= 4 and age < 25
+        rent = 21000 + size * 750 - age * 300 + (4000 if st_min <= 5 else 0) + (5000 if autolock else 0)
+        rent = max(28000, int(round(rent / 1000) * 1000))
+        lat, lon = from_xy(*c)
+        out.append(dict(
+            id=f"g{len(out) + 1}", name=f"{heads[len(out) % len(heads)]}{st['name']}{rng.choice(NAME_TAIL)}",
+            lat=round(lat, 6), lon=round(lon, 6), rent=rent, fee=rng.choice([2000, 3000, 3000, 4000, 5000]),
+            deposit=rng.choice([0, 0, 1]), key=rng.choice([0, 1, 1]),
+            layout="1R" if size <= 19 else "1DK" if size >= 28 else "1K", size=size, age=age,
+            floor=floor, floors=floors, autolock=autolock, net=rng.random() < 0.5))
+    return out
+
+
+def hazard_grid(layer, cell, x0, y0, x1, y1, z=15, classify=None):
+    """地図全体を cell m 四方に区切り、各マスの中心の色を読む。値のあるマスだけ返す。"""
+    cells = []
+    cols, rows = int((x1 - x0) // cell), int((y1 - y0) // cell)
+    for j in range(rows):
+        for i in range(cols):
+            lat, lon = from_xy(x0 + (i + .5) * cell, y0 + (j + .5) * cell)
+            px = hazard_pixel(layer, lat, lon, z)
+            if px is None:
+                continue
+            v = classify(px) if classify else 1
+            if v:
+                cells.append([i, j, v])
+    return {"cell": cell, "x0": round(x0), "y0": round(y0), "cols": cols, "rows": rows, "cells": cells}
+
+
 def dist(a, b):
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
@@ -255,8 +326,9 @@ def main():
                 "m": round(d), "min": walk_min(d), "hours": q.get("hours", ""),
                 "x": round(q["xy"][0]), "y": round(q["xy"][1])}
 
+    all_props = PROPERTIES + generate_properties(roads, stations)
     props = []
-    for pr in PROPERTIES:
+    for pr in all_props:
         p = to_xy(pr["lat"], pr["lon"])
         campus_m = min(dist(p, to_xy(*g)) for g in CAMPUS_GATES)
         st = min(stations, key=lambda s: dist(p, s["xy"]))
@@ -300,16 +372,29 @@ def main():
                        "quake60": q60, "quake55": q55},
         })
 
-    # 地図用のジオメトリ（物件の周りだけ、1m単位に丸める）
-    keep = []
-    for r in roads:
-        if any(way_dist((pp["x"], pp["y"]), r["pts"]) <= MAP_RADIUS for pp in props):
-            keep.append({"k": r["kind"], "r": r["rank"], "n": r["name"],
-                         "p": [c for xy in r["pts"] for c in (round(xy[0]), round(xy[1]))]})
-    map_pois = [{"k": q["kind"], "n": q["name"], "x": round(q["xy"][0]), "y": round(q["xy"][1])}
+    # 地図用のジオメトリ（地図に出す範囲全体、1m単位に丸める）
+    xs = [p["x"] for p in props] + [0]
+    ys = [p["y"] for p in props] + [0]
+    ext = (min(xs) - MAP_MARGIN, min(ys) - MAP_MARGIN, max(xs) + MAP_MARGIN, max(ys) + MAP_MARGIN)
+    inside = lambda xy: ext[0] <= xy[0] <= ext[2] and ext[1] <= xy[1] <= ext[3]
+    keep = [{"k": r["kind"], "r": r["rank"], "n": r["name"],
+             "p": [c for xy in r["pts"] for c in (round(xy[0]), round(xy[1]))]}
+            for r in roads if any(inside(xy) for xy in r["pts"])]
+    map_pois = [{"k": q["kind"], "n": q["name"], "x": round(q["xy"][0]), "y": round(q["xy"][1]),
+                 **({"e": 1} if q.get("emergency") else {})}
                 for q in pois + shelters
                 if q["kind"] in ("supermarket", "convenience", "clinic", "hospital", "chemist", "shelter")
-                and any(dist((pp["x"], pp["y"]), q["xy"]) <= MAP_RADIUS for pp in props)]
+                and inside(q["xy"])]
+    flood = hazard_grid("01_flood_l2_shinsuishin_data", GRID, *ext, classify=lambda px: flood_level(px)[0])
+    slide = hazard_grid("05_dosekiryukeikaikuiki", GRID, *ext)
+
+    # 建物の1点だけでなく、すぐ近く（まわり1マス＝おおむね50m以内）の浸水想定も持たせる
+    fcells = {(i, j): v for i, j, v in flood["cells"]}
+    for p in props:
+        i, j = int((p["x"] - flood["x0"]) // GRID), int((p["y"] - flood["y0"]) // GRID)
+        near = max(fcells.get((i + a, j + b), 0) for a in (-1, 0, 1) for b in (-1, 0, 1))
+        p["hazard"]["nearFlood"] = max(near, p["hazard"]["flood"])
+        p["hazard"]["nearFloodLabel"] = "想定なし" if not p["hazard"]["nearFlood"] else FLOOD_LEGEND[p["hazard"]["nearFlood"] - 1][2]
 
     out = {
         "generatedAt": time.strftime("%Y-%m-%d"),
@@ -317,7 +402,9 @@ def main():
         "stations": [{"name": s["name"], "line": s["line"], "x": round(s["xy"][0]), "y": round(s["xy"][1])}
                      for s in stations],
         "properties": props,
-        "map": {"ways": keep, "pois": map_pois},
+        "map": {"extent": [round(v) for v in ext], "ways": keep, "pois": map_pois},
+        "hazard": {"flood": flood, "landslide": slide,
+                   "floodLegend": [label for _, _, label in FLOOD_LEGEND]},
         "sources": [
             "© OpenStreetMap contributors (ODbL)",
             "国土地理院 重ねるハザードマップ（洪水浸水想定区域［想定最大規模］・土砂災害警戒区域・津波浸水想定）",
