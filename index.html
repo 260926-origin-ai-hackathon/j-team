@@ -678,16 +678,6 @@
           <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
         </div>
         <p class="small">いまの予算（家賃＋管理費 <b class="num">${man(rentCap())}</b> まで）に合う部屋は <b class="num">${inBudget}件</b>／全${state.data.properties.length}件</p>
-        <div class="intro">
-          <div class="eyebrow">こんな人のためのアプリです</div>
-          <ul>
-            <li>西日本から、大阪の大学に進学する</li>
-            <li>内見に何度も行くのはめんどくさい</li>
-            <li>奨学金で大学に通う</li>
-            <li>スーパーや病院の場所、まわりの交通量、災害が気になる</li>
-            <li>親も一緒に決める</li>
-          </ul>
-        </div>
         <div class="sources">物件（名前・家賃・間取り）はデモ用の架空データ。周辺の情報は次のオープンデータから：<ul>${state.data.sources.map((s) => `<li>${esc(s)}</li>`).join("")}</ul></div>`;
       return;
     }
