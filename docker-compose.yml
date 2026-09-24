@@ -14,4 +14,4 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    command: sh -c "pip install -q --root-user-action=ignore pillow && python scripts/build_area.py"
+    command: sh -c "pip install -q --root-user-action=ignore pillow numpy && python scripts/build_area.py"

@@ -311,6 +311,15 @@
     { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
   ];
   const HEAT_CELL = 80;
+  // 凡例に出す、テーマごとの色の基準（赤い側、緑の側、出どころ）
+  const HEAT_SCALE = {
+    all: ["このエリアの中で低い", "高い", "5テーマの平均をエリア内で比較"],
+    shop: ["スーパーまで900m以上", "150m以内", "OpenStreetMapの店の位置から"],
+    med: ["診療所まで800m以上", "150m以内", "OpenStreetMapの診療所・病院の位置から"],
+    quiet: ["屋外 68dB以上（幹線道路沿い）", "50dB以下（静かな住宅地）", "道路・線路からの騒音を計算"],
+    commute: ["キャンパスまで2.5km以上", "300m以内", "キャンパスの出入口から"],
+    safety: ["浸水想定 3m以上", "浸水想定なし", "国土地理院 洪水浸水想定区域"],
+  };
   const HEAT_STOPS = [[0, [210, 60, 42]], [0.5, [242, 201, 76]], [1, [47, 158, 91]]];
   // 建物の構造ごとの特徴（一般的な傾向。同じ構造でも建物ごとに差がある）
   // sound / fire は 1〜3（3が強い）
@@ -322,6 +331,14 @@
     "SRC造": { full: "SRC造（鉄骨鉄筋コンクリート）", sound: 3, fire: 3, soundText: "壁が厚く、隣の生活音はほとんど気にならない", fireText: "燃えにくく、火事が広がりにくい", note: "高層マンションに多い、いちばん頑丈な構造" },
   };
   const LEVEL3 = ["", "弱い", "ふつう", "強い"];
+  // 騒音の大きさのたとえ（一般的な目安）
+  function dbFeel(db) {
+    return db < 25 ? "ほとんど気にならない（深夜の寝室くらい）" : db < 35 ? "ささやき声くらい。眠るのに困らない" : db < 45 ? "図書館くらい" : db < 55 ? "静かな事務所くらい" : db < 65 ? "ふつうの会話くらい" : "騒がしい街の中くらい";
+  }
+  // 隣の部屋との遮音（D値）ごとに、隣の話し声がどう聞こえるか（日本建築学会の適用等級で使われる一般的な目安）
+  function dFeel(d) {
+    return d >= 55 ? "隣の話し声はまず聞こえない" : d >= 50 ? "大きな声やテレビの音がかすかに聞こえる程度" : d >= 45 ? "隣の話し声が小さく聞こえる" : d >= 40 ? "隣の話し声が聞こえ、内容が分かることもある" : d >= 35 ? "隣の話し声がよく聞こえる" : "話し声や生活音がはっきり聞こえる";
+  }
   // 画面に出している情報の出どころ。種類は「実データ／推定／独自の目安／一般的な傾向／架空」
   const KIND_CLASS = { 実データ: "k-real", 推定: "k-est", 独自の目安: "k-own", 一般的な傾向: "k-est", 架空: "k-fake" };
   const DATA_SOURCES = [
@@ -331,7 +348,8 @@
     ["土砂災害・津波", "実データ", "国土地理院「重ねるハザードマップ」土砂災害警戒区域・津波浸水想定", "https://disaportal.gsi.go.jp/"],
     ["避難場所", "実データ", "国土地理院 指定緊急避難場所データ（洪水）", "https://www.gsi.go.jp/bousaichiri/hinanbasho.html"],
     ["地震の確率", "実データ", "防災科学技術研究所 J-SHIS 確率論的地震動予測地図（2020年版）。建物の地点を含む250m四方の値", "https://www.j-shis.bosai.go.jp/"],
-    ["交通量", "推定", "道路の種類（OpenStreetMap）から推定した5段階。実際に測った交通量ではない"],
+    ["交通量・屋外の騒音", "推定", "道路の種類（OpenStreetMap）ごとに騒音の大きさを仮定（幹線道路は端から10mで70dBなど、騒音の環境基準を目安にした値）し、20mごとの点に分けて距離による減衰を足し合わせた昼間の目安。実際に測った値ではない"],
+    ["部屋の中の騒音・隣との遮音", "推定", "構造ごとに一般的な壁の材料を仮定し、質量則で遮音を計算（python-acoustics、BSD-3、ISO 717-1 の Rw・Rw+Ctr）。隣との遮音は床や天井の回り込みを差し引いてD値に換算した目安", "https://github.com/python-acoustics/python-acoustics"],
     ["徒歩・自転車の分数", "推定", "直線距離×1.3を、徒歩80m/分・自転車250m/分で割った目安"],
     ["耐震基準", "推定", "築年数（架空）から、建った年を逆算して推定"],
     ["ヒートマップ", "独自の目安", "上の公開データから、施設や道路までの距離で点数を付けたもの。線引きは独自の基準で、色はこのエリアの中で比べた相対値"],
@@ -385,9 +403,9 @@
     return ["good", "新耐震基準", `${built}年ごろの建築。1981年6月以降の基準${p.structure === "木造" ? "（木造の2000年基準も満たす時期）" : ""}`];
   }
   function buildingGrade(p) {
-    const st = STRUCTURES[p.structure], q = quakeStandard(p)[0];
+    const q = quakeStandard(p)[0], d = p.noise.dValue;
     if (q === "bad") return ["bad", "要確認"];
-    return st.sound >= 3 && q === "good" ? ["good", "頑丈"] : st.sound >= 2 ? ["good", "ふつう"] : ["warn", "音に注意"];
+    return d >= 50 && q === "good" ? ["good", "頑丈"] : d >= 40 ? ["good", "ふつう"] : ["warn", "音に注意"];
   }
   function floodShort(p) {
     const h = p.hazard;
@@ -499,24 +517,14 @@
     const d = state.data, [ex0, ey0, ex1, ey1] = d.map.extent, C = HEAT_CELL;
     const cols = Math.ceil((ex1 - ex0) / C), rows = Math.ceil((ey1 - ey0) / C);
     const pts = (kinds) => d.map.pois.filter((q) => kinds.includes(q.k)).map((q) => [q.x, q.y]);
-    const segs = (pred) => {
-      const out = [];
-      for (const w of d.map.ways) if (pred(w)) for (let i = 0; i + 3 < w.p.length; i += 2) out.push([w.p[i], w.p[i + 1], w.p[i + 2], w.p[i + 3]]);
-      return out;
-    };
     const supers = pts(["supermarket"]), convs = pts(["convenience"]), clinics = pts(["clinic"]), hosps = pts(["hospital"]);
-    const big = segs((w) => w.k !== "rail" && w.r >= 4), mid = segs((w) => w.k !== "rail" && w.r === 3), rail = segs((w) => w.k === "rail");
     const gates = d.campus.gates;
     const fl = d.hazard.flood, fcells = new Map(fl.cells.map(([i, j, v]) => [i + "," + j, v]));
     const near = (x, y, arr) => { let m = Infinity; for (const [a, b] of arr) m = Math.min(m, (a - x) ** 2 + (b - y) ** 2); return Math.sqrt(m); };
-    const segD = (x, y, arr) => {
-      let m = Infinity;
-      for (const [ax, ay, bx, by] of arr) {
-        const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
-        const t = L2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)) : 0;
-        m = Math.min(m, (x - ax - t * dx) ** 2 + (y - ay - t * dy) ** 2);
-      }
-      return Math.sqrt(m);
+    const nz = d.noise;
+    const noiseAt = (x, y) => {
+      const i = Math.floor((x - nz.x0) / nz.cell), j = Math.floor((y - nz.y0) / nz.cell);
+      return i < 0 || j < 0 || i >= nz.cols || j >= nz.rows ? 55 : nz.db[j * nz.cols + i];
     };
     const lin = (dist, good, bad) => Math.max(0, Math.min(1, (bad - dist) / (bad - good)));
     const field = {}; for (const t of HEAT_THEMES) field[t.k] = new Float32Array(cols * rows);
@@ -524,15 +532,16 @@
       const x = ex0 + (i + 0.5) * C, y = ey0 + (j + 0.5) * C, k = j * cols + i;
       const shop = lin(near(x, y, supers), 150, 900) * 0.8 + lin(near(x, y, convs), 100, 500) * 0.2;
       const med = lin(near(x, y, clinics), 150, 800) * 0.6 + lin(near(x, y, hosps), 300, 1500) * 0.4;
-      const quiet = Math.min(1, Math.max(0, (segD(x, y, big) - 20) / 200)) * 0.7 + Math.min(1, Math.max(0, (segD(x, y, mid) - 10) / 100)) * 0.2 + Math.min(1, Math.max(0, (segD(x, y, rail) - 20) / 150)) * 0.1;
+      const quiet = Math.max(0, Math.min(1, (68 - noiseAt(x, y)) / 18)); // 屋外の騒音の推定 50dB以下で満点、68dB以上で0点
       const commute = lin(near(x, y, gates), 300, 2500);
       const fi = Math.floor((x - fl.x0) / fl.cell), fj = Math.floor((y - fl.y0) / fl.cell);
       const safety = [1, 0.75, 0.4, 0.1, 0.05, 0, 0][fcells.get(fi + "," + fj) || 0];
       field.shop[k] = shop; field.med[k] = med; field.quiet[k] = quiet; field.commute[k] = commute; field.safety[k] = safety;
       field.all[k] = (shop + med + quiet + commute + safety) / 5;
     }
-    // エリアの中で比べやすいよう、テーマごとに下位5%〜上位5%を0〜1に広げる
-    for (const t of HEAT_THEMES) {
+    // 各テーマは距離やdBの決まった基準で塗る。「総合」だけは5つの平均で差が小さくなるので、
+    // エリアの中の下位5%〜上位5%を0〜1に広げて比べやすくする
+    for (const t of HEAT_THEMES.filter((x) => x.k === "all")) {
       const a = field[t.k], sorted = Array.from(a).sort((x, y) => x - y);
       const lo = sorted[Math.floor(sorted.length * 0.05)], hi = sorted[Math.floor(sorted.length * 0.95)];
       for (let n = 0; n < a.length; n++) a[n] = hi > lo ? Math.max(0, Math.min(1, (a[n] - lo) / (hi - lo))) : a[n];
@@ -645,7 +654,10 @@
     if (state.layers.has("traffic")) rows.push(`<span>車の量</span><span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`);
     if (state.layers.has("flood")) rows.push(`<span>洪水の浸水想定</span><span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`);
     if (state.layers.has("shelter")) rows.push(`${dot("shelter")}${src("実データ", "国土地理院 指定緊急避難場所（洪水）")}`);
-    if (state.layers.has("heat")) rows.push(`<span>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</span><span class="muted">このエリアの中で 低い</span><span class="heat-bar"></span><span class="muted">高い</span>${src("独自の目安", "公開データから距離で点数化")}`);
+    if (state.layers.has("heat")) {
+      const scale = HEAT_SCALE[state.heatTheme];
+      rows.push(`<span>ヒートマップ「${HEAT_THEMES.find((t) => t.k === state.heatTheme).label}」</span><span class="muted">${scale[0]}</span><span class="heat-bar"></span><span class="muted">${scale[1]}</span>${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}`);
+    }
     rows.push(`<span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}`);
     $("legend").innerHTML = rows.map((r) => `<div class="row">${r}</div>`).join("");
   }
@@ -760,12 +772,14 @@
       <div><div class="eyebrow">家の材質（構造）</div><div class="big-verdict">${esc(st.full)}</div></div>
       <p>${esc(st.note)}</p>
       <dl class="rows num">
-        <dt>音の伝わりにくさ</dt><dd>${meter(st.sound)} ${LEVEL3[st.sound]}<br><span class="small muted">${esc(st.soundText)}</span></dd>
+        <dt>隣の部屋の音</dt><dd><b>D-${p.noise.dValue} 相当</b>　${esc(dFeel(p.noise.dValue))}<br><span class="small muted">隣との壁：${esc(p.noise.partyLabel)}（1㎡あたり${p.noise.partyMass}kg → 遮音 Rw ${p.noise.partyRw}dB）</span></dd>
+        <dt>外の音（窓を閉めて）</dt><dd><b class="num">約${p.noise.indoor}dB</b>　${esc(dbFeel(p.noise.indoor))}<br><span class="small muted">屋外 約${p.noise.outdoor}dB − 外壁と窓の遮音 約${p.noise.facade}dB（外壁 ${esc(p.noise.outerLabel)} ${p.noise.outerRwCtr}dB、窓 ${p.noise.windowRwCtr}dB）</span></dd>
         <dt>火事への強さ</dt><dd>${meter(st.fire)} ${LEVEL3[st.fire]}<br><span class="small muted">${esc(st.fireText)}</span></dd>
         <dt>地震への備え</dt><dd><b class="${q[0] === "good" ? "t-good" : q[0] === "warn" ? "t-warn" : "t-bad"}">${esc(q[1])}</b><br><span class="small muted">${esc(q[2])}</span></dd>
         <dt>建物</dt><dd>${p.floors}階建ての${p.floor}階・築${p.age}年${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}</dd>
       </dl>
-      <p class="note">${badge("架空")} 構造・築年数はデモ用のデータ　${badge("推定")} 耐震基準は築年数からの推定　${badge("一般的な傾向")} 構造ごとの特徴は一般的な傾向で、同じ構造でも建物によって差があります。音が気になる人は「内見で聞くこと」のタブも見てください。</p>`;
+      <p class="note">${badge("推定")} 遮音は、構造ごとに一般的な壁の材料を仮定し、材料の重さから質量則で計算した目安（OSSの python-acoustics で計算。評価は ISO 717-1）。実際の建物では窓・すき間・床からの回り込みで変わります。外の音は窓がいちばんの弱点で、構造による差は小さくなります。</p>
+      <p class="note">${badge("架空")} 構造・築年数はデモ用のデータ　${badge("推定")} 耐震基準は築年数からの推定　${badge("一般的な傾向")} 構造ごとの特徴は一般的な傾向です。</p>`;
     }
     if (tab === "life") return `
       <dl class="rows num">
@@ -782,16 +796,18 @@
     if (tab === "traffic") {
       const [label, desc] = TRAFFIC_TEXT[tr.level];
       return `
-      <div><div class="eyebrow">家のまわりの車の量</div><div class="big-verdict ${trafficGrade(p)[0]}">${label}</div></div>
+      <div><div class="eyebrow">家のまわりの車の量・騒音</div><div class="big-verdict ${trafficGrade(p)[0]}">${label}<span class="num" style="font-size:16px;margin-left:10px">屋外 約${p.noise.outdoor}dB／部屋の中 約${p.noise.indoor}dB</span></div></div>
       <div class="meter" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= tr.level ? "on" : ""}"></i>`).join("")}</div>
       <p>${desc}</p>
       <dl class="rows num">
+        <dt>屋外の騒音</dt><dd>約${p.noise.outdoor}dB（${esc(dbFeel(p.noise.outdoor))}）<br><span class="small muted">住宅地の環境基準は昼55dB、幹線道路の近くは昼70dB</span></dd>
+        <dt>部屋の中（窓を閉めて）</dt><dd>約${p.noise.indoor}dB（${esc(dbFeel(p.noise.indoor))}）</dd>
         <dt>家の前の道</dt><dd>${esc(tr.front)}${tr.frontName ? `（${esc(tr.frontName)}）` : ""}</dd>
         <dt>120m以内の大きな道</dt><dd>${tr.bigRoads.length ? tr.bigRoads.map(esc).join("、") : "なし"}</dd>
         <dt>線路まで</dt><dd>約${tr.railM}m</dd>
         <dt>夜も開いている店</dt><dd>300m以内にコンビニ ${tr.conv300}軒</dd>
       </dl>
-      <p class="note">${badge("推定")} 道路の種類（OpenStreetMap）から推定した目安で、実際に測った交通量ではありません。左の地図は車の多い道路を色で示しています。</p>`;
+      <p class="note">${badge("推定")} 道路の種類（OpenStreetMap）ごとに騒音の大きさを仮定し、距離による減衰を足し合わせて計算した目安です。実際に測った交通量・騒音ではありません。部屋の中の値は、構造ごとの外壁と窓の遮音を引いたもの（「建物」タブ）。左の地図は車の多い道路を色で示しています。</p>`;
     }
     if (tab === "hazard") {
       const g = hazardGrade(p);
@@ -849,7 +865,8 @@
     if (p.hazard.nearFlood && p.floor <= 2) c.push(["過去にこの建物やまわりの道が浸水したことがあるか", p.hazard.flood ? `洪水の浸水想定 ${p.hazard.floodLabel} の区域` : `すぐ近くに浸水想定 ${p.hazard.nearFloodLabel} の区域`]);
     if (p.traffic.level >= 4) c.push(["窓を閉めたときの車の音（動画で送ってもらう）", `${p.traffic.bigRoads.join("・") || "大きな道路"}が近い`]);
     if (p.traffic.railM < 150) c.push(["電車が通るときの音と揺れ", `線路まで約${p.traffic.railM}m`]);
-    if (STRUCTURES[p.structure].sound === 1) c.push(["隣や上の階の音がどれくらい聞こえるか（壁をたたいてもらう）", `${p.structure}は生活音が響きやすい`]);
+    if (p.noise.dValue <= 35) c.push(["隣や上の階の音がどれくらい聞こえるか（壁をたたいてもらう）", `${p.structure}で隣との遮音は D-${p.noise.dValue} 相当。${dFeel(p.noise.dValue)}`]);
+    if (p.noise.indoor >= 33) c.push(["窓を閉めた部屋の中で、車や電車の音がどれくらい聞こえるか", `部屋の中の騒音の推定 約${p.noise.indoor}dB`]);
     if (quakeStandard(p)[0] !== "good") c.push(["耐震診断や補強をしているか", quakeStandard(p)[1]]);
     if (p.age >= 30) c.push(["水回りのカビ・においと、給湯器の年式", `築${p.age}年。古い給湯器は冬に壊れやすい`]);
     if (!p.autolock) c.push(["玄関の鍵の種類（ディンプルキーか）", "オートロックなし"]);
@@ -890,13 +907,13 @@
   function letterPrompt(p) {
     const n = p.near, h = p.hazard, ic = initialCost(p), inc = income();
     const facts = {
-      物件: `${p.name}（${p.layout}・${p.size}㎡・${STRUCTURES[p.structure].full}・${quakeStandard(p)[1]}・築${p.age}年・${p.floor}階／${p.floors}階建て・オートロック${p.autolock ? "あり" : "なし"}）`,
+      物件: `${p.name}（${p.layout}・${p.size}㎡・${STRUCTURES[p.structure].full}・隣との遮音D-${p.noise.dValue}相当・${quakeStandard(p)[1]}・築${p.age}年・${p.floor}階／${p.floors}階建て・オートロック${p.autolock ? "あり" : "なし"}）`,
       家賃: `${p.rent}円＋管理費${p.fee}円、敷金${p.deposit}か月・礼金${p.key}か月`,
       入居前に必要な費用: `約${Math.round(ic.total)}円`,
       本人の毎月の収入: `奨学金${inc.scholar}円・仕送り${inc.allow}円・バイト${inc.job}円、家賃予算の目安${rentCap()}円`,
       通学: `大学まで徒歩${p.campus.min}分`,
       暮らし: `スーパー徒歩${n.supermarket.min}分、診療所${n.clinic.min}分、病院「${n.hospital.name}」${n.hospital.min}分、夜間救急「${n.emergency.name}」${(n.emergency.m / 1000).toFixed(1)}km`,
-      交通量: `${TRAFFIC_TEXT[p.traffic.level][0]}（${p.traffic.front}${p.traffic.bigRoads.length ? "、近くに" + p.traffic.bigRoads.join("・") : ""}）`,
+      交通量: `屋外の騒音の推定 約${p.noise.outdoor}dB・窓を閉めた部屋の中 約${p.noise.indoor}dB、${TRAFFIC_TEXT[p.traffic.level][0]}（${p.traffic.front}${p.traffic.bigRoads.length ? "、近くに" + p.traffic.bigRoads.join("・") : ""}）`,
       災害: `洪水の浸水想定 建物の場所${h.floodLabel}・50m以内${h.nearFloodLabel}、土砂災害警戒区域${h.landslide ? "内" : "外"}、30年以内に震度6弱以上の確率${h.quake60}%、避難場所「${n.shelter.name}」徒歩${n.shelter.min}分`,
     };
     return `大阪の大学に進学して一人暮らしをする新入生が、実家の親にLINEで送るメッセージを書いてください。

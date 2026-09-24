@@ -20,7 +20,10 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
+
+from acoustics_building import THIRD_OCTAVES, mass_law, rw, rw_ctr
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "scripts" / ".cache"
@@ -30,7 +33,8 @@ OVERPASS = [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass-api.de/api/interpreter",
 ]
-BBOX = "34.634,135.566,34.674,135.606"
+# 地図に出す範囲より1kmほど広く取る（端のマスでも「いちばん近い施設・道路」を正しく測るため）
+BBOX = "34.624,135.554,34.694,135.621"
 Q_STATIONS = '[out:json][timeout:50];(node["railway"="station"](34.63,135.56,34.68,135.61););out tags;'
 Q_POIS = ('[out:json][timeout:90];(nwr["shop"~"^(supermarket|convenience|chemist)$"](%s);'
           'nwr["amenity"~"^(clinic|hospital|doctors)$"](%s););out tags center qt;' % (BBOX, BBOX))
@@ -63,6 +67,7 @@ WALK_M_PER_MIN = 80  # 不動産の表示に関する公正競争規約の「徒
 DETOUR = 1.3  # 直線距離を道なりに直す係数（目安）
 MAP_MARGIN = 500  # 物件のいちばん外側から、地図に含める余白（m）
 GRID = 50  # 浸水想定を塗るマスの大きさ（m）
+NOISE_CELL = 80  # 騒音を計算するマスの大きさ（m）。画面のヒートマップと同じ
 
 
 # ---------- 取得 ----------
@@ -192,6 +197,7 @@ def generate_properties(roads, stations):
         x, y = r["pts"][len(r["pts"]) // 2]
         if -1900 < x < 1250 and -1600 < y < 2100 and min(dist((x, y), g) for g in gates) > 260:
             cands.append((x, y))
+    cands.sort(key=lambda c: (round(c[0]), round(c[1])))  # Overpass の返す順番に左右されないように
     rng.shuffle(cands)
     heads = NAME_HEAD[:]
     rng.shuffle(heads)
@@ -240,6 +246,95 @@ def hazard_grid(layer, cell, x0, y0, x1, y1, z=15, classify=None):
     return {"cell": cell, "x0": round(x0), "y0": round(y0), "cols": cols, "rows": rows, "cells": cells}
 
 
+# ---------- 騒音（道路・線路からの屋外の音と、構造ごとの遮音） ----------
+
+# 道路の種類ごとに「道路の端から10mでの昼間の等価騒音レベル（dB）」を仮定する。
+# 目安にしたのは騒音の環境基準（幹線道路に近い空間は昼70dB、住宅地は昼55dB）。実測ではない。
+NOISE_AT_10M = {"trunk": 70, "primary": 70, "secondary": 66, "tertiary": 60,
+                "unclassified": 48, "residential": 44, "living_street": 41, "rail": 65}
+BACKGROUND_DB = 40
+SOURCE_STEP = 20  # 道路を20mごとの点に分けて、点ごとの音を足し合わせる
+
+
+def noise_sources(roads):
+    """道路・線路を、一定間隔の点音源（x, y, 1mあたりの音響パワーの目安）の並びにする。"""
+    xs, ys, lw = [], [], []
+    for r in roads:
+        l10 = NOISE_AT_10M.get(r["kind"])
+        if l10 is None:
+            continue
+        pts = r["pts"]
+        for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg // SOURCE_STEP))
+            for k in range(n):
+                t = (k + .5) / n
+                xs.append(ax + (bx - ax) * t)
+                ys.append(ay + (by - ay) * t)
+                # 無限に長い直線道路で10m地点が l10 になるよう、1mあたりのパワーレベルを l10+13 とする
+                lw.append(l10 + 13 + 10 * math.log10(seg / n))
+    return np.array(xs), np.array(ys), np.array(lw)
+
+
+def outdoor_db(px, py, src):
+    """地点 (px, py) の屋外の騒音レベル（dB、昼間の目安）。
+    点音源ごとに半自由空間の距離減衰を計算し、20mより先は建物による遮へいを最大15dBまで見込む。
+    （NoiseModelling などの騒音地図と同じ「音源を点に分けてエネルギーで足す」考え方を、ごく簡単にしたもの）"""
+    xs, ys, lw = src
+    px, py = np.atleast_1d(px).astype(float), np.atleast_1d(py).astype(float)
+    out = np.empty(len(px))
+    for a in range(0, len(px), 64):
+        dx = px[a:a + 64, None] - xs[None, :]
+        dy = py[a:a + 64, None] - ys[None, :]
+        r = np.maximum(np.hypot(dx, dy), 5.0)
+        shield = np.clip((r - 20) / 20, 0, 15)
+        lp = lw[None, :] - 20 * np.log10(r) - 8 - shield
+        e = np.sum(np.where(r < 800, 10 ** (lp / 10), 0), axis=1) + 10 ** (BACKGROUND_DB / 10)
+        out[a:a + 64] = 10 * np.log10(e)
+    return out
+
+
+# 構造ごとの壁の組み立て（一般的な例）。層ごとに（密度 kg/m3, 厚さ m）。
+# 隣の部屋との壁（界壁）と、外壁。窓はどの構造もアルミサッシの単板ガラス5mmとする。
+ASSEMBLIES = {
+    "木造": {"party": [(800, 0.025)], "party_label": "石膏ボード12.5mm×2（柱の両側）",
+           "outer": [(800, 0.0125), (1300, 0.016)], "outer_label": "石膏ボード＋窯業系サイディング", "flank": 5},
+    "軽量鉄骨造": {"party": [(800, 0.05)], "party_label": "石膏ボード12.5mm×4",
+              "outer": [(800, 0.0125), (500, 0.05)], "outer_label": "石膏ボード＋ALC50mm", "flank": 5},
+    "鉄骨造": {"party": [(500, 0.10), (800, 0.025)], "party_label": "ALC100mm＋石膏ボード×2",
+            "outer": [(500, 0.10), (800, 0.0125)], "outer_label": "ALC100mm＋石膏ボード", "flank": 6},
+    "RC造": {"party": [(2300, 0.18)], "party_label": "鉄筋コンクリート180mm",
+            "outer": [(2300, 0.15)], "outer_label": "鉄筋コンクリート150mm", "flank": 10},
+    "SRC造": {"party": [(2300, 0.20)], "party_label": "鉄筋コンクリート200mm",
+             "outer": [(2300, 0.15)], "outer_label": "鉄筋コンクリート150mm", "flank": 10},
+}
+WINDOW = [(2500, 0.005)]
+WINDOW_LEAK = 3  # サッシのすき間から漏れる分
+WINDOW_RATIO = 0.3  # 外に面した壁のうち窓の割合
+
+
+def wall_tl(layers):
+    """層を重ねた壁を1枚の重さとみなし、質量則で1/3オクターブごとの透過損失を出す（乱入射で5dB引く）。"""
+    m = sum(rho * t for rho, t in layers)
+    return mass_law(THIRD_OCTAVES, m, 1.0) - 5, m
+
+
+def structure_acoustics(structure):
+    a = ASSEMBLIES[structure]
+    party_tl, party_m = wall_tl(a["party"])
+    outer_tl, outer_m = wall_tl(a["outer"])
+    win_tl, _ = wall_tl(WINDOW)
+    party_rw = int(rw(party_tl.copy()))
+    # 隣との遮音の目安（D値）：壁の Rw から、床や天井を回り込む分を引いて5刻みに丸める
+    d_value = int((party_rw - a["flank"]) // 5 * 5)
+    outer_rwctr = float(rw_ctr(outer_tl))
+    win_rwctr = float(rw_ctr(win_tl)) - WINDOW_LEAK
+    facade = -10 * math.log10(WINDOW_RATIO * 10 ** (-win_rwctr / 10) + (1 - WINDOW_RATIO) * 10 ** (-outer_rwctr / 10))
+    return {"partyLabel": a["party_label"], "partyMass": round(party_m), "partyRw": party_rw, "dValue": d_value,
+            "outerLabel": a["outer_label"], "outerRwCtr": round(outer_rwctr), "windowRwCtr": round(win_rwctr),
+            "facade": round(facade)}
+
+
 def dist(a, b):
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
@@ -268,8 +363,8 @@ ROAD_LABEL = {5: "幹線道路", 4: "主要な道路", 3: "やや広い道路", 
 
 def main():
     stations_raw = overpass("stations.json", Q_STATIONS)
-    pois_raw = overpass("pois.json", Q_POIS)
-    roads_raw = overpass("roads.json", Q_ROADS)
+    pois_raw = overpass("pois_wide.json", Q_POIS)
+    roads_raw = overpass("roads_wide.json", Q_ROADS)
     # 指定緊急避難場所（洪水）。z10 のタイル1枚で周辺全体を覆う
     shelters_raw = json.loads(cached("shelter_flood_10_897_406.json", lambda: http_get(
         "https://cyberjapandata.gsi.go.jp/xyz/skhb01/10/897/406.geojson")))
@@ -391,6 +486,20 @@ def main():
     flood = hazard_grid("01_flood_l2_shinsuishin_data", GRID, *ext, classify=lambda px: flood_level(px)[0])
     slide = hazard_grid("05_dosekiryukeikaikuiki", GRID, *ext)
 
+    # 騒音：物件ごとの屋外の音、部屋の中に入ってくる音、隣との遮音。マスごとの屋外の音（ヒートマップ用）
+    src = noise_sources(roads)
+    outs = outdoor_db([p["x"] for p in props], [p["y"] for p in props], src)
+    for p, db in zip(props, outs):
+        ac = structure_acoustics(p["structure"])
+        indoor = max(20, db - ac["facade"])
+        p["noise"] = {"outdoor": round(float(db)), "indoor": round(float(indoor)), **ac}
+        p["traffic"]["level"] = 1 if db < 50 else 2 if db < 55 else 3 if db < 60 else 4 if db < 65 else 5
+    cols, rows = math.ceil((ext[2] - ext[0]) / NOISE_CELL), math.ceil((ext[3] - ext[1]) / NOISE_CELL)
+    gx = [ext[0] + (i + .5) * NOISE_CELL for j in range(rows) for i in range(cols)]
+    gy = [ext[1] + (j + .5) * NOISE_CELL for j in range(rows) for i in range(cols)]
+    noise_grid = {"cell": NOISE_CELL, "x0": round(ext[0]), "y0": round(ext[1]), "cols": cols, "rows": rows,
+                  "db": [int(round(v)) for v in outdoor_db(gx, gy, src)]}
+
     # 建物の1点だけでなく、すぐ近く（まわり1マス＝おおむね50m以内）の浸水想定も持たせる
     fcells = {(i, j): v for i, j, v in flood["cells"]}
     for p in props:
@@ -408,11 +517,13 @@ def main():
         "map": {"extent": [round(v) for v in ext], "ways": keep, "pois": map_pois},
         "hazard": {"flood": flood, "landslide": slide,
                    "floodLegend": [label for _, _, label in FLOOD_LEGEND]},
+        "noise": noise_grid,
         "sources": [
             "© OpenStreetMap contributors (ODbL)",
             "国土地理院 重ねるハザードマップ（洪水浸水想定区域［想定最大規模］・土砂災害警戒区域・津波浸水想定）",
             "国土地理院 指定緊急避難場所データ（洪水）",
             "防災科学技術研究所 J-SHIS 地震ハザードステーション（確率論的地震動予測地図 2020年版）",
+            "騒音・遮音：道路の種類ごとの仮定値からの推定と、python-acoustics（BSD-3）の質量則・ISO 717-1 評価による計算",
         ],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
