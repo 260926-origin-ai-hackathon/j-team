@@ -107,6 +107,11 @@
   .start-hint { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: .08em; padding: 6px 18px; border-radius: 999px; background: var(--surface); border: 2px solid var(--sky); }
   .bubble { position: relative; background: var(--surface); border: 2px solid var(--sky); border-radius: 18px; padding: 16px 20px; color: var(--ink); }
   .bubble p { margin: 0; line-height: 1.75; }
+  .map-guide { position: absolute; right: 12px; bottom: 84px; z-index: 690; display: flex; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(340px, calc(100% - 24px)); }
+  .map-guide .mascot { flex: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.12)); }
+  .map-bubble { position: relative; padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; line-height: 1.5; margin-bottom: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  .map-bubble::after { content: ""; position: absolute; right: -8px; bottom: 16px; width: 12px; height: 12px; background: var(--surface); border-right: 2px solid var(--sky); border-top: 2px solid var(--sky); transform: rotate(45deg); }
+  @media (max-width: 860px) { .map-guide { display: none; } }
   .d-guide { display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; max-width: 460px; }
   .d-guide .mascot { flex: none; }
   .d-bubble { position: relative; padding: 8px 14px; border-radius: 14px; font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--ink); }
@@ -373,6 +378,7 @@
         <button class="heat-strip" id="heatStrip" hidden></button>
         <div class="panel sheet" id="sheet" hidden></div>
         <nav class="taskbar" id="taskbar" aria-label="地図の表示の切り替え"></nav>
+        <div class="map-guide" id="mapGuide" aria-live="polite"></div>
         <div class="readout" id="readout" hidden></div>
       </div>
       <aside class="side"><div class="panel" id="sidePanel"></div></aside>
@@ -1728,14 +1734,45 @@
   }
 
   // ---------- 右側（使い方／選んだ物件の概要） ----------
+  // ---------- 地図の上のヘヤまる ----------
+  // 何も選んでいないとき・物件を選んだとき・ヒートマップや重ねる情報を変えたときに、表情とひとことを変える
+  let guideTimer = null;
+  function setMapGuide(face, text, { temporary = false } = {}) {
+    const el = $("mapGuide");
+    if (!el) return;
+    clearTimeout(guideTimer);
+    el.innerHTML = `<div class="bubble map-bubble">${esc(text)}</div>${mascotSVG(78, "hop", face)}`;
+    if (temporary) guideTimer = setTimeout(() => mapGuideForSelection(), 4500);
+  }
+  function mapGuideForSelection() {
+    const p = state.selected && byId(state.selected);
+    if (!p) { setMapGuide("smile", "気になる札をタップしてね。ヒートマップが緑のところほど住みやすいよ"); return; }
+    // 良いところと気になるところを1つずつ拾って、表情を決める
+    const goods = [], bads = [];
+    if (!overBudget(p)) goods.push("予算内"); else bads.push("予算を少し超える");
+    const add = (g, good, bad) => { if (g[0] === "good") goods.push(good); else if (g[0] === "bad") bads.push(bad); };
+    add(lifeGrade(p), "スーパーも近い", "スーパーや病院が遠め");
+    add(trafficGrade(p), "車の音が少ない", "大きな道が近い");
+    add(crimeGrade(p), "犯罪が少なめ", "犯罪が多めのエリア");
+    add(hazardGrade(p), "災害のリスクが低め", "災害のリスクが高め");
+    if (p.noise.dValue <= 35) bads.push("隣の音が響きやすい");
+    const face = bads.length === 0 ? "happy" : bads.length === 1 ? "think" : "worry";
+    const q = (arr) => `「${arr.slice(0, 2).join("」「")}」`;
+    const text = bads.length === 0 ? `いいところは${q(goods)}。いい部屋かも！「詳しく見る」で中も見てみよう`
+      : goods.length ? `いいところは${q(goods)}、気になるのは${q(bads)}。「詳しく見る」で確かめよう`
+      : `気になるのは${q(bads)}。ほかの札も見てみよう`;
+    setMapGuide(face, text);
+  }
+
   function renderSide() {
+    mapGuideForSelection();
     const p = state.selected && byId(state.selected);
     if (!p) {
       const inBudget = state.data.properties.filter((x) => !overBudget(x)).length;
       $("sidePanel").innerHTML = `
-        <div class="intro guide">
-          ${mascotSVG(64, "small")}
-          <div class="bubble small-bubble"><div class="eyebrow">ヘヤまるのひとこと</div><h2>気になる場所をタップして、部屋を選ぼう</h2></div>
+        <div class="intro">
+          <div class="eyebrow">大学進学ではじめての一人暮らし</div>
+          <h2>気になる場所をタップして、部屋を選ぶ</h2>
         </div>
         <div class="howto">
           <b>1</b><span>地図の下のタスクバーで、ヒートマップのテーマや、スーパー・病院・交通量・浸水想定・防犯などを切り替える</span>
@@ -2148,11 +2185,18 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
         return;
       }
       const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
-      if (t) { state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap(); return; }
+      if (t) {
+        state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap();
+        const hint = { all: "あなたの大事なことをまとめて", shop: "スーパーが近いところほど緑", med: "診療所が近いところほど緑", quiet: "静かなところほど緑", commute: "大学が近いところほど緑", safety: "浸水しにくいところほど緑", crime: "犯罪が少ないところほど緑", food: "飲食店が多いところほど緑", conv: "コンビニが近いところほど緑", bus: "バス停が近いところほど緑" }[t.dataset.t];
+        setMapGuide("surprised", `「${themeLabel(t.dataset.t)}」で塗り直したよ。${hint}`, { temporary: true });
+        return;
+      }
       if (!b) return;
       const k = b.dataset.k;
       state.layers.has(k) ? state.layers.delete(k) : state.layers.add(k);
       renderBigMap();
+      const ly = LAYERS.find((x) => x.k === k);
+      if (ly && k !== "heat") setMapGuide(state.layers.has(k) ? "happy" : "smile", state.layers.has(k) ? `${ly.label}を地図に出したよ` : `${ly.label}をしまったよ`, { temporary: true });
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sheet) { state.sheet = null; renderLayerChips(); } });
     $("sidePanel").addEventListener("click", (e) => {
