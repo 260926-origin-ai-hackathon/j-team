@@ -3,3 +3,11 @@ __pycache__/
 .DS_Store
 .vercel
 .env*
+# Next.js
+node_modules/
+.next/
+next-env.d.ts
+# index.html から scripts/build-next.mjs が作るもの
+app/_generated/
+public/heyakarte/
+public/data/

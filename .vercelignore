@@ -1,7 +1,14 @@
-# Vercel に送るのは、配信に必要な index.html と data/ だけ
+# Vercel に送るのは、Next.js のビルドに必要なもの（app/・index.html・data/・package.json・scripts/build-next.mjs など）
 .git
 .claude
-scripts
+node_modules
+.next
+app/_generated
+public/heyakarte
+public/data
+scripts/*.py
+scripts/.cache
+scripts/__pycache__
 docker
 Dockerfile
 docker-compose.yml

@@ -2553,6 +2553,33 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       session_expired: "サインインし直してください",
     }[e?.code] || "AIがうまく動きませんでした。ひな形を使ってください";
   }
+  // Next.js 版（Vercel）では、Claude Artifact の代わりにサーバーの /api/letter で AI を使う。
+  // 使い方は Artifact の sample と同じ形（文章が届くたびに onText を呼ぶ）にそろえる
+  async function serverSample() {
+    if (!window.__HEYAKARTE_SERVER_AI__) return null;
+    try {
+      const r = await fetch("/api/letter", { cache: "no-store" });
+      if (!r.ok || !(await r.json()).available) return null;
+    } catch { return null; }
+    return async (prompt, { signal, onText } = {}) => {
+      let text = "";
+      try {
+        const r = await fetch("/api/letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt }), signal });
+        if (!r.ok) throw { code: r.status === 429 ? "rate_limited" : "server_error" };
+        const reader = r.body.getReader(), dec = new TextDecoder();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          text += dec.decode(value, { stream: true });
+          onText?.({ text });
+        }
+        return { text };
+      } catch (e) {
+        if (e?.name === "AbortError") throw { code: "cancelled", text };
+        throw { ...(e?.code ? e : { code: "server_error" }), text };
+      }
+    };
+  }
   function disableAI() {
     state.sample = null;
     $("aiState").textContent = "AIなし（ひな形で動作）";
@@ -2687,7 +2714,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       <div class="src-item"><div class="src-line"><b>${esc(d.what)}</b>${badge(d.kind)}</div><div class="src-provider">${providerLink(d)}</div>${d.note ? `<p>${esc(d.note)}</p>` : ""}</div>`).join("")}</section>`).join("") +
       `<p class="note">周辺データの取得日 ${esc(state.data.generatedAt)}。公開データを加工して表示しています。</p>`;
     routeFromHash();
-    try { state.sample = window.claude ? await window.claude.use("sample") : null; } catch { state.sample = null; }
+    try { state.sample = window.claude ? await window.claude.use("sample") : await serverSample(); } catch { state.sample = null; }
     if (state.sample) {
       $("aiState").textContent = "AI 使用可"; $("aiState").classList.add("on");
       if ($("letterBtn")) $("letterBtn").textContent = "AIで文章を整える";
