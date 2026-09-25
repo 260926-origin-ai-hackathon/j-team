@@ -145,7 +145,7 @@ python3 scripts/build_area.py
 | [J-SHIS 地震ハザードステーション](https://www.j-shis.bosai.go.jp/)（防災科学技術研究所） | 出典明記で利用可 | 今後30年に震度6弱以上・5強以上の揺れに見舞われる確率 |
 | [大阪府警察 犯罪オープンデータ](https://www.police.pref.osaka.lg.jp/seikatsu/9290.html) | 政府標準利用規約2.0（CC BY 4.0 互換）。出典と加工したことを明記 | 2025年の街頭犯罪7手口の発生（町丁目・日付・時間帯）。「犯罪発生情報（2025年）」（大阪府警察）を加工して作成 |
 | [Geolonia 住所データ（japanese-addresses）](https://github.com/geolonia/japanese-addresses) | データ CC BY 4.0（スクリプト MIT） | 町丁目の代表点の緯度経度。犯罪の発生を地図に置くのに使用（表記ゆれは全角数字→漢数字、ケ→ヶでそろえ、5,288件中5,285件を位置付け） |
-| [kurashi-ai](https://github.com/daichi05xxx-commits/kurashi-ai) | ライセンス未設定（作者の了承のもとで取り込み） | 3D内見（間取りテンプレート・部屋の組み立て・three.js の表示と操作）を移植 |
+| [kurashi-ai](https://github.com/daichi05xxx-commits/kurashi-ai) | ライセンス未設定。取り込んでよいか作者に確認が必要 | 3D内見（間取りテンプレート・部屋の組み立て・three.js の表示と操作）を移植 |
 | [three.js](https://github.com/mrdoob/three.js) 0.180.0 | MIT | 部屋の中の3D表示。jsDelivr から読み込み |
 | [python-acoustics](https://github.com/python-acoustics/python-acoustics)（`acoustics/building.py`） | BSD-3-Clause | 質量則（`mass_law`）と ISO 717-1 の評価（`rw`・`rw_ctr`）で、構造ごとの壁と窓の遮音を計算。必要な関数だけを `scripts/acoustics_building.py` に取り込み、ライセンス表示も同梱 |
 
