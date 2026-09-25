@@ -120,6 +120,12 @@
   [aria-pressed="true"] > .switch::after { transform: translateX(14px); }
   .legend-row, .sheet .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; font-size: 12px; margin-top: 3px; }
   .legend-block { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 13px; }
+  .weights { display: grid; gap: 5px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+  .w-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+  .seg button { border: none; background: none; padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--muted); font-weight: 700; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
   .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
   .theme { display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 7px 10px; cursor: pointer; }
   .theme b { font-size: 13.5px; }
@@ -364,11 +370,11 @@
   const HEAT_CELL = 80;
   // 凡例に出す、テーマごとの色の基準（赤い側、緑の側、出どころ）
   const HEAT_SCALE = {
-    all: ["このエリアの中で低い", "高い", "6テーマの平均をエリア内で比較"],
-    shop: ["スーパーまで900m以上", "150m以内", "OpenStreetMapの店の位置から"],
-    med: ["診療所まで800m以上", "150m以内", "OpenStreetMapの診療所・病院の位置から"],
+    all: ["このエリアの中で低い", "高い", "6テーマの重み付き平均をエリア内で比較"],
+    shop: ["スーパーまで道のり1.1km以上", "200m以内", "OpenStreetMapの店と道路から、道のりで計算"],
+    med: ["診療所まで道のり1km以上", "200m以内", "OpenStreetMapの診療所・病院と道路から、道のりで計算"],
     quiet: ["屋外 68dB以上（幹線道路沿い）", "50dB以下（静かな住宅地）", "道路・線路からの騒音を計算"],
-    commute: ["キャンパスまで2.5km以上", "300m以内", "キャンパスの出入口から"],
+    commute: ["キャンパスまで道のり3km以上", "400m以内", "キャンパスの出入口まで、道のりで計算"],
     safety: ["浸水想定 3m以上", "浸水想定なし", "国土地理院 洪水浸水想定区域"],
     crime: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（街頭犯罪7手口）"],
   };
@@ -381,6 +387,26 @@
     { min: -1, mark: "×", label: "悪い", color: [200, 65, 47] },
   ];
   const levelOf = (v) => LEVELS.find((l) => v >= l.min);
+
+  // 「あなた向けの総合」の重み。テーマごとに 気にしない(0)／ふつう(1)／大事(3)
+  const WEIGHT_STEPS = [[0, "気にしない"], [1, "ふつう"], [3, "大事"]];
+  const DEFAULT_WEIGHTS = { shop: 1, med: 1, quiet: 1, commute: 1, safety: 1, crime: 1 };
+  const PERSONA_WEIGHTS = { shop: 3, med: 1, quiet: 1, commute: 1, safety: 3, crime: 3 };
+  function loadWeights() {
+    try { const w = JSON.parse(localStorage.getItem("heyakarte.weights") || "null"); if (w) return { ...DEFAULT_WEIGHTS, ...w }; } catch { /* 保存できない環境では毎回ふつうに戻る */ }
+    return { ...DEFAULT_WEIGHTS };
+  }
+  function saveWeights() { try { localStorage.setItem("heyakarte.weights", JSON.stringify(state.weights)); } catch { /* 同上 */ } }
+  const isCustomWeights = () => Object.keys(DEFAULT_WEIGHTS).some((k) => state.weights[k] !== DEFAULT_WEIGHTS[k]);
+  function themeLabel(k) {
+    if (k !== "all" || !isCustomWeights()) return HEAT_THEMES.find((t) => t.k === k).label;
+    return "あなた向け";
+  }
+  function weightSummary() {
+    const big = HEAT_THEMES.filter((t) => state.weights[t.k] === 3).map((t) => t.label);
+    const off = HEAT_THEMES.filter((t) => state.weights[t.k] === 0).map((t) => t.label);
+    return [big.length ? `${big.join("・")}を重視` : "", off.length ? `${off.join("・")}は気にしない` : ""].filter(Boolean).join("、") || "6つを同じ重さで平均";
+  }
   const rgb = (c) => `rgb(${c.join(",")})`;
   // 建物の構造ごとの特徴（一般的な傾向。同じ構造でも建物ごとに差がある）
   // sound / fire は 1〜3（3が強い）
@@ -420,8 +446,8 @@
       note: "道路の種類ごとに騒音の大きさを仮定し、距離による減衰を足し合わせた昼間の目安です。実際に測った値ではありません。" },
     { group: "calc", what: "隣の部屋の音・部屋の中の騒音", kind: "推定", provider: "python-acoustics で計算", url: "https://github.com/python-acoustics/python-acoustics",
       note: "構造ごとに一般的な壁の材料を仮定し、材料の重さから質量則で計算した目安です（評価は ISO 717-1）。" },
-    { group: "calc", what: "徒歩・自転車の分数", kind: "推定", provider: "直線距離から計算",
-      note: "直線距離×1.3を、徒歩80m/分・自転車250m/分で割った目安です。" },
+    { group: "calc", what: "徒歩・自転車の分数", kind: "推定", provider: "道路網の道のりから計算",
+      note: "OpenStreetMap の道路・歩道・階段をたどった道のりを、徒歩80m/分・自転車250m/分で割った目安です。道がデータに載っていない近道は反映されません。" },
     { group: "calc", what: "耐震基準", kind: "推定", provider: "築年数から推定", note: "建った年を築年数から逆算しています。" },
     { group: "calc", what: "ヒートマップ", kind: "独自の目安", provider: "上の公開データから計算",
       note: "施設までの距離などに独自の基準で点を付けたものです。「総合」と「犯罪の少なさ」はエリアの中での比較です。" },
@@ -438,7 +464,7 @@
   // ---------- 状態 ----------
   const state = {
     data: null, screen: "map", selected: null, tab: "building",
-    layers: new Set(["heat"]), heatTheme: "all", sheet: null,
+    layers: new Set(["heat"]), heatTheme: "all", sheet: null, weights: null,
     sample: null,
   };
   const maps = { big: null, mini: null };
@@ -592,11 +618,13 @@
     if (heatCache) return heatCache;
     const d = state.data, [ex0, ey0, ex1, ey1] = d.map.extent, C = HEAT_CELL;
     const cols = Math.ceil((ex1 - ex0) / C), rows = Math.ceil((ey1 - ey0) / C);
-    const pts = (kinds) => d.map.pois.filter((q) => kinds.includes(q.k)).map((q) => [q.x, q.y]);
-    const supers = pts(["supermarket"]), convs = pts(["convenience"]), clinics = pts(["clinic"]), hosps = pts(["hospital"]);
-    const gates = d.campus.gates;
+    // 施設・キャンパスまでの距離は、データ作成時に道路網をたどって計算した道のり（m）を使う
+    const w = d.walk;
+    const walkAt = (key, x, y) => {
+      const i = Math.floor((x - w.x0) / w.cell), j = Math.floor((y - w.y0) / w.cell);
+      return i < 0 || j < 0 || i >= w.cols || j >= w.rows ? 9999 : w[key][j * w.cols + i];
+    };
     const fl = d.hazard.flood, fcells = new Map(fl.cells.map(([i, j, v]) => [i + "," + j, v]));
-    const near = (x, y, arr) => { let m = Infinity; for (const [a, b] of arr) m = Math.min(m, (a - x) ** 2 + (b - y) ** 2); return Math.sqrt(m); };
     const nz = d.noise;
     const noiseAt = (x, y) => {
       const i = Math.floor((x - nz.x0) / nz.cell), j = Math.floor((y - nz.y0) / nz.cell);
@@ -607,11 +635,11 @@
     for (const t of HEAT_THEMES) { field[t.k] = new Float32Array(cols * rows); raw[t.k] = new Float32Array(cols * rows); }
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       const x = ex0 + (i + 0.5) * C, y = ey0 + (j + 0.5) * C, k = j * cols + i;
-      const dSuper = near(x, y, supers), dClinic = near(x, y, clinics), db = noiseAt(x, y), dGate = near(x, y, gates);
-      const shop = lin(dSuper, 150, 900) * 0.8 + lin(near(x, y, convs), 100, 500) * 0.2;
-      const med = lin(dClinic, 150, 800) * 0.6 + lin(near(x, y, hosps), 300, 1500) * 0.4;
+      const dSuper = walkAt("supermarket", x, y), dClinic = walkAt("clinic", x, y), db = noiseAt(x, y), dGate = walkAt("campus", x, y);
+      const shop = lin(dSuper, 200, 1100) * 0.8 + lin(walkAt("convenience", x, y), 120, 600) * 0.2;
+      const med = lin(dClinic, 200, 1000) * 0.6 + lin(walkAt("hospital", x, y), 400, 1800) * 0.4;
       const quiet = Math.max(0, Math.min(1, (68 - db) / 18)); // 屋外の騒音の推定 50dB以下で満点、68dB以上で0点
-      const commute = lin(dGate, 300, 2500);
+      const commute = lin(dGate, 400, 3000);
       raw.shop[k] = dSuper; raw.med[k] = dClinic; raw.quiet[k] = db; raw.commute[k] = dGate;
       const fi = Math.floor((x - fl.x0) / fl.cell), fj = Math.floor((y - fl.y0) / fl.cell);
       const safety = [1, 0.75, 0.4, 0.1, 0.05, 0, 0][fcells.get(fi + "," + fj) || 0];
@@ -620,21 +648,39 @@
       const crime = crimeScore(x, y);
       field.crime[k] = crime;
       raw.crime[k] = crimeDensityAt(x, y) ?? 0;
-      field.all[k] = (shop + med + quiet + commute + safety + crime) / 6;
     }
-    // 各テーマは距離やdBの決まった基準で塗る。「総合」だけは5つの平均で差が小さくなるので、
-    // エリアの中の下位5%〜上位5%を0〜1に広げて比べやすくする
-    for (const t of HEAT_THEMES.filter((x) => x.k === "all")) {
-      const a = field[t.k], sorted = Array.from(a).sort((x, y) => x - y);
-      const lo = sorted[Math.floor(sorted.length * 0.05)], hi = sorted[Math.floor(sorted.length * 0.95)];
-      for (let n = 0; n < a.length; n++) a[n] = hi > lo ? Math.max(0, Math.min(1, (a[n] - lo) / (hi - lo))) : a[n];
-    }
-    for (let n = 0; n < field.all.length; n++) raw.all[n] = field.all[n];
     // 「エリアの中で上位何%か」を出すために、テーマごとに点を並べておく
     const sorted = {};
-    for (const t of HEAT_THEMES) sorted[t.k] = Array.from(field[t.k]).sort((a, b) => a - b);
+    for (const t of HEAT_THEMES) if (t.k !== "all") sorted[t.k] = Array.from(field[t.k]).sort((a, b) => a - b);
     heatCache = { field, raw, sorted, cols, rows, x0: ex0, y0: ey0 };
+    computeOverall();
     return heatCache;
+  }
+
+  // 総合（あなた向け）＝重み付きの平均。平均すると差が小さくなるので、
+  // エリアの中の下位5%〜上位5%を0〜1に広げて比べやすくする。重みを変えるたびに計算し直す
+  function computeOverall() {
+    const h = heatCache, w = state.weights, keys = Object.keys(DEFAULT_WEIGHTS);
+    const total = keys.reduce((a, k) => a + w[k], 0) || 1;
+    const a = h.field.all;
+    for (let n = 0; n < a.length; n++) {
+      let v = 0;
+      for (const k of keys) v += h.field[k][n] * w[k];
+      a[n] = v / total;
+    }
+    const s = Array.from(a).sort((x, y) => x - y);
+    const lo = s[Math.floor(s.length * 0.05)], hi = s[Math.floor(s.length * 0.95)];
+    for (let n = 0; n < a.length; n++) a[n] = hi > lo ? Math.max(0, Math.min(1, (a[n] - lo) / (hi - lo))) : a[n];
+    h.raw.all.set(a);
+    h.sorted.all = Array.from(a).sort((x, y) => x - y);
+  }
+
+  function setWeight(k, v) {
+    state.weights[k] = v;
+    saveWeights();
+    heatField(); computeOverall();
+    state.heatTheme = "all"; state.layers.add("heat");
+    renderBigMap(); renderSide();
   }
 
   // マスごとの「まわり500m以内の年間件数」（物件と同じ数え方）。エリアの中の下位10%〜上位10%を「少ない〜多い」とする
@@ -675,8 +721,8 @@
   function rawText(theme, r) {
     const m = (d) => d >= 1000 ? `約${(d / 1000).toFixed(1)}km` : `約${Math.round(d / 10) * 10}m`;
     return {
-      all: "6テーマの平均", shop: `スーパーまで${m(r)}`, med: `診療所まで${m(r)}`, quiet: `屋外 約${Math.round(r)}dB`,
-      commute: `キャンパスまで${m(r)}`, safety: r ? `浸水想定 ${state.data.hazard.floodLegend[r - 1]}` : "浸水想定なし",
+      all: weightSummary(), shop: `スーパーまで道のり${m(r)}`, med: `診療所まで道のり${m(r)}`, quiet: `屋外 約${Math.round(r)}dB`,
+      commute: `キャンパスまで道のり${m(r)}`, safety: r ? `浸水想定 ${state.data.hazard.floodLegend[r - 1]}` : "浸水想定なし",
       crime: `500m以内 年${Math.round(r)}件`,
     }[theme];
   }
@@ -783,7 +829,7 @@
     const hi = heatInfo(latlng.lng, latlng.lat, state.heatTheme);
     if (!hi) { el.hidden = true; return; }
     const t = HEAT_THEMES.find((x) => x.k === state.heatTheme);
-    el.innerHTML = `<div class="small muted">この地点の「${t.label}」</div><div>${levelChip(hi.level)} <b>${hi.level.label}</b>　<span class="num">エリアの上位${hi.top}%</span></div><div class="small muted num">${esc(hi.text)}</div>`;
+    el.innerHTML = `<div class="small muted">この地点の「${themeLabel(t.k)}」</div><div>${levelChip(hi.level)} <b>${hi.level.label}</b>　<span class="num">エリアの上位${hi.top}%</span></div><div class="small muted num">${esc(hi.text)}</div>`;
     el.hidden = false;
   }
 
@@ -837,7 +883,7 @@
   function renderLayerChips() {
     const overlays = LAYERS.filter((ly) => ly.k !== "heat");
     const on = overlays.filter((ly) => state.layers.has(ly.k)).length, heatOn = state.layers.has("heat");
-    const theme = HEAT_THEMES.find((t) => t.k === state.heatTheme).label;
+    const theme = themeLabel(state.heatTheme);
     const btn = (k, label, sub) => `<button class="tb" data-sheet="${k}" aria-expanded="${state.sheet === k}">${ICONS[k]}<span class="tb-label">${label}</span><span class="tb-sub">${sub}</span></button>`;
     $("taskbar").innerHTML = btn("layers", "地図に重ねる", on ? `${on}つ表示中` : "なし") + btn("heat", "ヒートマップ", heatOn ? theme : "オフ") + btn("legend", "凡例", "色と記号の意味");
 
@@ -859,7 +905,13 @@
       el.innerHTML = `<div class="sheet-head"><h3>ヒートマップ</h3>
           <button class="opt-row compact" data-k="heat" aria-pressed="${heatOn}"><span class="switch" aria-hidden="true"></span><span>${heatOn ? "表示中" : "オフ"}</span></button></div>
         <p class="small muted">何を基準に住みやすさを塗るかを選びます。</p>
-        <div class="theme-grid">${HEAT_THEMES.map((t) => `<button class="theme" data-t="${t.k}" aria-pressed="${heatOn && state.heatTheme === t.k}"><b>${t.label}</b><span>${THEME_HINT[t.k]}</span></button>`).join("")}</div>
+        <div class="theme-grid">${HEAT_THEMES.map((t) => `<button class="theme" data-t="${t.k}" aria-pressed="${heatOn && state.heatTheme === t.k}"><b>${themeLabel(t.k)}</b><span>${t.k === "all" ? esc(weightSummary()) : THEME_HINT[t.k]}</span></button>`).join("")}</div>
+        <div class="weights">
+          <div class="sheet-head"><b>あなた向けの総合：何を大事にする？</b>
+            <span class="row" style="margin:0"><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
+          ${HEAT_THEMES.filter((t) => t.k !== "all").map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
+          <p class="note">「大事」は「ふつう」の3倍の重さで平均します。選ぶと「あなた向け」の総合に切り替わります。「おすすめ」は、ペルソナ（親も一緒に決める新入生）に合わせて、買い物・浸水しにくさ・犯罪の少なさを大事にした設定です。</p>
+        </div>
         ${heatLegend()}`;
     } else if (state.sheet === "legend") {
       const active = overlays.filter((ly) => state.layers.has(ly.k));
@@ -916,7 +968,7 @@
       <table class="rank-table num">${HEAT_THEMES.map((t) => {
         const hi = heatInfo(p.x, p.y, t.k);
         if (!hi) return "";
-        return `<tr title="${esc(hi.text)}"><th>${t.label}</th><td>${levelChip(hi.level)} ${hi.level.label}</td><td class="muted">上位${hi.top}%</td><td class="muted">${esc(hi.text)}</td></tr>`;
+        return `<tr title="${esc(hi.text)}"><th>${themeLabel(t.k)}</th><td>${levelChip(hi.level)} ${hi.level.label}</td><td class="muted">上位${hi.top}%</td><td class="muted">${esc(hi.text)}</td></tr>`;
       }).join("")}</table>
       <button class="btn" id="openDetail" style="padding:12px">詳しく見る →</button>
       <p class="note">同じ札をもう一度タップしても開きます。</p>`;
@@ -1004,7 +1056,7 @@
         <dt>病院</dt><dd>徒歩${n.hospital.min}分　${esc(n.hospital.name)}</dd>
         <dt>夜間の救急</dt><dd>${(n.emergency.m / 1000).toFixed(1)}km　${esc(n.emergency.name)}</dd>
       </dl>
-      <p class="note">${badge("実データ")} 施設の場所：OpenStreetMap（© OpenStreetMap contributors）　${badge("推定")} 徒歩の分数：直線距離×1.3を80m/分で割った目安</p>`;
+      <p class="note">${badge("実データ")} 施設の場所：OpenStreetMap（© OpenStreetMap contributors）　${badge("推定")} 徒歩の分数：道路・歩道をたどった道のりを80m/分で割った目安</p>`;
     if (tab === "traffic") {
       const [label, desc] = TRAFFIC_TEXT[tr.level];
       return `
@@ -1205,6 +1257,13 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     });
     $("heatStrip").addEventListener("click", () => { state.sheet = "heat"; renderLayerChips(); });
     $("sheet").addEventListener("click", (e) => {
+      const wb = e.target.closest("[data-w]"), pb = e.target.closest("[data-preset]");
+      if (wb) { setWeight(wb.dataset.w, Number(wb.dataset.v)); return; }
+      if (pb) {
+        state.weights = { ...(pb.dataset.preset === "persona" ? PERSONA_WEIGHTS : DEFAULT_WEIGHTS) };
+        setWeight("shop", state.weights.shop);
+        return;
+      }
       const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
       if (t) { state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap(); return; }
       if (!b) return;
@@ -1261,6 +1320,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       return;
     }
     $("budgetChip").textContent = man(rentCap());
+    state.weights = loadWeights();
     $("dataList").innerHTML = SOURCE_GROUPS.map(([g, title]) => `<section class="src-group"><h4>${title}</h4>${DATA_SOURCES.filter((d) => d.group === g).map((d) => `
       <div class="src-item"><div class="src-line"><b>${esc(d.what)}</b>${badge(d.kind)}</div><div class="src-provider">${providerLink(d)}</div>${d.note ? `<p>${esc(d.note)}</p>` : ""}</div>`).join("")}</section>`).join("") +
       `<p class="note">周辺データの取得日 ${esc(state.data.generatedAt)}。公開データを加工して表示しています。</p>`;

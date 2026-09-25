@@ -12,6 +12,7 @@
 """
 
 import csv
+import heapq
 import io
 import json
 import re
@@ -43,6 +44,11 @@ Q_POIS = ('[out:json][timeout:90];(nwr["shop"~"^(supermarket|convenience|chemist
 Q_ROADS = ('[out:json][timeout:120];(way["highway"~"^(trunk|primary|secondary|tertiary|unclassified|'
            'residential|living_street)$"](%s);way["railway"="rail"](%s););out tags geom qt;' % (BBOX, BBOX))
 
+# 歩く道のりを計算するための道路網（歩道・小道・階段も含む）。道路どうしのつながりが要るので node の id も取る
+Q_WALK = ('[out:json][timeout:180];(way["highway"~"^(trunk|primary|secondary|tertiary|unclassified|residential|'
+          'living_street|service|pedestrian|footway|path|steps|cycleway|track|trunk_link|primary_link|secondary_link|'
+          'tertiary_link)$"](%s););out body geom qt;' % BBOX)
+BIKE_M_PER_MIN = 250
 Q_POLICE = '[out:json][timeout:60];(nwr["amenity"="police"](%s););out tags center qt;' % BBOX
 
 # 防犯：大阪府警察 犯罪オープンデータ（町丁目ごとの発生）を、Geolonia 住所データの町丁目の代表点に置く
@@ -431,7 +437,73 @@ def dist(a, b):
 
 
 def walk_min(m):
+    """直線距離から徒歩の分数を見積もる（架空物件の家賃づけにだけ使う）。"""
     return max(1, math.ceil(m * DETOUR / WALK_M_PER_MIN))
+
+
+def road_min(m, per_min=WALK_M_PER_MIN):
+    """道のり（m）から分数を出す。"""
+    return max(1, math.ceil(m / per_min))
+
+
+# ---------- 道のり（道路網をたどった距離） ----------
+
+class WalkGraph:
+    """OpenStreetMap の道路を、交差点・曲がり角を点、そのあいだを辺にしたグラフ。"""
+
+    def __init__(self, raw):
+        self.xy, adj = {}, {}
+        for e in raw["elements"]:
+            ids, geo = e.get("nodes") or [], e.get("geometry") or []
+            if len(ids) != len(geo) or len(ids) < 2:
+                continue
+            for nid, g in zip(ids, geo):
+                if nid not in self.xy:
+                    self.xy[nid] = to_xy(g["lat"], g["lon"])
+            for a, b in zip(ids, ids[1:]):
+                w = dist(self.xy[a], self.xy[b])
+                adj.setdefault(a, []).append((b, w))
+                adj.setdefault(b, []).append((a, w))
+        self.adj = adj
+        self.ids = np.array(list(self.xy.keys()))
+        self.nx = np.array([self.xy[i][0] for i in self.ids])
+        self.ny = np.array([self.xy[i][1] for i in self.ids])
+
+    def snap(self, xs, ys):
+        """各地点にいちばん近い道路上の点と、そこまでの直線距離。"""
+        xs, ys = np.atleast_1d(xs).astype(float), np.atleast_1d(ys).astype(float)
+        out_i, out_d = np.empty(len(xs), dtype=np.int64), np.empty(len(xs))
+        for a in range(0, len(xs), 256):
+            d2 = (xs[a:a + 256, None] - self.nx[None, :]) ** 2 + (ys[a:a + 256, None] - self.ny[None, :]) ** 2
+            k = np.argmin(d2, axis=1)
+            out_i[a:a + 256] = self.ids[k]
+            out_d[a:a + 256] = np.sqrt(d2[np.arange(len(k)), k])
+        return out_i, out_d
+
+    def from_sources(self, places):
+        """places（xy のリスト）のどれかにいちばん近い道のりと、そのどれか（番号）を、すべての点について出す。"""
+        nodes, snapd = self.snap([p[0] for p in places], [p[1] for p in places])
+        best, label, heap = {}, {}, []
+        for k, (n, d0) in enumerate(zip(nodes.tolist(), snapd.tolist())):
+            if d0 < best.get(n, math.inf):
+                best[n], label[n] = d0, k
+                heapq.heappush(heap, (d0, n))
+        while heap:
+            d, n = heapq.heappop(heap)
+            if d > best[n]:
+                continue
+            for m, w in self.adj.get(n, ()):
+                nd = d + w
+                if nd < best.get(m, math.inf):
+                    best[m], label[m] = nd, label[n]
+                    heapq.heappush(heap, (nd, m))
+        return best, label
+
+    def lookup(self, field, xs, ys):
+        """地点から最寄りの道路の点へ出て、そこからの道のりを足す。"""
+        best, label = field
+        nodes, snapd = self.snap(xs, ys)
+        return [(best.get(n, math.inf) + d, label.get(n)) for n, d in zip(nodes.tolist(), snapd.tolist())]
 
 
 def seg_dist(p, a, b):
@@ -486,6 +558,8 @@ def main():
             kind = "clinic"
         elif kind == "doctors":
             kind = "clinic"
+        elif kind == "supermarket" and "ペット" in name:
+            kind = "other"  # OpenStreetMap でスーパーとして登録されているペットショップ
         emergency = kind == "hospital" and ("救命" in name or "医療センター" in name or t.get("emergency") == "yes")
         pois.append({"kind": kind, "name": name, "xy": to_xy(lat, lon),
                      "hours": t.get("opening_hours", ""), "emergency": emergency})
@@ -514,23 +588,42 @@ def main():
         roads.append({"kind": kind, "name": t.get("name", ""), "pts": pts,
                       "rank": 0 if kind == "rail" else ROAD_RANK.get(kind, 1)})
 
-    def nearest(p, kind, pred=None):
-        cands = [q for q in (shelters if kind == "shelter" else pois)
-                 if q["kind"] == kind and (pred is None or pred(q))]
-        q = min(cands, key=lambda q: dist(p, q["xy"]))
-        d = dist(p, q["xy"])
+    # 施設の種類ごとに、道路網のすべての点から「いちばん近い施設までの道のり」を計算しておく
+    graph = WalkGraph(overpass("walk_graph.json", Q_WALK))
+    print(f"walk graph: {len(graph.xy)} 点, {sum(len(v) for v in graph.adj.values()) // 2} 本")
+    groups = {}
+
+    def candidates(kind, pred=None):
+        return [q for q in (shelters if kind == "shelter" else pois) if q["kind"] == kind and (pred is None or pred(q))]
+
+    def field_for(key, kind, pred=None):
+        if key not in groups:
+            cands = candidates(kind, pred)
+            groups[key] = (cands, graph.from_sources([q["xy"] for q in cands]))
+        return groups[key]
+
+    def nearest(p, kind, pred=None, key=None):
+        cands, field = field_for(key or kind, kind, pred)
+        (d, k), = graph.lookup(field, [p[0]], [p[1]])
+        if k is None or not math.isfinite(d):  # 道路網につながらないときは直線で代用
+            k = min(range(len(cands)), key=lambda i: dist(p, cands[i]["xy"]))
+            d = dist(p, cands[k]["xy"]) * DETOUR
+        q = cands[k]
         return {"name": q["name"] or {"supermarket": "スーパー", "convenience": "コンビニ",
                                       "clinic": "診療所", "hospital": "病院", "chemist": "ドラッグストア"}.get(kind, ""),
-                "m": round(d), "min": walk_min(d), "hours": q.get("hours", ""),
+                "m": round(d), "min": road_min(d), "hours": q.get("hours", ""),
                 "x": round(q["xy"][0]), "y": round(q["xy"][1])}
+
+    gate_field = graph.from_sources([to_xy(*g) for g in CAMPUS_GATES])
+    station_field = graph.from_sources([s["xy"] for s in stations])
 
     all_props = PROPERTIES + generate_properties(roads, stations)
     props = []
     for pr in all_props:
         p = to_xy(pr["lat"], pr["lon"])
-        campus_m = min(dist(p, to_xy(*g)) for g in CAMPUS_GATES)
-        st = min(stations, key=lambda s: dist(p, s["xy"]))
-        st_m = dist(p, st["xy"])
+        (campus_m, _), = graph.lookup(gate_field, [p[0]], [p[1]])
+        (st_m, st_k), = graph.lookup(station_field, [p[0]], [p[1]])
+        st = stations[st_k]
 
         near_roads = sorted(((way_dist(p, r["pts"]), r) for r in roads if r["kind"] != "rail"),
                             key=lambda t: t[0])
@@ -551,9 +644,8 @@ def main():
             **{k: pr[k] for k in ("id", "name", "rent", "fee", "deposit", "key", "layout", "size",
                                    "age", "floor", "floors", "autolock", "net", "structure")},
             "x": round(p[0]), "y": round(p[1]),
-            "campus": {"m": round(campus_m), "min": walk_min(campus_m),
-                       "bike": max(1, math.ceil(campus_m * DETOUR / 250))},
-            "station": {"name": st["name"], "line": st["line"], "m": round(st_m), "min": walk_min(st_m),
+            "campus": {"m": round(campus_m), "min": road_min(campus_m), "bike": road_min(campus_m, BIKE_M_PER_MIN)},
+            "station": {"name": st["name"], "line": st["line"], "m": round(st_m), "min": road_min(st_m),
                         "x": round(st["xy"][0]), "y": round(st["xy"][1])},
             "near": {
                 "supermarket": nearest(p, "supermarket"),
@@ -561,7 +653,7 @@ def main():
                 "chemist": nearest(p, "chemist"),
                 "clinic": nearest(p, "clinic"),
                 "hospital": nearest(p, "hospital"),
-                "emergency": nearest(p, "hospital", lambda q: q["emergency"]),
+                "emergency": nearest(p, "hospital", lambda q: q["emergency"], key="emergency"),
                 "shelter": nearest(p, "shelter"),
                 "police": nearest(p, "police"),
             },
@@ -610,6 +702,15 @@ def main():
     noise_grid = {"cell": NOISE_CELL, "x0": round(ext[0]), "y0": round(ext[1]), "cols": cols, "rows": rows,
                   "db": [int(round(v)) for v in outdoor_db(gx, gy, src)]}
 
+    # ヒートマップ用：マスの中心から、施設の種類ごとのいちばん近い道のり（m）
+    wx = [ext[0] + (i + .5) * NOISE_CELL for j in range(rows) for i in range(cols)]
+    wy = [ext[1] + (j + .5) * NOISE_CELL for j in range(rows) for i in range(cols)]
+    cap = lambda v: int(min(9999, round(v))) if math.isfinite(v) else 9999
+    walk_grid = {"cell": NOISE_CELL, "x0": round(ext[0]), "y0": round(ext[1]), "cols": cols, "rows": rows}
+    for key, kind in (("supermarket", "supermarket"), ("convenience", "convenience"), ("clinic", "clinic"), ("hospital", "hospital")):
+        walk_grid[key] = [cap(d) for d, _ in graph.lookup(field_for(key, kind)[1], wx, wy)]
+    walk_grid["campus"] = [cap(d) for d, _ in graph.lookup(gate_field, wx, wy)]
+
     # 建物の1点だけでなく、すぐ近く（まわり1マス＝おおむね50m以内）の浸水想定も持たせる
     fcells = {(i, j): v for i, j, v in flood["cells"]}
     for p in props:
@@ -628,6 +729,7 @@ def main():
         "hazard": {"flood": flood, "landslide": slide,
                    "floodLegend": [label for _, _, label in FLOOD_LEGEND]},
         "noise": noise_grid,
+        "walk": walk_grid,
         "crime": {"year": CRIME_YEAR, "radius": CRIME_RADIUS, "towns": crime_towns,
                   "grid": crime_grid(crimes, ext, NOISE_CELL)},
         "sources": [
