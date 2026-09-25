@@ -200,6 +200,14 @@
   /* 予算のポップオーバー */
   .pop { position: absolute; right: 0; top: 40px; z-index: 900; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
   .data-pop { width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 90px); overflow-y: auto; overscroll-behavior: contain; }
+  .lv { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 700; vertical-align: -3px; margin-right: 3px; text-shadow: 0 0 2px rgba(0,0,0,.35); }
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 12.5px; line-height: 1.5; }
+  .rank-table th { text-align: left; font-weight: 700; white-space: nowrap; padding: 2px 6px 2px 0; }
+  .rank-table td { padding: 2px 6px 2px 0; white-space: nowrap; }
+  .rank-table td:last-child { font-size: 11px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+  .rank-table tr + tr { border-top: 1px solid var(--line); }
+  .readout { position: absolute; top: 10px; right: 10px; z-index: 650; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); font-size: 13px; pointer-events: none; }
+  .readout[hidden] { display: none; }
   .kind { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; }
   .k-real { color: var(--good); } .k-est { color: var(--warn); } .k-own { color: #7a5ac0; } .k-fake { color: var(--muted); border-style: dashed; }
   .heat-img { image-rendering: auto; }
