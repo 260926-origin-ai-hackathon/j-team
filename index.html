@@ -94,6 +94,33 @@
   .eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
 
   /* ---- 地図の画面 ---- */
+  /* 最初の画面（キャラクター）。キャラと、この画面だけ水色 */
+  :root { --sky: #3F9FD8; --sky-deep: #1E5F8A; --sky-soft: #E3F4FC; }
+  .s-start { display: grid; place-items: center; overflow: hidden; border-radius: 18px; background: var(--sky-soft); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sky-soft: #14303f; } }
+  :root[data-theme="dark"] { --sky-soft: #14303f; }
+  .mascot-wrap { display: grid; place-items: center; }
+  .start-char { display: grid; justify-items: center; gap: 10px; border: none; background: none; padding: 16px 24px; border-radius: 28px; cursor: pointer; color: var(--sky-deep); }
+  .start-char:hover .mascot { transform: scale(1.03); }
+  .start-char .mascot { transition: transform .2s ease; }
+  .start-title { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 6vw, 64px); line-height: 1.1; letter-spacing: .06em; color: var(--sky-deep); margin-top: -6px; }
+  .start-hint { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: .08em; padding: 6px 18px; border-radius: 999px; background: var(--surface); border: 2px solid var(--sky); }
+  .bubble { position: relative; background: var(--surface); border: 2px solid var(--sky); border-radius: 18px; padding: 16px 20px; color: var(--ink); }
+  .bubble p { margin: 0; line-height: 1.75; }
+  .guide { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
+  .small-bubble { padding: 8px 12px; border-radius: 14px; }
+  .small-bubble h2 { font-size: 17px; }
+  .small-bubble .eyebrow { color: var(--sky-deep); }
+  @media (prefers-reduced-motion: no-preference) {
+    .start-hint { animation: hint 2.8s ease-in-out infinite; }
+    @keyframes hint { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+    .mascot.start .mascot-body { animation: bob 2.8s ease-in-out infinite; transform-origin: 100px 200px; }
+    .mascot .mascot-eyes { animation: blink 5s infinite; transform-origin: 100px 124px; }
+    .mascot.start .mascot-arm { animation: wave 2.8s ease-in-out infinite; transform-origin: 160px 150px; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+    @keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
+  }
   .s-map { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
   .mapwrap { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--map-ground); min-height: 0; }
   .map { position: absolute; inset: 0; }
@@ -295,7 +322,7 @@
 <div class="app">
   <header class="top">
     <button class="btn ghost" id="backBtn" hidden>← 地図に戻る</button>
-    <div class="logo" id="logo">
+    <div class="logo" id="logo" role="link" tabindex="0" title="最初の画面へ" style="cursor:pointer">
       <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="4" width="24" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9 4v-2M21 4v-2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M8 14h14M8 20h9" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/></svg>
       ヘヤカルテ
     </div>
@@ -323,6 +350,15 @@
 
   <main class="stage">
     <!-- 地図 -->
+    <!-- 最初の画面（キャラクターだけ。タップで地図へ） -->
+    <section class="screen s-start" data-screen="start" hidden>
+      <button class="start-char" id="startBtn" aria-label="ヘヤカルテ。ヘヤまるをタップして、地図で部屋を探しはじめる">
+        <span class="mascot-wrap" id="startMascot"></span>
+        <span class="start-title">ヘヤカルテ</span>
+        <span class="start-hint">タップしてはじめる</span>
+      </button>
+    </section>
+
     <section class="screen s-map" data-screen="map" hidden>
       <div class="mapwrap">
         <div class="map" id="bigMap"></div>
@@ -1212,15 +1248,54 @@
     document.querySelectorAll(".screen").forEach((el) => { el.hidden = el.dataset.screen !== screen; });
     $("backBtn").hidden = screen !== "detail";
     $("logo").hidden = screen === "detail";
-    const hash = screen === "detail" ? "home-" + id : "map";
+    document.body.classList.toggle("on-start", screen === "start");
+    const hash = screen === "detail" ? "home-" + id : screen;
     if (push && location.hash.slice(1) !== hash) { try { history.pushState(null, "", "#" + hash); } catch { /* 表示先によっては履歴を触れない */ } }
-    if (screen === "map") { hideRoom3D(); renderBigMap(); renderSide(); }
+    if (screen === "start") { hideRoom3D(); $("startMascot").innerHTML = mascotSVG(280, "start"); }
+    else if (screen === "map") { hideRoom3D(); renderBigMap(); renderSide(); }
     else renderDetail();
   }
+  // 最初はキャラクターの画面。#map・#home-〇〇 で直接開いたときは、その画面から
   function routeFromHash() {
     const h = location.hash.slice(1);
     if (h.startsWith("home-")) go("detail", h.slice(5), { push: false });
-    else go("map", null, { push: false });
+    else if (h === "map") go("map", null, { push: false });
+    else go("start", null, { push: false });
+  }
+
+  // ---------- キャラクター「ヘヤまる」 ----------
+  // 水色の家の形をした案内役。カルテ（クリップボード）を持っている
+  function mascotSVG(size, variant = "") {
+    return `<svg class="mascot ${variant}" width="${size}" height="${Math.round(size * 1.1)}" viewBox="0 0 200 220" role="img" aria-label="ヘヤまる（水色の家の形をしたキャラクター）">
+      <ellipse cx="100" cy="208" rx="58" ry="8" fill="#1E5F8A" opacity=".12"/>
+      <g class="mascot-body">
+        <ellipse cx="78" cy="196" rx="14" ry="8" fill="#3F9FD8"/>
+        <ellipse cx="122" cy="196" rx="14" ry="8" fill="#3F9FD8"/>
+        <rect x="128" y="38" width="16" height="30" rx="3" fill="#3F9FD8" stroke="#1E5F8A" stroke-width="5"/>
+        <path d="M24 100 100 34l76 66" fill="#3F9FD8" stroke="#1E5F8A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+        <rect x="42" y="88" width="116" height="104" rx="22" fill="#8FD3F4" stroke="#1E5F8A" stroke-width="6"/>
+        <path d="M44 100 100 50l56 50" fill="#8FD3F4"/>
+        <g class="mascot-eyes">
+          <ellipse cx="80" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/>
+          <ellipse cx="120" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/>
+          <circle cx="82.5" cy="120.5" r="2.6" fill="#ffffff"/>
+          <circle cx="122.5" cy="120.5" r="2.6" fill="#ffffff"/>
+        </g>
+        <ellipse cx="66" cy="142" rx="9" ry="5.5" fill="#F7A8B8" opacity=".85"/>
+        <ellipse cx="134" cy="142" rx="9" ry="5.5" fill="#F7A8B8" opacity=".85"/>
+        <path d="M89 141q11 10 22 0" fill="none" stroke="#1E5F8A" stroke-width="4.5" stroke-linecap="round"/>
+        <rect x="88" y="158" width="24" height="34" rx="7" fill="#F5D547" stroke="#1E5F8A" stroke-width="4.5"/>
+        <circle cx="106" cy="176" r="2.3" fill="#1E5F8A"/>
+        <g class="mascot-arm">
+          <ellipse cx="160" cy="150" rx="9" ry="12" fill="#8FD3F4" stroke="#1E5F8A" stroke-width="4.5"/>
+          <rect x="150" y="104" width="40" height="52" rx="6" fill="#ffffff" stroke="#1E5F8A" stroke-width="4.5" transform="rotate(8 170 130)"/>
+          <rect x="160" y="98" width="20" height="10" rx="3" fill="#3F9FD8" stroke="#1E5F8A" stroke-width="3.5" transform="rotate(8 170 130)"/>
+          <path d="M161 122h18M160 132h18M159 142h11" stroke="#9CC9E6" stroke-width="3.5" stroke-linecap="round" transform="rotate(8 170 130)"/>
+          <path d="M170 140l4 5 9-11" fill="none" stroke="#2F9E5B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" transform="rotate(8 170 130)"/>
+        </g>
+        <ellipse cx="40" cy="150" rx="9" ry="12" fill="#8FD3F4" stroke="#1E5F8A" stroke-width="4.5"/>
+      </g>
+    </svg>`;
   }
 
   // ---------- 地図の共通部品 ----------
@@ -1623,9 +1698,9 @@
     if (!p) {
       const inBudget = state.data.properties.filter((x) => !overBudget(x)).length;
       $("sidePanel").innerHTML = `
-        <div class="intro">
-          <div class="eyebrow">大学進学ではじめての一人暮らし</div>
-          <h2>気になる場所をタップして、部屋を選ぶ</h2>
+        <div class="intro guide">
+          ${mascotSVG(64, "small")}
+          <div class="bubble small-bubble"><div class="eyebrow">ヘヤまるのひとこと</div><h2>気になる場所をタップして、部屋を選ぼう</h2></div>
         </div>
         <div class="howto">
           <b>1</b><span>地図の下のタスクバーで、ヒートマップのテーマや、スーパー・病院・交通量・浸水想定・防犯などを切り替える</span>
@@ -1999,6 +2074,9 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
   // ---------- イベント ----------
   function bind() {
     $("backBtn").addEventListener("click", () => go("map"));
+    $("startBtn").addEventListener("click", () => go("map"));
+    $("logo").addEventListener("click", () => go("start"));
+    $("logo").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("start"); } });
     window.addEventListener("popstate", routeFromHash);
     $("taskbar").addEventListener("click", (e) => {
       const b = e.target.closest(".tb"); if (!b) return;
