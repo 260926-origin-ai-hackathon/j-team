@@ -12,6 +12,7 @@
 """
 
 import csv
+import hashlib
 import heapq
 import io
 import json
@@ -441,6 +442,14 @@ def walk_min(m):
     return max(1, math.ceil(m * DETOUR / WALK_M_PER_MIN))
 
 
+# 窓（バルコニー）の向き。架空データなので、既存の物件が変わらないよう乱数は使わず、物件の id から決める
+FACINGS = ["南", "南", "南", "東", "東", "西", "西", "北"]
+
+
+def facing_of(pid):
+    return FACINGS[int(hashlib.md5(pid.encode()).hexdigest(), 16) % len(FACINGS)]
+
+
 def road_min(m, per_min=WALK_M_PER_MIN):
     """道のり（m）から分数を出す。"""
     return max(1, math.ceil(m / per_min))
@@ -643,6 +652,7 @@ def main():
         props.append({
             **{k: pr[k] for k in ("id", "name", "rent", "fee", "deposit", "key", "layout", "size",
                                    "age", "floor", "floors", "autolock", "net", "structure")},
+            "facing": facing_of(pr["id"]), "balcony": pr["floor"] >= 2,
             "x": round(p[0]), "y": round(p[1]),
             "campus": {"m": round(campus_m), "min": road_min(campus_m), "bike": road_min(campus_m, BIKE_M_PER_MIN)},
             "station": {"name": st["name"], "line": st["line"], "m": round(st_m), "min": road_min(st_m),
