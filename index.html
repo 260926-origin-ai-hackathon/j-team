@@ -1,0 +1,1276 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ヘヤカルテ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+/* Leaflet 1.9.4 — BSD-2-Clause, (c) 2010-2023 Volodymyr Agafonkin, (c) 2010-2011 CloudMade. https://github.com/Leaflet/Leaflet */
+.leaflet-image-layer,.leaflet-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane,.leaflet-pane>canvas,.leaflet-pane>svg,.leaflet-tile,.leaflet-tile-container,.leaflet-zoom-box{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden}.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile::selection{background:0 0}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}.leaflet-marker-icon,.leaflet-marker-shadow{display:block}.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer{max-width:none!important;max-height:none!important;width:auto;padding:0}.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}.leaflet-container{-webkit-tap-highlight-color:transparent}.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,.4)}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-overlay-pane svg{-moz-user-select:none}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}.leaflet-vml-shape{width:1px;height:1px}.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-bottom,.leaflet-top{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity .2s linear;-moz-transition:opacity .2s linear;transition:opacity .2s linear}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0}svg.leaflet-zoom-animated{will-change:transform}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);-moz-transition:-moz-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}.leaflet-pan-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}.leaflet-control,.leaflet-popup-pane{cursor:auto}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing}.leaflet-image-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}.leaflet-image-layer.leaflet-interactive,.leaflet-marker-icon.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto}.leaflet-container{background:#ddd;outline-offset:1px}.leaflet-container a{color:#0078a8}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}.leaflet-container{font-family:"Helvetica Neue",Arial,Helvetica,sans-serif;font-size:12px;font-size:.75rem;line-height:1.5}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block}.leaflet-bar a:focus,.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px}.leaflet-touch .leaflet-bar a:first-child{border-top-left-radius:2px;border-top-right-radius:2px}.leaflet-touch .leaflet-bar a:last-child{border-bottom-left-radius:2px;border-bottom-right-radius:2px}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px}.leaflet-control-layers{box-shadow:0 1px 5px rgba(0,0,0,.4);background:#fff;border-radius:5px}.leaflet-control-layers-toggle{background-image:url(images/layers.png);width:36px;height:36px}.leaflet-retina .leaflet-control-layers-toggle{background-image:url(images/layers-2x.png);background-size:26px 26px}.leaflet-touch .leaflet-control-layers-toggle{width:44px;height:44px}.leaflet-control-layers .leaflet-control-layers-list,.leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none}.leaflet-control-layers-expanded .leaflet-control-layers-list{display:block;position:relative}.leaflet-control-layers-expanded{padding:6px 10px 6px 6px;color:#333;background:#fff}.leaflet-control-layers-scrollbar{overflow-y:scroll;overflow-x:hidden;padding-right:5px}.leaflet-control-layers-selector{margin-top:2px;position:relative;top:1px}.leaflet-control-layers label{display:block;font-size:13px;font-size:1.08333em}.leaflet-control-layers-separator{height:0;border-top:1px solid #ddd;margin:5px -10px 5px -6px}.leaflet-default-icon-path{background-image:url(images/marker-icon.png)}.leaflet-container .leaflet-control-attribution{background:#fff;background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution,.leaflet-control-scale-line{padding:0 5px;color:#333;line-height:1.4}.leaflet-control-attribution a{text-decoration:none}.leaflet-control-attribution a:focus,.leaflet-control-attribution a:hover{text-decoration:underline}.leaflet-attribution-flag{display:inline!important;vertical-align:baseline!important;width:1em;height:.6669em}.leaflet-left .leaflet-control-scale{margin-left:5px}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:border-box;box-sizing:border-box;background:rgba(255,255,255,.8);text-shadow:1px 1px #fff}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-attribution,.leaflet-touch .leaflet-control-layers{box-shadow:none}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-layers{border:2px solid rgba(0,0,0,.2);background-clip:padding-box}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.3;font-size:13px;font-size:1.08333em;min-height:1px}.leaflet-popup-content p{margin:17px 0;margin:1.3em 0}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:#333;box-shadow:0 3px 14px rgba(0,0,0,.4)}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:0 0}.leaflet-container a.leaflet-popup-close-button:focus,.leaflet-container a.leaflet-popup-close-button:hover{color:#585858}.leaflet-popup-scrolled{overflow:auto}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto}.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999}.leaflet-div-icon{background:#fff;border:1px solid #666}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}.leaflet-tooltip.leaflet-interactive{cursor:pointer;pointer-events:auto}.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before,.leaflet-tooltip-top:before{position:absolute;pointer-events:none;border:6px solid transparent;background:0 0;content:""}.leaflet-tooltip-bottom{margin-top:6px}.leaflet-tooltip-top{margin-top:-6px}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;margin-left:-6px;border-bottom-color:#fff}.leaflet-tooltip-left{margin-left:-6px}.leaflet-tooltip-right{margin-left:6px}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff}@media print{.leaflet-control{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+<style>
+  :root {
+    --bg: #eef2ef;
+    --surface: #ffffff;
+    --surface-2: #f6f8f6;
+    --ink: #1b2521;
+    --muted: #5b6862;
+    --line: #d5ddd8;
+    --accent: #0d7a65;
+    --accent-soft: #dcefe9;
+    --on-accent: #ffffff;
+    --mark: #f5d547;
+    --good: #2f8a52;
+    --warn: #c47a16;
+    --bad: #bf3f2c;
+    --map-ground: #f7f9f7;
+    --map-road: #c3ccc6;
+    --map-rail: #6d7a74;
+    --flood-1: #8ec3ee;
+    --flood-2: #3f8fd6;
+    --flood-3: #1f5fa8;
+    --display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #111715; --surface: #19211e; --surface-2: #1f2925; --ink: #e4ece8; --muted: #9aa9a2;
+      --line: #2e3a35; --accent: #3cc3a2; --accent-soft: #173b33; --on-accent: #0b1411; --mark: #cdb03a;
+      --good: #58c083; --warn: #e0a044; --bad: #ef7461;
+      --map-ground: #151c19; --map-road: #3a4842; --map-rail: #8b9993;
+      --flood-1: #2d5f8c; --flood-2: #3f86c9; --flood-3: #7fb6ea;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #111715; --surface: #19211e; --surface-2: #1f2925; --ink: #e4ece8; --muted: #9aa9a2;
+    --line: #2e3a35; --accent: #3cc3a2; --accent-soft: #173b33; --on-accent: #0b1411; --mark: #cdb03a;
+    --good: #58c083; --warn: #e0a044; --bad: #ef7461;
+    --map-ground: #151c19; --map-road: #3a4842; --map-rail: #8b9993;
+    --flood-1: #2d5f8c; --flood-2: #3f86c9; --flood-3: #7fb6ea;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--body);
+    font-size: 15px; line-height: 1.65; overflow: hidden; margin: 0; padding-inline: 16px; padding-block: 0;
+  }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.3; text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  .num { font-variant-numeric: tabular-nums; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+
+  /* ---- 枠 ---- */
+  .app { height: 100%; max-width: 1400px; margin: 0 auto; display: grid; grid-template-rows: auto minmax(0, 1fr); padding-bottom: 14px; }
+  header.top { display: flex; align-items: center; gap: 12px; padding-block: 10px; min-width: 0; }
+  .logo { font-family: var(--display); font-weight: 900; font-size: 21px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .logo[hidden] { display: none; }
+  .tagline { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .spacer { flex: 1; }
+  .chip-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .chip-btn b { font-family: var(--display); color: var(--accent); }
+  .ai-state { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .ai-state.on { color: var(--accent); border-color: var(--accent); }
+  @media (max-width: 720px) { .tagline, .ai-state { display: none; } }
+
+  .stage { position: relative; min-height: 0; }
+  .screen { position: absolute; inset: 0; min-height: 0; }
+  .screen[hidden] { display: none !important; }
+  @media (prefers-reduced-motion: no-preference) {
+    .screen { animation: in .25s ease both; }
+    @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+
+  .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 700; border-radius: 10px; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn:disabled { opacity: .55; cursor: progress; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-height: 0; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+
+  /* ---- 地図の画面 ---- */
+  .s-map { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
+  .mapwrap { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--map-ground); min-height: 0; }
+  .map { position: absolute; inset: 0; }
+  .taskbar { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 700; display: flex; gap: 4px; padding: 5px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0,0,0,.14); }
+  .tb { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; border: none; background: none; border-radius: 12px; padding: 6px 12px 6px 10px; cursor: pointer; color: var(--ink); min-width: 0; }
+  .tb svg { grid-row: 1 / 3; }
+  .tb-label { font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+  .tb-sub { font-size: 11px; color: var(--muted); white-space: nowrap; max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+  .tb:hover { background: var(--surface-2); }
+  .tb[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
+  .sheet { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 720; width: min(560px, calc(100% - 20px)); max-height: calc(100% - 100px); overflow: auto; display: grid; gap: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .sheet[hidden] { display: none; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sheet-head h3 { font-size: 16px; }
+  .sheet-list { display: grid; gap: 6px; }
+  .opt-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 9px 12px; cursor: pointer; }
+  .opt-row.compact { display: inline-grid; grid-template-columns: auto auto; align-items: center; padding: 5px 10px; font-size: 13px; font-weight: 700; }
+  .opt-row[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+  .opt-text { display: grid; gap: 2px; min-width: 0; }
+  .opt-text b { font-size: 14px; }
+  .switch { width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; flex: none; margin-top: 1px; transition: background .15s; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  [aria-pressed="true"] > .switch { background: var(--accent); }
+  [aria-pressed="true"] > .switch::after { transform: translateX(14px); }
+  .legend-row, .sheet .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; font-size: 12px; margin-top: 3px; }
+  .legend-block { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 13px; }
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+  .theme { display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 7px 10px; cursor: pointer; }
+  .theme b { font-size: 13.5px; }
+  .theme span { font-size: 11px; color: var(--muted); }
+  .theme[aria-pressed="true"] { background: #2f9e5b; border-color: #2f9e5b; color: #fff; }
+  .theme[aria-pressed="true"] span { color: rgba(255,255,255,.85); }
+  .heat-strip { position: absolute; top: 10px; left: 52px; z-index: 650; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.1); font-size: 12.5px; cursor: pointer; }
+  .heat-strip[hidden] { display: none; }
+  .heat-strip b { margin-right: 4px; }
+  .heat-strip .lv { margin-right: 0; }
+  .heat-strip .muted { margin-left: 4px; font-size: 11.5px; }
+  .src { color: var(--muted); font-size: 11px; }
+  .lv-item { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
+  @media (max-width: 560px) { .tb { grid-template-columns: auto; justify-items: center; padding: 6px 8px; } .tb svg { grid-row: auto; } .tb-sub { display: none; } }
+  .sheet i:not(.dot) { display: inline-block; width: 16px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-size: 8px; font-weight: 700; font-style: normal; vertical-align: -2px; margin-right: 3px; }
+  .sheet i.dot { width: 13px; height: 13px; border-radius: 50%; }
+
+  .side { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+  .side .panel { display: grid; align-content: start; gap: 9px; overflow: auto; }
+  .intro h2 { font-size: 21px; }
+  .intro ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; }
+  .intro li { display: flex; gap: 8px; align-items: baseline; }
+  .intro li::before { content: ""; width: 6px; height: 6px; border-radius: 2px; background: var(--accent); flex: none; transform: translateY(-2px); }
+  .howto { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 13.5px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); }
+  .howto b { font-family: var(--display); color: var(--accent); }
+  .sources { display: grid; gap: 4px; font-size: 12px; color: var(--muted); padding-top: 10px; border-top: 1px solid var(--line); }
+  .src-head { display: flex; justify-content: space-between; align-items: center; color: var(--ink); font-size: 12.5px; }
+  .src-head .linkbtn { font-size: 12px; padding: 0; }
+  .src-table { width: 100%; border-collapse: collapse; font-size: 12px; line-height: 1.5; }
+  .linkbtn { background: none; border: none; color: var(--accent); font-weight: 700; cursor: pointer; }
+  .linkbtn:hover { text-decoration: underline; }
+  .src-table td { padding: 3px 0; vertical-align: top; }
+  .src-table td:first-child { padding-right: 10px; width: 48%; }
+  .src-table tr + tr td { border-top: 1px dashed var(--line); }
+  .src-table a, .src-provider a { color: var(--accent); text-decoration: none; font-weight: 700; }
+  .src-table a:hover, .src-provider a:hover { text-decoration: underline; }
+  .src-group { display: grid; gap: 8px; margin-top: 10px; }
+  .src-group h4 { margin: 0; font-size: 12.5px; color: var(--muted); letter-spacing: .04em; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+  .src-item { display: grid; gap: 1px; font-size: 12.5px; }
+  .src-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .src-provider { font-size: 12.5px; }
+  .src-item p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+  .demo-flag { display: inline-block; font-size: 11px; padding: 0 7px; border-radius: 4px; border: 1px dashed var(--muted); color: var(--muted); vertical-align: middle; font-weight: 400; font-family: var(--body); letter-spacing: 0; }
+
+  .pv-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .pv-head h2 { font-size: 22px; }
+  .pv-price { text-align: right; white-space: nowrap; }
+  .pv-price strong { font-family: var(--display); font-size: 26px; font-weight: 900; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fact { padding: 6px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); min-width: 0; }
+  .fact .k { font-size: 11.5px; color: var(--muted); }
+  .fact .v { font-family: var(--display); font-size: 16px; font-weight: 900; line-height: 1.35; }
+  .fact .s { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fact.good .v { color: var(--good); } .fact.warn .v { color: var(--warn); } .fact.bad .v { color: var(--bad); }
+  .budget-line { font-size: 13px; padding: 6px 10px; border-radius: 8px; }
+  .budget-line.ok { background: var(--accent-soft); } .budget-line.over { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+  @media (max-width: 860px) {
+    .s-map { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+    .side .panel { max-height: 46vh; }
+  }
+
+  /* 地図の目印 */
+  .leaflet-container { background: var(--map-ground); font-family: var(--body); }
+  .price-pin { font-family: var(--display); font-weight: 900; font-size: 12.5px; padding: 2px 8px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 2px solid var(--ink); white-space: nowrap; width: max-content; transform: translate(-50%, -50%); box-shadow: 0 2px 6px rgba(0,0,0,.18); cursor: pointer; }
+  .price-pin.over { border-color: var(--muted); color: var(--muted); opacity: .8; }
+  .price-pin.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); transform: translate(-50%, -50%) scale(1.25); }
+  .pin { display: grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; border: 2px solid var(--map-ground); box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .home-pin { width: 34px; height: 34px; border-radius: 50%; background: var(--mark); border: 3px solid var(--ink); display: grid; place-items: center; }
+  .st-pin { background: var(--ink); color: var(--bg); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; white-space: nowrap; width: max-content; }
+  .campus-pin { background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; width: max-content; }
+  .leaflet-tooltip.lbl { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: none; font-size: 12px; font-weight: 700; padding: 1px 6px; }
+  .leaflet-tooltip.lbl::before { display: none; }
+  .leaflet-control-attribution { font-size: 10px; background: color-mix(in srgb, var(--surface) 85%, transparent) !important; color: var(--muted); }
+  .leaflet-control-attribution a { color: var(--accent); }
+  .leaflet-bar a { background: var(--surface); color: var(--ink); border-color: var(--line); }
+
+  /* 予算のポップオーバー */
+  .pop { position: absolute; right: 0; top: 40px; z-index: 900; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .data-pop { width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 90px); overflow-y: auto; overscroll-behavior: contain; }
+  .lv { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 700; vertical-align: -3px; margin-right: 3px; text-shadow: 0 0 2px rgba(0,0,0,.35); }
+  .rank-table { width: 100%; border-collapse: collapse; font-size: 12.5px; line-height: 1.5; }
+  .rank-table th { text-align: left; font-weight: 700; white-space: nowrap; padding: 2px 6px 2px 0; }
+  .rank-table td { padding: 2px 6px 2px 0; white-space: nowrap; }
+  .rank-table td:last-child { font-size: 11px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+  .rank-table tr + tr { border-top: 1px solid var(--line); }
+  .readout { position: absolute; top: 10px; right: 10px; z-index: 650; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); font-size: 13px; pointer-events: none; }
+  .readout[hidden] { display: none; }
+  .kind { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; }
+  .k-real { color: var(--good); } .k-est { color: var(--warn); } .k-own { color: #7a5ac0; } .k-fake { color: var(--muted); border-style: dashed; }
+  .heat-img { image-rendering: auto; }
+  .pop[hidden] { display: none; }
+  .pop label { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-top: 8px; }
+  .pop input { text-align: right; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 6px 8px; width: 100%; }
+
+  /* ---- 詳しい住宅情報の画面 ---- */
+  .s-detail { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); grid-template-rows: auto minmax(0, 1fr); gap: 12px 16px; }
+  .d-head { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 18px; }
+  .d-head h2 { font-size: clamp(22px, 2.6vw, 28px); font-weight: 900; }
+  .d-head .spec { color: var(--muted); font-size: 14px; }
+  .d-head .pv-price { margin-left: auto; }
+  .d-body { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { border: none; background: none; padding: 8px 12px; cursor: pointer; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; font-size: 14px; }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab .v { margin-left: 5px; font-size: 11px; padding: 0 6px; border-radius: 999px; color: #fff; }
+  .v-good { background: var(--good); } .v-warn { background: var(--warn); } .v-bad { background: var(--bad); }
+  .tabbody { min-height: 0; overflow: auto; padding-top: 14px; display: grid; align-content: start; gap: 12px; }
+  dl.rows { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; font-size: 14.5px; align-content: start; }
+  dl.rows dt { color: var(--muted); white-space: nowrap; }
+  dl.rows dd { margin: 0; }
+  .note { font-size: 12.5px; color: var(--muted); }
+  .big-verdict { font-family: var(--display); font-size: 24px; font-weight: 900; }
+  .big-verdict.good { color: var(--good); } .big-verdict.warn { color: var(--warn); } .big-verdict.bad { color: var(--bad); }
+  .meter { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .meter i { height: 10px; border-radius: 3px; background: var(--line); }
+  .meter i.on { background: var(--warn); }
+  .meter3 { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 4px; }
+  .meter3 i { width: 18px; height: 9px; border-radius: 2px; background: var(--line); }
+  .meter3 i.on { background: var(--accent); }
+  .t-good { color: var(--good); } .t-warn { color: var(--warn); } .t-bad { color: var(--bad); }
+  .bars { display: grid; gap: 5px; }
+  .bar-row { display: grid; grid-template-columns: 120px 1fr 48px; gap: 8px; align-items: center; font-size: 13.5px; }
+  .bar-row i { display: block; height: 12px; border-radius: 3px; background: #7b3fa8; opacity: .75; }
+  .bar-row b { text-align: right; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .money-bar { display: flex; height: 24px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+  .money-bar i { display: block; height: 100%; }
+  .money-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--muted); }
+  .money-legend b { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .checklist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .checklist li { display: grid; grid-template-columns: 20px 1fr; gap: 6px; font-size: 13.5px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); line-height: 1.5; }
+  .checklist input { width: 17px; height: 17px; margin-top: 2px; accent-color: var(--accent); }
+  .checklist .why { display: block; font-size: 12px; color: var(--muted); }
+  .pchecks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .pcheck { padding: 7px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-size: 12px; min-width: 0; }
+  .pcheck b { display: block; font-size: 14px; }
+  .pcheck span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pcheck.good b { color: var(--good); } .pcheck.warn b { color: var(--warn); } .pcheck.bad b { color: var(--bad); }
+  .letter { width: 100%; height: 230px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); line-height: 1.75; resize: none; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .status { font-size: 13px; color: var(--muted); }
+  @media (max-width: 860px) {
+    .s-detail { grid-template-columns: 1fr; grid-template-rows: auto 180px minmax(0, 1fr); }
+    .two, .checklist { grid-template-columns: 1fr; }
+    .pchecks { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+
+<div class="app">
+  <header class="top">
+    <button class="btn ghost" id="backBtn" hidden>← 地図に戻る</button>
+    <div class="logo" id="logo">
+      <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="4" width="24" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9 4v-2M21 4v-2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M8 14h14M8 20h9" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/></svg>
+      ヘヤカルテ
+    </div>
+    <div class="tagline">内見に行く前に、部屋の「まわり」まで分かる</div>
+    <div class="spacer"></div>
+    <div style="position:relative">
+      <button class="chip-btn" id="budgetBtn" aria-expanded="false">家賃の目安 <b class="num" id="budgetChip"></b> ✎</button>
+      <div class="panel pop" id="budgetPop" hidden>
+        <div class="eyebrow">毎月入ってくるお金</div>
+        <label for="inScholar">奨学金<input id="inScholar" class="num" type="number" step="1000" min="0" value="50000"><span>円</span></label>
+        <label for="inAllow">仕送り<input id="inAllow" class="num" type="number" step="1000" min="0" value="30000"><span>円</span></label>
+        <label for="inJob">バイト<input id="inJob" class="num" type="number" step="1000" min="0" value="40000"><span>円</span></label>
+        <p class="note" style="margin-top:10px">家賃＋管理費の目安は収入の3分の1。超える部屋は地図で薄く表示します。</p>
+      </div>
+    </div>
+    <div style="position:relative">
+      <button class="chip-btn" id="dataBtn" aria-expanded="false">データについて</button>
+      <div class="panel pop data-pop" id="dataPop" hidden>
+        <div class="eyebrow">この画面の情報の出どころ</div>
+        <div id="dataList"></div>
+      </div>
+    </div>
+    <div class="ai-state" id="aiState">AIを確認中…</div>
+  </header>
+
+  <main class="stage">
+    <!-- 地図 -->
+    <section class="screen s-map" data-screen="map" hidden>
+      <div class="mapwrap">
+        <div class="map" id="bigMap"></div>
+        <button class="heat-strip" id="heatStrip" hidden></button>
+        <div class="panel sheet" id="sheet" hidden></div>
+        <nav class="taskbar" id="taskbar" aria-label="地図の表示の切り替え"></nav>
+        <div class="readout" id="readout" hidden></div>
+      </div>
+      <aside class="side"><div class="panel" id="sidePanel"></div></aside>
+    </section>
+
+    <!-- 詳しい住宅情報 -->
+    <section class="screen s-detail" data-screen="detail" hidden>
+      <div class="d-head" id="dHead"></div>
+      <div class="mapwrap"><div class="map" id="miniMap"></div></div>
+      <div class="d-body">
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <div class="tabbody" id="tabBody"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- 定数 ----------
+  const LIVING = { utility: 10000, phone: 5000, food: 30000, daily: 15000, social: 10000 };
+  const TRAFFIC_TEXT = {
+    1: ["少ない", "細い生活道路。車はほとんど通らない想定"],
+    2: ["少なめ", "生活道路。朝夕に通勤の車や自転車"],
+    3: ["ふつう", "やや広い道路に近い。車の出入りがある"],
+    4: ["多め", "主要な道路が近い。窓を開けると車の音が入りやすい"],
+    5: ["多い", "幹線道路沿い。大型車も通り、音と排気ガスが気になりやすい"],
+  };
+  const POI_STYLE = {
+    supermarket: { c: "#2f8a52", t: "ス", label: "スーパー" },
+    convenience: { c: "#6b7f3a", t: "コ", label: "コンビニ" },
+    chemist: { c: "#8a5ac0", t: "薬", label: "ドラッグストア" },
+    clinic: { c: "#c0507a", t: "医", label: "診療所" },
+    hospital: { c: "#bf3f2c", t: "病", label: "病院" },
+    shelter: { c: "#2e6fb5", t: "避", label: "避難場所" },
+    police: { c: "#1f3a8a", t: "交", label: "交番・警察署" },
+  };
+  // 地図に重ねる情報（ペルソナが気にしていること）
+  const LAYERS = [
+    { k: "shop", label: "スーパー・買い物", color: "#2f8a52", kinds: ["supermarket", "convenience", "chemist"] },
+    { k: "med", label: "病院", color: "#bf3f2c", kinds: ["clinic", "hospital"] },
+    { k: "traffic", label: "交通量", color: "#d9822b" },
+    { k: "flood", label: "浸水想定", color: "#3f8fd6" },
+    { k: "shelter", label: "避難場所", color: "#2e6fb5", kinds: ["shelter"] },
+    { k: "crime", label: "防犯", color: "#7b3fa8", kinds: ["police"] },
+    { k: "heat", label: "ヒートマップ", color: "#2f9e5b" },
+  ];
+  // ヒートマップのテーマ。色が緑に近いほどその観点で住みやすい場所
+  const HEAT_THEMES = [
+    { k: "all", label: "総合" }, { k: "shop", label: "買い物" }, { k: "med", label: "病院" },
+    { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
+    { k: "crime", label: "犯罪の少なさ" },
+  ];
+  const HEAT_CELL = 80;
+  // 凡例に出す、テーマごとの色の基準（赤い側、緑の側、出どころ）
+  const HEAT_SCALE = {
+    all: ["このエリアの中で低い", "高い", "6テーマの平均をエリア内で比較"],
+    shop: ["スーパーまで900m以上", "150m以内", "OpenStreetMapの店の位置から"],
+    med: ["診療所まで800m以上", "150m以内", "OpenStreetMapの診療所・病院の位置から"],
+    quiet: ["屋外 68dB以上（幹線道路沿い）", "50dB以下（静かな住宅地）", "道路・線路からの騒音を計算"],
+    commute: ["キャンパスまで2.5km以上", "300m以内", "キャンパスの出入口から"],
+    safety: ["浸水想定 3m以上", "浸水想定なし", "国土地理院 洪水浸水想定区域"],
+    crime: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（街頭犯罪7手口）"],
+  };
+  // 評価は5段階。点（0〜1）を20点刻みで区切り、記号・言葉・色をいつも同じ組み合わせで使う
+  const LEVELS = [
+    { min: 0.8, mark: "◎", label: "とても良い", color: [47, 158, 91] },
+    { min: 0.6, mark: "○", label: "良い", color: [140, 193, 82] },
+    { min: 0.4, mark: "△", label: "ふつう", color: [231, 195, 58] },
+    { min: 0.2, mark: "▲", label: "やや悪い", color: [232, 137, 44] },
+    { min: -1, mark: "×", label: "悪い", color: [200, 65, 47] },
+  ];
+  const levelOf = (v) => LEVELS.find((l) => v >= l.min);
+  const rgb = (c) => `rgb(${c.join(",")})`;
+  // 建物の構造ごとの特徴（一般的な傾向。同じ構造でも建物ごとに差がある）
+  // sound / fire は 1〜3（3が強い）
+  const STRUCTURES = {
+    "木造": { full: "木造", sound: 1, fire: 1, soundText: "隣や上の階の足音・話し声が聞こえやすい", fireText: "燃えやすい素材。火災保険や避難経路の確認を", note: "家賃が安め。風通しがよく湿気がこもりにくい一方、冬は寒くなりやすい" },
+    "軽量鉄骨造": { full: "軽量鉄骨造", sound: 1, fire: 2, soundText: "壁が薄いことが多く、生活音は木造と同じくらい響く", fireText: "木造よりは燃えにくい", note: "アパートに多い構造。家賃は木造と同じくらい" },
+    "鉄骨造": { full: "鉄骨造（重量鉄骨）", sound: 2, fire: 2, soundText: "床や壁がしっかりしていて、木造より音が伝わりにくい", fireText: "燃えにくい", note: "中くらいのマンションに多い" },
+    "RC造": { full: "RC造（鉄筋コンクリート）", sound: 3, fire: 3, soundText: "壁が厚く、隣の生活音はほとんど気にならない", fireText: "燃えにくく、火事が広がりにくい", note: "家賃は高め。気密性が高く、冬の結露やカビには換気で対策を" },
+    "SRC造": { full: "SRC造（鉄骨鉄筋コンクリート）", sound: 3, fire: 3, soundText: "壁が厚く、隣の生活音はほとんど気にならない", fireText: "燃えにくく、火事が広がりにくい", note: "高層マンションに多い、いちばん頑丈な構造" },
+  };
+  const LEVEL3 = ["", "弱い", "ふつう", "強い"];
+  // 騒音の大きさのたとえ（一般的な目安）
+  function dbFeel(db) {
+    return db < 25 ? "ほとんど気にならない（深夜の寝室くらい）" : db < 35 ? "ささやき声くらい。眠るのに困らない" : db < 45 ? "図書館くらい" : db < 55 ? "静かな事務所くらい" : db < 65 ? "ふつうの会話くらい" : "騒がしい街の中くらい";
+  }
+  // 隣の部屋との遮音（D値）ごとに、隣の話し声がどう聞こえるか（日本建築学会の適用等級で使われる一般的な目安）
+  function dFeel(d) {
+    return d >= 55 ? "隣の話し声はまず聞こえない" : d >= 50 ? "大きな声やテレビの音がかすかに聞こえる程度" : d >= 45 ? "隣の話し声が小さく聞こえる" : d >= 40 ? "隣の話し声が聞こえ、内容が分かることもある" : d >= 35 ? "隣の話し声がよく聞こえる" : "話し声や生活音がはっきり聞こえる";
+  }
+  // 画面に出している情報の出どころ。種類は「実データ／推定／独自の目安／一般的な傾向／架空」
+  const KIND_CLASS = { 実データ: "k-real", 推定: "k-est", 独自の目安: "k-own", 一般的な傾向: "k-est", 架空: "k-fake" };
+  // 画面に出している情報の出どころ。group は「data＝実際のデータ／calc＝計算・推定したもの／demo＝架空」
+  const DATA_SOURCES = [
+    { group: "data", what: "お店・病院・交番・駅・道路", kind: "実データ", provider: "OpenStreetMap", url: "https://www.openstreetmap.org/copyright",
+      note: "© OpenStreetMap contributors（ODbL）。ボランティアが作る地図なので、載っていない店や古い情報もあります。" },
+    { group: "data", what: "洪水の浸水想定・土砂災害・津波", kind: "実データ", provider: "国土地理院 重ねるハザードマップ", url: "https://disaportal.gsi.go.jp/",
+      note: "1000年に1度くらいの大雨で川があふれた場合の想定で、過去の実績や予報ではありません。側溝や下水があふれる内水氾濫は含みません。" },
+    { group: "data", what: "避難場所", kind: "実データ", provider: "国土地理院 指定緊急避難場所", url: "https://www.gsi.go.jp/bousaichiri/hinanbasho.html",
+      note: "洪水のときに使う避難場所です。" },
+    { group: "data", what: "地震の確率", kind: "実データ", provider: "防災科学技術研究所 J-SHIS", url: "https://www.j-shis.bosai.go.jp/",
+      note: "確率論的地震動予測地図（2020年版）の、建物の地点を含む250m四方の値です。" },
+    { group: "data", what: "犯罪の件数", kind: "実データ", provider: "大阪府警察 犯罪オープンデータ", url: "https://www.police.pref.osaka.lg.jp/seikatsu/9290.html",
+      note: "「犯罪発生情報（2025年）」を加工して作成。自転車盗・ひったくりなど街頭犯罪7手口だけで、空き巣などの侵入盗や性犯罪は含みません。" },
+    { group: "data", what: "町丁目の位置", kind: "実データ", provider: "Geolonia 住所データ", url: "https://github.com/geolonia/japanese-addresses",
+      note: "CC BY 4.0。犯罪の件数を地図に置くのに使っています。" },
+    { group: "calc", what: "交通量・屋外の騒音", kind: "推定", provider: "道路の種類から計算",
+      note: "道路の種類ごとに騒音の大きさを仮定し、距離による減衰を足し合わせた昼間の目安です。実際に測った値ではありません。" },
+    { group: "calc", what: "隣の部屋の音・部屋の中の騒音", kind: "推定", provider: "python-acoustics で計算", url: "https://github.com/python-acoustics/python-acoustics",
+      note: "構造ごとに一般的な壁の材料を仮定し、材料の重さから質量則で計算した目安です（評価は ISO 717-1）。" },
+    { group: "calc", what: "徒歩・自転車の分数", kind: "推定", provider: "直線距離から計算",
+      note: "直線距離×1.3を、徒歩80m/分・自転車250m/分で割った目安です。" },
+    { group: "calc", what: "耐震基準", kind: "推定", provider: "築年数から推定", note: "建った年を築年数から逆算しています。" },
+    { group: "calc", what: "ヒートマップ", kind: "独自の目安", provider: "上の公開データから計算",
+      note: "施設までの距離などに独自の基準で点を付けたものです。「総合」と「犯罪の少なさ」はエリアの中での比較です。" },
+    { group: "calc", what: "構造ごとの特徴・生活費・初期費用", kind: "一般的な傾向", provider: "一般的な目安", note: "建物や人によって差があります。" },
+    { group: "demo", what: "物件（名前・家賃・間取り・構造・築年数）", kind: "架空", provider: "デモ用に作成", note: "位置だけ実在の住宅地に置いています。" },
+  ];
+  const SOURCE_GROUPS = [["data", "実際のデータ（公開されているもの）"], ["calc", "計算・推定したもの"], ["demo", "架空のデータ"]];
+  const providerLink = (d) => d.url ? `<a href="${d.url}" target="_blank" rel="noopener">${esc(d.provider)}</a>` : esc(d.provider);
+  const CRIME_COLOR = "#7b3fa8";
+  const badge = (kind) => `<span class="kind ${KIND_CLASS[kind] || ""}">${kind}</span>`;
+  const TRAFFIC_COLORS = { 5: "#d23c2a", 4: "#e8892c", 3: "#e7c33a" };
+  const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors・国土地理院・J-SHIS';
+
+  // ---------- 状態 ----------
+  const state = {
+    data: null, screen: "map", selected: null, tab: "building",
+    layers: new Set(["heat"]), heatTheme: "all", sheet: null,
+    sample: null,
+  };
+  const maps = { big: null, mini: null };
+  const layerGroups = {};
+  let heatLayer = null, heatCache = null;
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const yen = (n) => Math.round(n).toLocaleString("ja-JP") + "円";
+  const man = (n) => (n / 10000).toFixed(n % 10000 ? 1 : 0) + "万円";
+  const manShort = (n) => (n / 10000).toFixed(1).replace(/\.0$/, "") + "万";
+  const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const byId = (id) => state.data.properties.find((x) => x.id === id);
+  const ll = (x, y) => [y, x];
+
+  function income() {
+    const v = (id) => Math.max(0, Number($(id).value) || 0);
+    return { scholar: v("inScholar"), allow: v("inAllow"), job: v("inJob") };
+  }
+  const incomeTotal = () => Object.values(income()).reduce((a, b) => a + b, 0);
+  const rentCap = () => Math.floor(incomeTotal() / 3 / 1000) * 1000;
+  const overBudget = (p) => p.rent + p.fee > rentCap();
+
+  // ---------- 判定 ----------
+  function lifeGrade(p) { const n = p.near; const m = Math.max(n.supermarket.min, Math.min(n.clinic.min, n.hospital.min)); return m <= 5 ? ["good", "安心"] : m <= 10 ? ["warn", "ふつう"] : ["bad", "遠い"]; }
+  function trafficGrade(p) { const l = p.traffic.level; return [l <= 2 ? "good" : l <= 3 ? "warn" : "bad", TRAFFIC_TEXT[l][0]]; }
+  function hazardGrade(p) {
+    const h = p.hazard;
+    if (h.landslide || h.tsunami || (h.flood >= 2 && p.floor === 1) || h.flood >= 3) return ["bad", "要確認"];
+    if (h.flood >= 1 || h.nearFlood >= 1 || p.near.shelter.min > 10) return ["warn", "注意"];
+    return ["good", "安心"];
+  }
+  // 築年数から、どの耐震基準で建てられたかを推定する（建築確認の時期と建った年はずれることがある）
+  function quakeStandard(p) {
+    const built = new Date().getFullYear() - p.age;
+    if (built < 1982) return ["bad", "旧耐震基準の可能性", `${built}年ごろの建築。1981年5月以前に建築確認を受けた建物は、今の基準より地震に弱い`];
+    if (p.structure === "木造" && built < 2001) return ["warn", "新耐震基準（木造の2000年基準の前）", `${built}年ごろの建築。木造は2000年に接合部などの基準が強化された`];
+    return ["good", "新耐震基準", `${built}年ごろの建築。1981年6月以降の基準${p.structure === "木造" ? "（木造の2000年基準も満たす時期）" : ""}`];
+  }
+  function buildingGrade(p) {
+    const q = quakeStandard(p)[0], d = p.noise.dValue;
+    if (q === "bad") return ["bad", "要確認"];
+    return d >= 50 && q === "good" ? ["good", "頑丈"] : d >= 40 ? ["good", "ふつう"] : ["warn", "音に注意"];
+  }
+  function floodShort(p) {
+    const h = p.hazard;
+    if (h.flood) return `浸水 ${h.floodLabel}`;
+    return h.nearFlood ? `すぐ近くに浸水想定 ${h.nearFloodLabel}` : "浸水想定なし";
+  }
+  function moneyLeft(p) { return incomeTotal() - (p.rent + p.fee + LIVING.food + LIVING.utility + LIVING.phone + (p.net ? 0 : 4000) + LIVING.daily + LIVING.social); }
+  function moneyGrade(p) { const l = moneyLeft(p); return l >= 10000 ? ["good", "OK"] : l >= 0 ? ["warn", "ギリギリ"] : ["bad", "赤字"]; }
+
+  function initialCost(p) {
+    const items = [
+      ["敷金", p.rent * p.deposit], ["礼金", p.rent * p.key], ["仲介手数料", p.rent * 1.1],
+      ["前家賃", p.rent + p.fee], ["保証会社", (p.rent + p.fee) * 0.5], ["火災保険", 15000], ["鍵の交換", 15000],
+    ].filter(([, v]) => v > 0);
+    return { items, total: items.reduce((a, [, v]) => a + v, 0) };
+  }
+
+  // ---------- 画面の移動 ----------
+  function go(screen, id, { push = true } = {}) {
+    if (screen === "detail" && !(id && byId(id))) screen = "map";
+    state.screen = screen;
+    if (id) state.selected = id;
+    document.querySelectorAll(".screen").forEach((el) => { el.hidden = el.dataset.screen !== screen; });
+    $("backBtn").hidden = screen !== "detail";
+    $("logo").hidden = screen === "detail";
+    const hash = screen === "detail" ? "home-" + id : "map";
+    if (push && location.hash.slice(1) !== hash) { try { history.pushState(null, "", "#" + hash); } catch { /* 表示先によっては履歴を触れない */ } }
+    if (screen === "map") { renderBigMap(); renderSide(); }
+    else renderDetail();
+  }
+  function routeFromHash() {
+    const h = location.hash.slice(1);
+    if (h.startsWith("home-")) go("detail", h.slice(5), { push: false });
+    else go("map", null, { push: false });
+  }
+
+  // ---------- 地図の共通部品 ----------
+  function newMap(el) {
+    const map = L.map(el, { crs: L.CRS.Simple, minZoom: -3.5, maxZoom: 1.5, zoomSnap: 0.25, zoomDelta: 0.5 });
+    map.attributionControl.setPrefix(false).addAttribution(ATTRIBUTION);
+    drawBase(map);
+    return map;
+  }
+
+  function drawBase(map) {
+    const d = state.data, renderer = L.canvas({ padding: 0.5 });
+    const road = cssVar("--map-road"), rail = cssVar("--map-rail"), ground = cssVar("--map-ground");
+    for (const w of d.map.ways) {
+      const pts = [];
+      for (let i = 0; i < w.p.length; i += 2) pts.push(ll(w.p[i], w.p[i + 1]));
+      if (w.k === "rail") {
+        L.polyline(pts, { renderer, color: rail, weight: 5, interactive: false }).addTo(map);
+        L.polyline(pts, { renderer, color: ground, weight: 2.5, dashArray: "8 8", interactive: false }).addTo(map);
+      } else {
+        L.polyline(pts, { renderer, color: road, weight: [1.5, 1.5, 2, 3, 5, 7][w.r], interactive: false, lineCap: "round" }).addTo(map);
+      }
+    }
+    for (const s of d.stations) {
+      L.marker(ll(s.x, s.y), { icon: L.divIcon({ className: "", html: `<div class="st-pin">${esc(s.line)} ${esc(s.name)}</div>`, iconSize: null, iconAnchor: [0, 10] }), interactive: false }).addTo(map);
+    }
+    const g = d.campus.gates[0];
+    L.marker(ll(g[0], g[1]), { icon: L.divIcon({ className: "", html: `<div class="campus-pin">近大キャンパス</div>`, iconSize: null, iconAnchor: [50, 12] }), interactive: false, zIndexOffset: 100 }).addTo(map);
+  }
+
+  function poiMarker(q, big = false) {
+    const st = POI_STYLE[q.k], sz = big ? 24 : 17;
+    const m = L.marker(ll(q.x, q.y), { icon: L.divIcon({ className: "", html: `<div class="pin" style="width:${sz}px;height:${sz}px;background:${st.c};font-size:${big ? 12 : 9}px">${st.t}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), zIndexOffset: big ? 500 : 0 });
+    m.bindTooltip(esc(q.n || st.label) + (q.e ? "（夜間救急）" : ""), { direction: "right", className: "lbl", offset: [8, 0], permanent: big });
+    return m;
+  }
+
+  // 重ねる情報（交通量・浸水想定）の線や面を、指定した地図に描く
+  function drawTraffic(target) {
+    const renderer = L.canvas({ padding: 0.5 });
+    for (const w of state.data.map.ways) {
+      if (w.k === "rail" || w.r < 3) continue;
+      const pts = [];
+      for (let i = 0; i < w.p.length; i += 2) pts.push(ll(w.p[i], w.p[i + 1]));
+      L.polyline(pts, { renderer, color: TRAFFIC_COLORS[Math.min(5, w.r)], weight: [0, 0, 0, 4, 7, 9][w.r], opacity: 0.9, interactive: false, lineCap: "round" }).addTo(target);
+    }
+  }
+  function drawFlood(target) {
+    // 同じ段階が横に続くマスは1つの長方形にまとめて描く
+    const fg = state.data.hazard.flood, renderer = L.canvas({ padding: 0.5 });
+    const colors = { 1: cssVar("--flood-1"), 2: cssVar("--flood-2"), 3: cssVar("--flood-3") };
+    const rows = new Map();
+    for (const [i, j, v] of fg.cells) { if (!rows.has(j)) rows.set(j, []); rows.get(j).push([i, Math.min(3, v)]); }
+    for (const [j, arr] of rows) {
+      arr.sort((a, b) => a[0] - b[0]);
+      let start = null, prev = null;
+      const flush = () => {
+        if (!start) return;
+        const x0 = fg.x0 + start[0] * fg.cell, x1 = fg.x0 + (prev[0] + 1) * fg.cell, y0 = fg.y0 + j * fg.cell;
+        L.rectangle([ll(x0, y0), ll(x1, y0 + fg.cell)], { renderer, stroke: false, fillColor: colors[start[1]], fillOpacity: 0.42, interactive: false }).addTo(target);
+      };
+      for (const cur of arr) {
+        if (start && cur[0] === prev[0] + 1 && cur[1] === start[1]) { prev = cur; continue; }
+        flush(); start = cur; prev = cur;
+      }
+      flush();
+    }
+  }
+
+  // ---------- ヒートマップ ----------
+  // 地図全体を80m四方のマスに区切り、マスごとに観点別の住みやすさ（0〜1）を計算する。
+  // 小さな画像にして地図に重ね、ブラウザの拡大補間でなめらかに見せる。
+  function heatField() {
+    if (heatCache) return heatCache;
+    const d = state.data, [ex0, ey0, ex1, ey1] = d.map.extent, C = HEAT_CELL;
+    const cols = Math.ceil((ex1 - ex0) / C), rows = Math.ceil((ey1 - ey0) / C);
+    const pts = (kinds) => d.map.pois.filter((q) => kinds.includes(q.k)).map((q) => [q.x, q.y]);
+    const supers = pts(["supermarket"]), convs = pts(["convenience"]), clinics = pts(["clinic"]), hosps = pts(["hospital"]);
+    const gates = d.campus.gates;
+    const fl = d.hazard.flood, fcells = new Map(fl.cells.map(([i, j, v]) => [i + "," + j, v]));
+    const near = (x, y, arr) => { let m = Infinity; for (const [a, b] of arr) m = Math.min(m, (a - x) ** 2 + (b - y) ** 2); return Math.sqrt(m); };
+    const nz = d.noise;
+    const noiseAt = (x, y) => {
+      const i = Math.floor((x - nz.x0) / nz.cell), j = Math.floor((y - nz.y0) / nz.cell);
+      return i < 0 || j < 0 || i >= nz.cols || j >= nz.rows ? 55 : nz.db[j * nz.cols + i];
+    };
+    const lin = (dist, good, bad) => Math.max(0, Math.min(1, (bad - dist) / (bad - good)));
+    const field = {}, raw = {};
+    for (const t of HEAT_THEMES) { field[t.k] = new Float32Array(cols * rows); raw[t.k] = new Float32Array(cols * rows); }
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const x = ex0 + (i + 0.5) * C, y = ey0 + (j + 0.5) * C, k = j * cols + i;
+      const dSuper = near(x, y, supers), dClinic = near(x, y, clinics), db = noiseAt(x, y), dGate = near(x, y, gates);
+      const shop = lin(dSuper, 150, 900) * 0.8 + lin(near(x, y, convs), 100, 500) * 0.2;
+      const med = lin(dClinic, 150, 800) * 0.6 + lin(near(x, y, hosps), 300, 1500) * 0.4;
+      const quiet = Math.max(0, Math.min(1, (68 - db) / 18)); // 屋外の騒音の推定 50dB以下で満点、68dB以上で0点
+      const commute = lin(dGate, 300, 2500);
+      raw.shop[k] = dSuper; raw.med[k] = dClinic; raw.quiet[k] = db; raw.commute[k] = dGate;
+      const fi = Math.floor((x - fl.x0) / fl.cell), fj = Math.floor((y - fl.y0) / fl.cell);
+      const safety = [1, 0.75, 0.4, 0.1, 0.05, 0, 0][fcells.get(fi + "," + fj) || 0];
+      raw.safety[k] = fcells.get(fi + "," + fj) || 0;
+      field.shop[k] = shop; field.med[k] = med; field.quiet[k] = quiet; field.commute[k] = commute; field.safety[k] = safety;
+      const crime = crimeScore(x, y);
+      field.crime[k] = crime;
+      raw.crime[k] = crimeDensityAt(x, y) ?? 0;
+      field.all[k] = (shop + med + quiet + commute + safety + crime) / 6;
+    }
+    // 各テーマは距離やdBの決まった基準で塗る。「総合」だけは5つの平均で差が小さくなるので、
+    // エリアの中の下位5%〜上位5%を0〜1に広げて比べやすくする
+    for (const t of HEAT_THEMES.filter((x) => x.k === "all")) {
+      const a = field[t.k], sorted = Array.from(a).sort((x, y) => x - y);
+      const lo = sorted[Math.floor(sorted.length * 0.05)], hi = sorted[Math.floor(sorted.length * 0.95)];
+      for (let n = 0; n < a.length; n++) a[n] = hi > lo ? Math.max(0, Math.min(1, (a[n] - lo) / (hi - lo))) : a[n];
+    }
+    for (let n = 0; n < field.all.length; n++) raw.all[n] = field.all[n];
+    // 「エリアの中で上位何%か」を出すために、テーマごとに点を並べておく
+    const sorted = {};
+    for (const t of HEAT_THEMES) sorted[t.k] = Array.from(field[t.k]).sort((a, b) => a - b);
+    heatCache = { field, raw, sorted, cols, rows, x0: ex0, y0: ey0 };
+    return heatCache;
+  }
+
+  // マスごとの「まわり500m以内の年間件数」（物件と同じ数え方）。エリアの中の下位10%〜上位10%を「少ない〜多い」とする
+  let crimeRange = null;
+  function crimeDensityAt(x, y) {
+    const g = state.data.crime.grid;
+    const i = Math.floor((x - g.x0) / g.cell), j = Math.floor((y - g.y0) / g.cell);
+    return i < 0 || j < 0 || i >= g.cols || j >= g.rows ? null : g.near[j * g.cols + i];
+  }
+  function crimeScore(x, y) {
+    if (!crimeRange) {
+      const v = state.data.crime.grid.near.slice().sort((a, b) => a - b);
+      crimeRange = [v[Math.floor(v.length * 0.1)], v[Math.floor(v.length * 0.9)]];
+    }
+    const d = crimeDensityAt(x, y) ?? crimeRange[1];
+    return Math.max(0, Math.min(1, (crimeRange[1] - d) / (crimeRange[1] - crimeRange[0])));
+  }
+  function crimeGrade(p) {
+    // 物件の件数そのもので判定する（ヒートマップのマスと同じ物差し）
+    const [lo, hi] = crimeRange || (crimeScore(0, 0), crimeRange);
+    const s = Math.max(0, Math.min(1, (hi - p.crime.total) / (hi - lo)));
+    return s >= 0.6 ? ["good", "少なめ"] : s >= 0.3 ? ["warn", "ふつう"] : ["bad", "多め"];
+  }
+
+  function heatColor(v) { return levelOf(v).color; }
+
+  // その地点の評価：5段階、エリアの中での順位、実際の値
+  function heatInfo(x, y, theme) {
+    const h = heatField();
+    const i = Math.floor((x - h.x0) / HEAT_CELL), j = Math.floor((y - h.y0) / HEAT_CELL);
+    if (i < 0 || j < 0 || i >= h.cols || j >= h.rows) return null;
+    const k = j * h.cols + i, v = h.field[theme][k], arr = h.sorted[theme];
+    let lo = 0, hi = arr.length; // v より大きいマスの数を二分探索で数える
+    while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] <= v) lo = m + 1; else hi = m; }
+    const top = Math.max(1, Math.round(((arr.length - lo) + 1) / arr.length * 100));
+    return { v, level: levelOf(v), top, text: rawText(theme, h.raw[theme][k]) };
+  }
+  function rawText(theme, r) {
+    const m = (d) => d >= 1000 ? `約${(d / 1000).toFixed(1)}km` : `約${Math.round(d / 10) * 10}m`;
+    return {
+      all: "6テーマの平均", shop: `スーパーまで${m(r)}`, med: `診療所まで${m(r)}`, quiet: `屋外 約${Math.round(r)}dB`,
+      commute: `キャンパスまで${m(r)}`, safety: r ? `浸水想定 ${state.data.hazard.floodLegend[r - 1]}` : "浸水想定なし",
+      crime: `500m以内 年${Math.round(r)}件`,
+    }[theme];
+  }
+  // テーマごとに、エリアのマスが5段階それぞれにどれだけあるか（%）
+  function levelShares(theme) {
+    const vals = heatField().field[theme], cnt = LEVELS.map(() => 0);
+    for (const v of vals) cnt[LEVELS.indexOf(levelOf(v))]++;
+    return cnt.map((c) => Math.round((c / vals.length) * 100));
+  }
+  const levelChip = (lv) => `<span class="lv" style="background:${rgb(lv.color)}">${lv.mark}</span>`;
+
+  function drawHeat() {
+    if (!heatLayer) return;
+    heatLayer.clearLayers();
+    const { field, cols, rows, x0, y0 } = heatField(), vals = field[state.heatTheme];
+    const cv = document.createElement("canvas"); cv.width = cols; cv.height = rows;
+    const ctx = cv.getContext("2d"), img = ctx.createImageData(cols, rows);
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const v = vals[j * cols + i], [r, g, b] = heatColor(v), o = ((rows - 1 - j) * cols + i) * 4;
+      img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 175;
+    }
+    ctx.putImageData(img, 0, 0);
+    L.imageOverlay(cv.toDataURL(), [ll(x0, y0), ll(x0 + cols * HEAT_CELL, y0 + rows * HEAT_CELL)], { opacity: 0.72, interactive: false, className: "heat-img" }).addTo(heatLayer);
+  }
+
+  function heatAt(x, y, theme = "all") {
+    const { field, cols, rows, x0, y0 } = heatField();
+    const i = Math.floor((x - x0) / HEAT_CELL), j = Math.floor((y - y0) / HEAT_CELL);
+    if (i < 0 || j < 0 || i >= cols || j >= rows) return null;
+    return field[theme][j * cols + i];
+  }
+
+  // 町丁目ごとの年間件数を、面積が件数に比例する円で描く
+  function drawCrime(target) {
+    const renderer = L.canvas({ padding: 0.5 });
+    for (const t of state.data.crime.towns) {
+      if (!t.n) continue;
+      L.circle(ll(t.x, t.y), { renderer, radius: Math.sqrt(t.n) * 14, color: CRIME_COLOR, weight: 1, fillColor: CRIME_COLOR, fillOpacity: 0.22, interactive: false }).addTo(target);
+    }
+  }
+
+  // ---------- 大きい地図 ----------
+  function buildLayers() {
+    for (const ly of LAYERS) {
+      const g = L.layerGroup();
+      if (ly.kinds) for (const q of state.data.map.pois) if (ly.kinds.includes(q.k)) poiMarker(q).addTo(g);
+      if (ly.k === "traffic") drawTraffic(g);
+      if (ly.k === "flood") drawFlood(g);
+      if (ly.k === "crime") drawCrime(g);
+      if (ly.k === "heat") heatLayer = g;
+      layerGroups[ly.k] = g;
+    }
+  }
+
+  function renderBigMap() {
+    if (!window.L) { $("bigMap").innerHTML = `<p style="padding:16px" class="muted">地図ライブラリを読み込めませんでした。通信状況を確かめて、ページを開き直してください。</p>`; return; }
+    if (!maps.big) {
+      maps.big = newMap($("bigMap"));
+      buildLayers();
+      maps.big.pins = L.layerGroup().addTo(maps.big);
+      maps.big.focus = L.layerGroup().addTo(maps.big);
+      const ext = state.data.map.extent;
+      maps.big.fitBounds([ll(ext[0] + 400, ext[1] + 400), ll(ext[2] - 400, ext[3] - 400)]);
+      maps.big.on("click", (e) => { if (state.sheet) { state.sheet = null; renderLayerChips(); } showReadout(e.latlng); if (state.selected) { state.selected = null; renderSide(); drawPins(); } });
+      maps.big.on("mousemove", (e) => showReadout(e.latlng));
+      maps.big.on("mouseout", () => { $("readout").hidden = true; });
+    }
+    maps.big.invalidateSize();
+    for (const ly of LAYERS) {
+      const g = layerGroups[ly.k];
+      if (state.layers.has(ly.k)) g.addTo(maps.big); else g.remove();
+    }
+    if (state.layers.has("heat")) drawHeat();
+    maps.big.pins.remove().addTo(maps.big); // 札をいつもいちばん上に
+    renderLayerChips();
+    drawPins();
+  }
+
+  function drawPins() {
+    const map = maps.big;
+    if (!map) return;
+    map.pins.clearLayers();
+    map.focus.clearLayers();
+    for (const p of state.data.properties) {
+      const on = p.id === state.selected, cls = on ? "on" : overBudget(p) ? "over" : "";
+      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
+      m.on("click", (e) => { L.DomEvent.stopPropagation(e); selectPin(p.id); });
+      m.addTo(map.pins);
+    }
+    const p = state.selected && byId(state.selected);
+    if (p) {
+      const accent = cssVar("--accent");
+      for (const [min, fill] of [[10, 0], [5, 0.08]]) {
+        const r = min * 80 / 1.3;
+        L.circle(ll(p.x, p.y), { radius: r, color: accent, weight: 2, dashArray: "6 8", fillColor: accent, fillOpacity: fill, interactive: false }).addTo(map.focus);
+      }
+    }
+  }
+
+  // カーソル（スマホではタップ）の地点の評価を、地図の右上に出す
+  function showReadout(latlng) {
+    const el = $("readout");
+    if (!state.layers.has("heat")) { el.hidden = true; return; }
+    const hi = heatInfo(latlng.lng, latlng.lat, state.heatTheme);
+    if (!hi) { el.hidden = true; return; }
+    const t = HEAT_THEMES.find((x) => x.k === state.heatTheme);
+    el.innerHTML = `<div class="small muted">この地点の「${t.label}」</div><div>${levelChip(hi.level)} <b>${hi.level.label}</b>　<span class="num">エリアの上位${hi.top}%</span></div><div class="small muted num">${esc(hi.text)}</div>`;
+    el.hidden = false;
+  }
+
+  function selectPin(id) {
+    if (state.selected === id) { go("detail", id); return; }
+    state.selected = id;
+    drawPins();
+    renderSide();
+    const p = byId(id);
+    maps.big.panTo(ll(p.x, p.y), { animate: true });
+  }
+
+  // ---------- 地図のタスクバー ----------
+  // 地図の下に「地図に重ねる／ヒートマップ／凡例」の3つだけを置き、タップするとそのカテゴリの中身を開く
+  const ICONS = {
+    layers: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 2.5 6.3 10 10l7.5-3.7L10 2.5Z"/><path d="m2.5 10 7.5 3.7 7.5-3.7"/><path d="m2.5 13.7 7.5 3.8 7.5-3.8"/></svg>`,
+    heat: `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="7.5" height="7.5" rx="1.5" fill="rgb(47,158,91)"/><rect x="10.5" y="2" width="7.5" height="7.5" rx="1.5" fill="rgb(231,195,58)"/><rect x="2" y="10.5" width="7.5" height="7.5" rx="1.5" fill="rgb(140,193,82)"/><rect x="10.5" y="10.5" width="7.5" height="7.5" rx="1.5" fill="rgb(200,65,47)"/></svg>`,
+    legend: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 5h10M7 10h10M7 15h10"/><circle cx="3.5" cy="5" r="1" fill="currentColor"/><circle cx="3.5" cy="10" r="1" fill="currentColor"/><circle cx="3.5" cy="15" r="1" fill="currentColor"/></svg>`,
+  };
+  const src = (kind, text) => `<span class="src">${badge(kind)} ${text}</span>`;
+  const dot = (k) => `<span><i class="dot" style="background:${POI_STYLE[k].c}">${POI_STYLE[k].t}</i>${POI_STYLE[k].label}</span>`;
+
+  // レイヤーごとの凡例（色・記号の意味と出どころ）
+  function legendFor(k) {
+    return {
+      shop: ["supermarket", "convenience", "chemist"].map(dot).join("") + src("実データ", "OpenStreetMap"),
+      med: ["clinic", "hospital"].map(dot).join("") + src("実データ", "OpenStreetMap"),
+      traffic: `<span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`,
+      flood: `<span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`,
+      crime: `<span><i style="background:${CRIME_COLOR};opacity:.35;border-radius:50%;width:12px;height:12px"></i>町丁目ごとの犯罪の件数（円が大きいほど多い）</span>${dot("police")}${src("実データ", "大阪府警察 犯罪オープンデータ（2025年）を加工・交番はOpenStreetMap")}`,
+      shelter: `${dot("shelter")}<span class="muted">洪水のとき</span>${src("実データ", "国土地理院 指定緊急避難場所")}`,
+    }[k] || "";
+  }
+  const THEME_HINT = {
+    all: "6つのテーマの平均", shop: "スーパーが近いほど緑", med: "診療所が近いほど緑", quiet: "車や電車の音が小さいほど緑",
+    commute: "大学が近いほど緑", safety: "浸水しにくいほど緑", crime: "犯罪が少ないほど緑",
+  };
+  const LAYER_DESC = {
+    shop: "スーパー・コンビニ・ドラッグストアの場所", med: "診療所・病院の場所", traffic: "車の多い道路を色分け",
+    flood: "大雨で川があふれたときの浸水想定", crime: "町丁目ごとの犯罪の件数と交番", shelter: "洪水のときの避難場所",
+  };
+
+  function heatLegend() {
+    const scale = HEAT_SCALE[state.heatTheme], share = levelShares(state.heatTheme);
+    return `<div class="row">${LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${l.label}<span class="muted num" style="font-weight:400">（${share[n]}%）</span></span>`).join("")}</div>
+      <p class="note">（　）は、このエリアのうちその段階にあたる場所の割合。×：${scale[0]}　◎：${scale[1]}</p>
+      <div class="row">${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}</div>`;
+  }
+  const pinLegend = () => `<div class="row"><span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}</div>`;
+
+  function renderLayerChips() {
+    const overlays = LAYERS.filter((ly) => ly.k !== "heat");
+    const on = overlays.filter((ly) => state.layers.has(ly.k)).length, heatOn = state.layers.has("heat");
+    const theme = HEAT_THEMES.find((t) => t.k === state.heatTheme).label;
+    const btn = (k, label, sub) => `<button class="tb" data-sheet="${k}" aria-expanded="${state.sheet === k}">${ICONS[k]}<span class="tb-label">${label}</span><span class="tb-sub">${sub}</span></button>`;
+    $("taskbar").innerHTML = btn("layers", "地図に重ねる", on ? `${on}つ表示中` : "なし") + btn("heat", "ヒートマップ", heatOn ? theme : "オフ") + btn("legend", "凡例", "色と記号の意味");
+
+    // ヒートマップの5段階だけは、いつも地図の上に小さく出す
+    $("heatStrip").hidden = !heatOn;
+    if (heatOn) $("heatStrip").innerHTML = `<b>${theme}</b> ${LEVELS.map((l) => levelChip(l)).join("")}<span class="muted">左ほど良い</span>`;
+
+    const el = $("sheet");
+    el.hidden = !state.sheet;
+    if (state.sheet === "layers") {
+      el.innerHTML = `<div class="sheet-head"><h3>地図に重ねる情報</h3><span class="muted small">いくつでも選べます</span></div>
+        <div class="sheet-list">${overlays.map((ly) => `
+          <button class="opt-row" data-k="${ly.k}" aria-pressed="${state.layers.has(ly.k)}">
+            <span class="switch" aria-hidden="true"></span>
+            <span class="opt-text"><b style="--c:${ly.color}">${ly.label}</b><span class="muted small">${LAYER_DESC[ly.k]}</span>
+            ${state.layers.has(ly.k) ? `<span class="legend-row">${legendFor(ly.k)}</span>` : ""}</span>
+          </button>`).join("")}</div>`;
+    } else if (state.sheet === "heat") {
+      el.innerHTML = `<div class="sheet-head"><h3>ヒートマップ</h3>
+          <button class="opt-row compact" data-k="heat" aria-pressed="${heatOn}"><span class="switch" aria-hidden="true"></span><span>${heatOn ? "表示中" : "オフ"}</span></button></div>
+        <p class="small muted">何を基準に住みやすさを塗るかを選びます。</p>
+        <div class="theme-grid">${HEAT_THEMES.map((t) => `<button class="theme" data-t="${t.k}" aria-pressed="${heatOn && state.heatTheme === t.k}"><b>${t.label}</b><span>${THEME_HINT[t.k]}</span></button>`).join("")}</div>
+        ${heatLegend()}`;
+    } else if (state.sheet === "legend") {
+      const active = overlays.filter((ly) => state.layers.has(ly.k));
+      el.innerHTML = `<div class="sheet-head"><h3>凡例</h3><span class="muted small">いま地図に出ているもの</span></div>
+        ${pinLegend()}
+        ${heatOn ? `<div class="legend-block"><b>ヒートマップ「${theme}」</b>${heatLegend()}</div>` : ""}
+        ${active.map((ly) => `<div class="legend-block"><b>${ly.label}</b><div class="row">${legendFor(ly.k)}</div></div>`).join("") || (heatOn ? "" : `<p class="small muted">重ねている情報はありません。「地図に重ねる」から選べます。</p>`)}`;
+    }
+  }
+
+  // ---------- 右側（使い方／選んだ物件の概要） ----------
+  function renderSide() {
+    const p = state.selected && byId(state.selected);
+    if (!p) {
+      const inBudget = state.data.properties.filter((x) => !overBudget(x)).length;
+      $("sidePanel").innerHTML = `
+        <div class="intro">
+          <div class="eyebrow">大学進学ではじめての一人暮らし</div>
+          <h2>気になる場所をタップして、部屋を選ぶ</h2>
+        </div>
+        <div class="howto">
+          <b>1</b><span>地図の下のタスクバーで、ヒートマップのテーマや、スーパー・病院・交通量・浸水想定・防犯などを切り替える</span>
+          <b>2</b><span>気になる場所にある物件（金額の札）をタップ</span>
+          <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
+        </div>
+        <p class="small">いまの予算（家賃＋管理費 <b class="num">${man(rentCap())}</b> まで）に合う部屋は <b class="num">${inBudget}件</b>／全${state.data.properties.length}件</p>
+        <div class="sources">
+          <div class="src-head"><b>データの出どころ</b><button class="linkbtn" id="moreSources">くわしく見る</button></div>
+          <table class="src-table">${DATA_SOURCES.filter((d) => d.group !== "calc").map((d) => `<tr><td>${esc(d.what)}</td><td>${providerLink(d)}</td></tr>`).join("")}</table>
+          <p>騒音・徒歩分数・ヒートマップなどは、これらをもとに計算した目安です。</p>
+        </div>`;
+      return;
+    }
+    const n = p.near, lg = lifeGrade(p), tg = trafficGrade(p), hg = hazardGrade(p), over = overBudget(p);
+    $("sidePanel").innerHTML = `
+      <div class="pv-head">
+        <div>
+          <div class="eyebrow">選んだ物件 <span class="demo-flag">架空データ</span></div>
+          <h2>${esc(p.name)}</h2>
+          <div class="small muted num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階</div>
+        </div>
+        <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
+      </div>
+      <div class="budget-line ${over ? "over" : "ok"} num">${over ? `予算（${man(rentCap())}）を ${yen(p.rent + p.fee - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}</div>
+      <div class="facts num">
+        <div class="fact"><div class="k">大学まで</div><div class="v">徒歩${p.campus.min}分</div><div class="s">自転車 約${p.campus.bike}分</div></div>
+        <div class="fact ${lg[0]}"><div class="k">スーパー・病院</div><div class="v">${n.supermarket.min}分・${n.hospital.min}分</div><div class="s">${esc(n.supermarket.name)}</div></div>
+        <div class="fact ${tg[0]}"><div class="k">まわりの交通量</div><div class="v">${tg[1]}</div><div class="s">${esc(p.traffic.front)}</div></div>
+        <div class="fact ${hg[0]}"><div class="k">災害</div><div class="v">${hg[1]}</div><div class="s">${floodShort(p)}</div></div>
+        <div class="fact ${crimeGrade(p)[0]}"><div class="k">まわりの犯罪</div><div class="v">${crimeGrade(p)[1]}</div><div class="s">500m以内 年${p.crime.total}件・交番${p.near.police.min}分</div></div>
+        <div class="fact ${p.noise.dValue >= 45 ? "good" : p.noise.dValue >= 40 ? "warn" : "bad"}"><div class="k">隣の部屋の音</div><div class="v">D-${p.noise.dValue}</div><div class="s">${esc(p.structure)}</div></div>
+      </div>
+      <div class="small muted">この場所の評価（地図のエリア全体の中での順位） ${badge("独自の目安")}</div>
+      <table class="rank-table num">${HEAT_THEMES.map((t) => {
+        const hi = heatInfo(p.x, p.y, t.k);
+        if (!hi) return "";
+        return `<tr title="${esc(hi.text)}"><th>${t.label}</th><td>${levelChip(hi.level)} ${hi.level.label}</td><td class="muted">上位${hi.top}%</td><td class="muted">${esc(hi.text)}</td></tr>`;
+      }).join("")}</table>
+      <button class="btn" id="openDetail" style="padding:12px">詳しく見る →</button>
+      <p class="note">同じ札をもう一度タップしても開きます。</p>`;
+  }
+
+  // ---------- 詳しい住宅情報 ----------
+  function renderDetail() {
+    const p = byId(state.selected);
+    $("dHead").innerHTML = `
+      <div>
+        <div class="eyebrow">詳しい住宅情報 <span class="demo-flag">物件はデモ用の架空データ</span></div>
+        <h2>${esc(p.name)}</h2>
+        <div class="spec num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階／${p.floors}階建て${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}・${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</div>
+      </div>
+      <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
+    const tabs = [
+      ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
+      ["money", "お金", moneyGrade(p)], ["check", "内見で聞くこと", null], ["parent", "親に相談", null],
+    ];
+    $("tabs").innerHTML = tabs.map(([k, label, v]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab === k}">${label}${v ? `<span class="v v-${v[0]}">${v[1]}</span>` : ""}</button>`).join("");
+    $("tabBody").innerHTML = tabContent(p, state.tab);
+    if (state.tab === "parent") { $("letter").value = letterTemplate(p); $("letterBtn").textContent = state.sample ? "AIで文章を整える" : "ひな形に戻す"; }
+    drawMiniMap(p);
+  }
+
+  function drawMiniMap(p) {
+    const el = $("miniMap");
+    if (!window.L) { el.innerHTML = `<p style="padding:16px" class="muted">地図を表示できませんでした。</p>`; return; }
+    const mode = ["hazard", "traffic", "crime"].includes(state.tab) ? state.tab : "life";
+    if (maps.mini && maps.mini.pid === p.id && maps.mini.mode === mode) { maps.mini.invalidateSize(); return; }
+    if (maps.mini) { maps.mini.remove(); maps.mini = null; }
+    const map = newMap(el);
+    map.pid = p.id; map.mode = mode;
+    maps.mini = map;
+    // タブに合わせて、地図に重ねる情報を切り替える
+    if (mode === "traffic") drawTraffic(map);
+    if (mode === "hazard") drawFlood(map);
+    if (mode === "crime") {
+      drawCrime(map);
+      L.circle(ll(p.x, p.y), { radius: state.data.crime.radius, color: CRIME_COLOR, weight: 2, fill: false, interactive: false }).addTo(map);
+    }
+    const accent = cssVar("--accent");
+    for (const [min, fill] of [[10, 0], [5, 0.07]]) {
+      const r = min * 80 / 1.3;
+      L.circle(ll(p.x, p.y), { radius: r, color: accent, weight: 2, dashArray: "6 8", fillColor: accent, fillOpacity: fill, interactive: false }).addTo(map);
+      L.marker(ll(p.x, p.y + r), { icon: L.divIcon({ className: "", html: "", iconSize: [0, 0] }), interactive: false }).addTo(map)
+        .bindTooltip(`徒歩${min}分`, { permanent: true, direction: "top", className: "lbl" });
+    }
+    const show = mode === "hazard" ? ["shelter"] : mode === "crime" ? ["police"] : mode === "traffic" ? [] : ["supermarket", "convenience", "chemist", "clinic", "hospital"];
+    const nearest = new Set(Object.values(p.near).map((q) => q.x + "," + q.y));
+    for (const q of state.data.map.pois) {
+      if (!show.includes(q.k) || Math.hypot(q.x - p.x, q.y - p.y) > 1000) continue;
+      poiMarker(q, nearest.has(q.x + "," + q.y)).addTo(map);
+    }
+    L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="home-pin"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M1 8 8 1l7 7v7H1z" fill="#1b2521"/></svg></div>`, iconSize: [34, 34], iconAnchor: [17, 17] }), zIndexOffset: 2000, title: p.name }).addTo(map);
+    map.setView(ll(p.x, p.y), -0.9);
+  }
+
+  function tabContent(p, tab) {
+    const n = p.near, h = p.hazard, tr = p.traffic, inc = income(), incT = incomeTotal();
+    if (tab === "building") {
+      const st = STRUCTURES[p.structure], q = quakeStandard(p);
+      const meter = (v) => `<span class="meter3">${[1, 2, 3].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`;
+      return `
+      <div><div class="eyebrow">家の材質（構造）</div><div class="big-verdict">${esc(st.full)}</div></div>
+      <p>${esc(st.note)}</p>
+      <dl class="rows num">
+        <dt>隣の部屋の音</dt><dd><b>D-${p.noise.dValue} 相当</b>　${esc(dFeel(p.noise.dValue))}<br><span class="small muted">隣との壁：${esc(p.noise.partyLabel)}（1㎡あたり${p.noise.partyMass}kg → 遮音 Rw ${p.noise.partyRw}dB）</span></dd>
+        <dt>外の音（窓を閉めて）</dt><dd><b class="num">約${p.noise.indoor}dB</b>　${esc(dbFeel(p.noise.indoor))}<br><span class="small muted">屋外 約${p.noise.outdoor}dB − 外壁と窓の遮音 約${p.noise.facade}dB（外壁 ${esc(p.noise.outerLabel)} ${p.noise.outerRwCtr}dB、窓 ${p.noise.windowRwCtr}dB）</span></dd>
+        <dt>火事への強さ</dt><dd>${meter(st.fire)} ${LEVEL3[st.fire]}<br><span class="small muted">${esc(st.fireText)}</span></dd>
+        <dt>地震への備え</dt><dd><b class="${q[0] === "good" ? "t-good" : q[0] === "warn" ? "t-warn" : "t-bad"}">${esc(q[1])}</b><br><span class="small muted">${esc(q[2])}</span></dd>
+        <dt>建物</dt><dd>${p.floors}階建ての${p.floor}階・築${p.age}年${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}</dd>
+      </dl>
+      <p class="note">${badge("推定")} 遮音は、構造ごとに一般的な壁の材料を仮定し、材料の重さから質量則で計算した目安（OSSの python-acoustics で計算。評価は ISO 717-1）。実際の建物では窓・すき間・床からの回り込みで変わります。外の音は窓がいちばんの弱点で、構造による差は小さくなります。</p>
+      <p class="note">${badge("架空")} 構造・築年数はデモ用のデータ　${badge("推定")} 耐震基準は築年数からの推定　${badge("一般的な傾向")} 構造ごとの特徴は一般的な傾向です。</p>`;
+    }
+    if (tab === "life") return `
+      <dl class="rows num">
+        <dt>大学まで</dt><dd>徒歩${p.campus.min}分（自転車 約${p.campus.bike}分）</dd>
+        <dt>最寄り駅</dt><dd>${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</dd>
+        <dt>スーパー</dt><dd>徒歩${n.supermarket.min}分　${esc(n.supermarket.name)}${n.supermarket.hours === "24/7" ? "（24時間）" : ""}</dd>
+        <dt>コンビニ</dt><dd>徒歩${n.convenience.min}分　${esc(n.convenience.name)}</dd>
+        <dt>ドラッグストア</dt><dd>徒歩${n.chemist.min}分　${esc(n.chemist.name)}</dd>
+        <dt>診療所</dt><dd>徒歩${n.clinic.min}分　${esc(n.clinic.name)}</dd>
+        <dt>病院</dt><dd>徒歩${n.hospital.min}分　${esc(n.hospital.name)}</dd>
+        <dt>夜間の救急</dt><dd>${(n.emergency.m / 1000).toFixed(1)}km　${esc(n.emergency.name)}</dd>
+      </dl>
+      <p class="note">${badge("実データ")} 施設の場所：OpenStreetMap（© OpenStreetMap contributors）　${badge("推定")} 徒歩の分数：直線距離×1.3を80m/分で割った目安</p>`;
+    if (tab === "traffic") {
+      const [label, desc] = TRAFFIC_TEXT[tr.level];
+      return `
+      <div><div class="eyebrow">家のまわりの車の量・騒音</div><div class="big-verdict ${trafficGrade(p)[0]}">${label}<span class="num" style="font-size:16px;margin-left:10px">屋外 約${p.noise.outdoor}dB／部屋の中 約${p.noise.indoor}dB</span></div></div>
+      <div class="meter" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= tr.level ? "on" : ""}"></i>`).join("")}</div>
+      <p>${desc}</p>
+      <dl class="rows num">
+        <dt>屋外の騒音</dt><dd>約${p.noise.outdoor}dB（${esc(dbFeel(p.noise.outdoor))}）<br><span class="small muted">住宅地の環境基準は昼55dB、幹線道路の近くは昼70dB</span></dd>
+        <dt>部屋の中（窓を閉めて）</dt><dd>約${p.noise.indoor}dB（${esc(dbFeel(p.noise.indoor))}）</dd>
+        <dt>家の前の道</dt><dd>${esc(tr.front)}${tr.frontName ? `（${esc(tr.frontName)}）` : ""}</dd>
+        <dt>120m以内の大きな道</dt><dd>${tr.bigRoads.length ? tr.bigRoads.map(esc).join("、") : "なし"}</dd>
+        <dt>線路まで</dt><dd>約${tr.railM}m</dd>
+        <dt>夜も開いている店</dt><dd>300m以内にコンビニ ${tr.conv300}軒</dd>
+      </dl>
+      <p class="note">${badge("推定")} 道路の種類（OpenStreetMap）ごとに騒音の大きさを仮定し、距離による減衰を足し合わせて計算した目安です。実際に測った交通量・騒音ではありません。部屋の中の値は、構造ごとの外壁と窓の遮音を引いたもの（「建物」タブ）。左の地図は車の多い道路を色で示しています。</p>`;
+    }
+    if (tab === "crime") {
+      const c = p.crime, g = crimeGrade(p), max = Math.max(1, ...Object.values(c.kinds));
+      const bike = c.kinds["自転車盗"] || 0;
+      return `
+      <div><div class="eyebrow">まわりの犯罪（500m以内・${state.data.crime.year}年の1年間）</div><div class="big-verdict ${g[0]}">${g[1]}<span class="num" style="font-size:16px;margin-left:10px">年${c.total}件・夜（18〜6時）${c.night}件</span></div></div>
+      <div class="bars">${Object.entries(c.kinds).map(([k, v]) => `<div class="bar-row"><span>${esc(k)}</span><i style="width:${(v / max) * 100}%"></i><b class="num">${v}件</b></div>`).join("") || `<p class="muted">この範囲で発生の記録はありません</p>`}</div>
+      <dl class="rows num">
+        <dt>いちばん近い交番</dt><dd>徒歩${p.near.police.min}分　${esc(p.near.police.name)}</dd>
+        <dt>建物の防犯</dt><dd>${p.autolock ? "オートロックあり" : "オートロックなし"}・${p.floor}階${p.floor === 1 ? "（1階は侵入されやすい）" : ""}</dd>
+        ${bike ? `<dt>気をつけること</dt><dd>いちばん多いのは自転車盗（${bike}件）。鍵を2つ付け、屋根や防犯カメラのある駐輪場か確かめる</dd>` : ""}
+      </dl>
+      <p class="note">${badge("実データ")} 「犯罪発生情報（${state.data.crime.year}年）」（大阪府警察 <a href="https://www.police.pref.osaka.lg.jp/seikatsu/9290.html" target="_blank" rel="noopener">犯罪オープンデータ</a>）を加工して作成。町丁目の位置は Geolonia 住所データ（CC BY 4.0）、交番は OpenStreetMap。</p>
+      <p class="note">${badge("推定")} 発生は町丁目単位なので、町丁目の代表点が物件から500m以内にあるものを数えています。空き巣などの侵入盗や性犯罪は、このデータに含まれません。「少なめ／多め」は、地図のエリア全体で同じように数えた件数と比べた結果です（エリアの中で少ないほうの1割は年${crimeRange[0]}件以下、多いほうの1割は年${crimeRange[1]}件以上）。</p>`;
+    }
+    if (tab === "hazard") {
+      const g = hazardGrade(p);
+      return `
+      <div><div class="eyebrow">災害のリスク</div><div class="big-verdict ${g[0]}">${g[1]}</div></div>
+      <p>${h.flood ? `大雨で川があふれたとき、${h.floodLabel}浸水する想定の地域です。部屋は${p.floor}階です。` : h.nearFlood ? `建物の場所は浸水想定の外ですが、すぐ近く（50m以内）に${h.nearFloodLabel}浸水する想定の区域があります。` : "洪水で浸水する想定のない地域です。"}避難場所は「${esc(n.shelter.name)}」、歩いて${n.shelter.min}分です。</p>
+      <dl class="rows num">
+        <dt>洪水の浸水想定</dt><dd>建物の場所 ${esc(h.floodLabel)}／すぐ近く ${esc(h.nearFloodLabel)}</dd>
+        <dt>土砂災害</dt><dd>${h.landslide ? "警戒区域に入る" : "警戒区域の外"}</dd>
+        <dt>津波</dt><dd>${h.tsunami ? "浸水想定あり" : "浸水想定なし"}</dd>
+        <dt>大きな地震</dt><dd>30年以内に震度6弱以上 ${h.quake60}%（5強以上 ${h.quake55}%）</dd>
+        <dt>避難場所</dt><dd>徒歩${n.shelter.min}分　${esc(n.shelter.name)}</dd>
+      </dl>
+      <p class="note">${badge("実データ")} 浸水・土砂災害・津波：国土地理院「<a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener">重ねるハザードマップ</a>」。浸水は1000年に1度くらいの大雨（想定最大規模）で川があふれた場合の想定で、側溝や下水があふれる内水氾濫は含みません。市のハザードマップもあわせて確かめてください。</p>
+      <p class="note">${badge("実データ")} 地震：防災科学技術研究所 J-SHIS（2020年版）　${badge("実データ")} 避難場所：国土地理院 指定緊急避難場所データ</p>`;
+    }
+    if (tab === "money") {
+      const spend = [
+        ["家賃・管理費", p.rent + p.fee, "var(--accent)"], ["食費", LIVING.food, "#2f8a52"], ["光熱費", LIVING.utility, "#c47a16"],
+        ["スマホ・ネット", LIVING.phone + (p.net ? 0 : 4000), "#8a5ac0"], ["日用品・交際費", LIVING.daily + LIVING.social, "#6d7a74"],
+      ];
+      const spendT = spend.reduce((a, [, v]) => a + v, 0), left = incT - spendT, scale = Math.max(incT, spendT), ic = initialCost(p);
+      return `
+      <div><div class="eyebrow">毎月</div><div class="big-verdict ${moneyGrade(p)[0]} num">${left >= 0 ? "残り " + yen(left) : yen(-left) + " 足りない"}</div></div>
+      <div class="money-bar">${spend.map(([k, v, c]) => `<i title="${k} ${yen(v)}" style="width:${(v / scale) * 100}%;background:${c}"></i>`).join("")}</div>
+      <div class="money-legend num">${spend.map(([k, v, c]) => `<span><b style="background:${c}"></b>${k} ${yen(v)}</span>`).join("")}</div>
+      <p class="note num">入ってくるお金 ${yen(incT)}（奨学金 ${yen(inc.scholar)}・仕送り ${yen(inc.allow)}・バイト ${yen(inc.job)}）。右上の「家賃の目安」から変えられます。</p>
+      <div class="two">
+        <div><div class="eyebrow">入居前に必要</div><div class="big-verdict num">${yen(Math.round(ic.total / 100) * 100)}</div></div>
+        <dl class="rows num small">${ic.items.map(([k, v]) => `<dt>${k}</dt><dd>${yen(Math.round(v / 100) * 100)}</dd>`).join("")}</dl>
+      </div>
+      <p class="note">奨学金は入学後に振り込まれるので、入居前のお金は先に用意が必要です。${inc.scholar ? `貸与型なら4年間で約${man(inc.scholar * 48)}を卒業後に返します。` : ""}</p>`;
+    }
+    if (tab === "check") {
+      const c = checklist(p);
+      return `
+      <p class="small muted">内見に行かなくても、オンライン内見（ビデオ通話）で不動産会社にこれだけ聞けばOK。この部屋の条件から${c.length}個に絞りました。</p>
+      <ul class="checklist">${c.map(([q, why], i) => `<li><input type="checkbox" id="ck-${p.id}-${i}"><label for="ck-${p.id}-${i}">${esc(q)}<span class="why">${esc(why)}</span></label></li>`).join("")}</ul>`;
+    }
+    return `
+      <div class="pchecks">${parentChecks(p).map(([k, c, v, sub]) => `<div class="pcheck ${c}"><span class="muted">${k}</span><b class="num">${esc(v)}</b><span class="muted">${esc(sub)}</span></div>`).join("")}</div>
+      <label for="letter" class="small muted">親に送るメッセージ（LINEにそのまま貼れます）</label>
+      <textarea class="letter" id="letter"></textarea>
+      <div class="row">
+        <button class="btn" id="letterBtn">親に送る文章を作る</button>
+        <button class="btn ghost" id="copyBtn">コピー</button>
+        <button class="btn ghost" id="stopBtn" hidden>止める</button>
+        <span class="status" id="letterStatus"></span>
+      </div>`;
+  }
+
+  function checklist(p) {
+    const c = [];
+    if (p.floor === 1) c.push(["1階の防犯：窓に面格子や補助錠があるか", "1階は空き巣・のぞきの被害が多い。親が一番気にするポイント"]);
+    if (p.hazard.nearFlood && p.floor <= 2) c.push(["過去にこの建物やまわりの道が浸水したことがあるか", p.hazard.flood ? `洪水の浸水想定 ${p.hazard.floodLabel} の区域` : `すぐ近くに浸水想定 ${p.hazard.nearFloodLabel} の区域`]);
+    if (p.traffic.level >= 4) c.push(["窓を閉めたときの車の音（動画で送ってもらう）", `${p.traffic.bigRoads.join("・") || "大きな道路"}が近い`]);
+    if (p.traffic.railM < 150) c.push(["電車が通るときの音と揺れ", `線路まで約${p.traffic.railM}m`]);
+    if (p.noise.dValue <= 35) c.push(["隣や上の階の音がどれくらい聞こえるか（壁をたたいてもらう）", `${p.structure}で隣との遮音は D-${p.noise.dValue} 相当。${dFeel(p.noise.dValue)}`]);
+    if (p.noise.indoor >= 33) c.push(["窓を閉めた部屋の中で、車や電車の音がどれくらい聞こえるか", `部屋の中の騒音の推定 約${p.noise.indoor}dB`]);
+    if (quakeStandard(p)[0] !== "good") c.push(["耐震診断や補強をしているか", quakeStandard(p)[1]]);
+    if (p.age >= 30) c.push(["水回りのカビ・においと、給湯器の年式", `築${p.age}年。古い給湯器は冬に壊れやすい`]);
+    if (!p.autolock) c.push(["玄関の鍵の種類（ディンプルキーか）", "オートロックなし"]);
+    if ((p.crime.kinds["自転車盗"] || 0) >= 50) c.push(["駐輪場に屋根・照明・防犯カメラがあるか", `まわり500mで自転車盗が年${p.crime.kinds["自転車盗"]}件`]);
+    if (!p.net) c.push(["ネット回線を自分で引く必要があるか", "無料Wi-Fiなし。工事に数週間かかることがある"]);
+    if (p.near.supermarket.min >= 8) c.push(["ネットスーパーの配達エリアか", `一番近いスーパーまで徒歩${p.near.supermarket.min}分`]);
+    c.push(["部屋で携帯の電波が入るか", "ビデオ通話中にそのまま確かめられる"]);
+    c.push(["日当たり（何時ごろまで日が入るか）", "写真では分かりにくい"]);
+    return c;
+  }
+
+  function parentChecks(p) {
+    const cap = rentCap(), m = p.rent + p.fee, ic = initialCost(p).total, n = p.near, h = p.hazard;
+    return [
+      ["毎月の家賃", m <= cap ? "good" : m <= cap * 1.15 ? "warn" : "bad", m <= cap ? "払える" : "きつい", `目安 ${man(cap)}`],
+      ["初期費用", ic <= 150000 ? "good" : ic <= 220000 ? "warn" : "bad", man(Math.round(ic / 1000) * 1000), "入居前に必要"],
+      ["防犯", p.floor === 1 || crimeGrade(p)[0] === "bad" ? "bad" : p.autolock && crimeGrade(p)[0] === "good" ? "good" : "warn", `犯罪${crimeGrade(p)[1]}`, `${p.autolock ? "オートロック" : "オートロックなし"}・${p.floor}階・交番${p.near.police.min}分`],
+      ["災害", hazardGrade(p)[0], h.flood ? `浸水${h.floodLabel}` : h.nearFlood ? "近くに浸水想定" : "浸水想定なし", `避難場所 ${n.shelter.min}分`],
+      ["病院", n.hospital.min <= 8 ? "good" : "warn", `徒歩${n.hospital.min}分`, n.hospital.name],
+    ];
+  }
+
+  // ---------- 親へのメッセージ ----------
+  function letterTemplate(p) {
+    const n = p.near, h = p.hazard, ic = initialCost(p);
+    return `お母さん、お父さんへ
+部屋の候補が決まってきたので見てほしい。
+
+【${p.name}】${p.layout}・${p.size}㎡・${p.structure}・${p.floor}階（${quakeStandard(p)[1]}）
+・家賃 ${yen(p.rent)}＋管理費 ${yen(p.fee)}（毎月の予算 ${yen(rentCap())} 以内${p.rent + p.fee <= rentCap() ? "に収まる" : "を少し超える"}）
+・入居前に約${man(Math.round(ic.total / 1000) * 1000)}かかる。奨学金は入学後に振り込まれるから、ここだけ先に助けてほしい
+・大学まで歩いて${p.campus.min}分、スーパーは${n.supermarket.min}分、病院（${n.hospital.name}）は${n.hospital.min}分
+・${h.flood ? `洪水のときは${h.floodLabel}浸水する想定の地域` : h.nearFlood ? `建物の場所は浸水想定の外（すぐ近くに${h.nearFloodLabel}の区域あり）` : "洪水の浸水想定はない地域"}。避難場所は${n.shelter.name}（歩いて${n.shelter.min}分）
+・まわり500mの犯罪は年${p.crime.total}件（ほとんど自転車盗）。交番まで歩いて${p.near.police.min}分
+・${p.autolock ? "オートロックあり" : "オートロックはない"}${p.floor === 1 ? "。1階なので防犯は不動産屋さんに確認する" : ""}
+
+大丈夫そうなら、オンライン内見を申し込もうと思ってる。`;
+  }
+
+  function letterPrompt(p) {
+    const n = p.near, h = p.hazard, ic = initialCost(p), inc = income();
+    const facts = {
+      物件: `${p.name}（${p.layout}・${p.size}㎡・${STRUCTURES[p.structure].full}・隣との遮音D-${p.noise.dValue}相当・${quakeStandard(p)[1]}・築${p.age}年・${p.floor}階／${p.floors}階建て・オートロック${p.autolock ? "あり" : "なし"}）`,
+      家賃: `${p.rent}円＋管理費${p.fee}円、敷金${p.deposit}か月・礼金${p.key}か月`,
+      入居前に必要な費用: `約${Math.round(ic.total)}円`,
+      本人の毎月の収入: `奨学金${inc.scholar}円・仕送り${inc.allow}円・バイト${inc.job}円、家賃予算の目安${rentCap()}円`,
+      通学: `大学まで徒歩${p.campus.min}分`,
+      暮らし: `スーパー徒歩${n.supermarket.min}分、診療所${n.clinic.min}分、病院「${n.hospital.name}」${n.hospital.min}分、夜間救急「${n.emergency.name}」${(n.emergency.m / 1000).toFixed(1)}km`,
+      防犯: `まわり500mの街頭犯罪 年${p.crime.total}件（${Object.entries(p.crime.kinds).map(([k, v]) => k + v + "件").join("・")}）、このエリアの中では${crimeGrade(p)[1]}、いちばん近い交番「${p.near.police.name}」徒歩${p.near.police.min}分、オートロック${p.autolock ? "あり" : "なし"}`,
+      交通量: `屋外の騒音の推定 約${p.noise.outdoor}dB・窓を閉めた部屋の中 約${p.noise.indoor}dB、${TRAFFIC_TEXT[p.traffic.level][0]}（${p.traffic.front}${p.traffic.bigRoads.length ? "、近くに" + p.traffic.bigRoads.join("・") : ""}）`,
+      災害: `洪水の浸水想定 建物の場所${h.floodLabel}・50m以内${h.nearFloodLabel}、土砂災害警戒区域${h.landslide ? "内" : "外"}、30年以内に震度6弱以上の確率${h.quake60}%、避難場所「${n.shelter.name}」徒歩${n.shelter.min}分`,
+    };
+    return `大阪の大学に進学して一人暮らしをする新入生が、実家の親にLINEで送るメッセージを書いてください。
+目的：この部屋に決めてよいか親に相談し、入居前の費用の援助をお願いすること。
+親が気にするのは「毎月払えるか」「初期費用」「防犯」「災害」「病院」です。下の事実だけを使い、数字は変えないでください。書いていない事実は足さないでください。
+口調：子から親への、ていねいすぎない普段の話し言葉。250〜350字。見出しや記号の多用はせず、LINEで読みやすく改行する。心配されそうな点は隠さず、どう確認するつもりかを一言添える。
+
+${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
+
+メッセージ本文だけを出力してください。`;
+  }
+
+  let letterCtl = null;
+  async function makeLetter() {
+    const p = byId(state.selected);
+    if (!state.sample) { $("letter").value = letterTemplate(p); $("letterStatus").textContent = "ひな形に戻しました"; return; }
+    letterCtl = new AbortController();
+    $("letterBtn").disabled = true; $("stopBtn").hidden = false;
+    $("letterStatus").textContent = "考えています…";
+    try {
+      await state.sample(letterPrompt(p), {
+        signal: letterCtl.signal, cache: false,
+        onText: ({ text }) => { if ($("letter")) $("letter").value = text; if ($("letterStatus")) $("letterStatus").textContent = "書いています…"; },
+      });
+      if ($("letterStatus")) $("letterStatus").textContent = "できました。気になるところは直してから送ってください";
+    } catch (e) {
+      if (!$("letter")) return;
+      if (e?.text) $("letter").value = e.text;
+      $("letterStatus").textContent = e?.code === "cancelled" ? "止めました" : errorText(e);
+      if (FATAL.includes(e?.code)) disableAI();
+    } finally {
+      if ($("letterBtn")) { $("letterBtn").disabled = false; $("stopBtn").hidden = true; }
+    }
+  }
+
+  const FATAL = ["not_granted", "sampling_disabled", "capability_disabled", "not_declared", "capability_removed"];
+  function errorText(e) {
+    return {
+      rate_limited: "AIが混み合っています。少し待ってからもう一度どうぞ",
+      not_granted: "AIの利用が許可されなかったので、ひな形を使ってください",
+      refused: "この内容はAIが扱えませんでした",
+      session_expired: "サインインし直してください",
+    }[e?.code] || "AIがうまく動きませんでした。ひな形を使ってください";
+  }
+  function disableAI() {
+    state.sample = null;
+    $("aiState").textContent = "AIなし（ひな形で動作）";
+    $("aiState").classList.remove("on");
+    if ($("letterBtn")) $("letterBtn").textContent = "ひな形に戻す";
+  }
+
+  // ---------- イベント ----------
+  function bind() {
+    $("backBtn").addEventListener("click", () => go("map"));
+    window.addEventListener("popstate", routeFromHash);
+    $("taskbar").addEventListener("click", (e) => {
+      const b = e.target.closest(".tb"); if (!b) return;
+      state.sheet = state.sheet === b.dataset.sheet ? null : b.dataset.sheet;
+      renderLayerChips();
+    });
+    $("heatStrip").addEventListener("click", () => { state.sheet = "heat"; renderLayerChips(); });
+    $("sheet").addEventListener("click", (e) => {
+      const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
+      if (t) { state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap(); return; }
+      if (!b) return;
+      const k = b.dataset.k;
+      state.layers.has(k) ? state.layers.delete(k) : state.layers.add(k);
+      renderBigMap();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sheet) { state.sheet = null; renderLayerChips(); } });
+    $("sidePanel").addEventListener("click", (e) => {
+      if (e.target.id === "openDetail") go("detail", state.selected);
+      if (e.target.id === "moreSources") { e.stopPropagation(); $("dataPop").hidden = false; $("dataBtn").setAttribute("aria-expanded", "true"); }
+    });
+    $("dataBtn").addEventListener("click", () => {
+      const open = $("dataPop").hidden;
+      $("dataPop").hidden = !open; $("dataBtn").setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", (e) => {
+      if (!$("dataPop").hidden && !e.target.closest("#dataPop, #dataBtn")) { $("dataPop").hidden = true; $("dataBtn").setAttribute("aria-expanded", "false"); }
+    });
+    $("budgetBtn").addEventListener("click", () => {
+      const open = $("budgetPop").hidden;
+      $("budgetPop").hidden = !open; $("budgetBtn").setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", (e) => {
+      if (!$("budgetPop").hidden && !e.target.closest("#budgetPop, #budgetBtn")) { $("budgetPop").hidden = true; $("budgetBtn").setAttribute("aria-expanded", "false"); }
+    });
+    for (const id of ["inScholar", "inAllow", "inJob"]) $(id).addEventListener("input", () => {
+      $("budgetChip").textContent = man(rentCap());
+      if (state.screen === "map") { drawPins(); renderSide(); } else renderDetail();
+    });
+    $("tabs").addEventListener("click", (e) => {
+      const t = e.target.closest(".tab"); if (!t) return;
+      state.tab = t.dataset.tab; renderDetail();
+    });
+    $("tabBody").addEventListener("click", async (e) => {
+      if (e.target.id === "letterBtn") makeLetter();
+      if (e.target.id === "stopBtn") letterCtl?.abort();
+      if (e.target.id === "copyBtn") {
+        const ta = $("letter");
+        try { await navigator.clipboard.writeText(ta.value); $("letterStatus").textContent = "コピーしました"; }
+        catch { ta.focus(); ta.select(); $("letterStatus").textContent = "選択しました。コピーして貼り付けてください"; }
+      }
+    });
+    window.addEventListener("resize", () => { maps.big?.invalidateSize(); maps.mini?.invalidateSize(); });
+  }
+
+  // ---------- 起動 ----------
+  async function start() {
+    bind();
+    try {
+      state.data = await (await fetch("data/area.json", { cache: "no-cache" })).json();
+    } catch {
+      document.querySelector(".stage").innerHTML = `<div class="panel" style="margin-top:20px">周辺データ（data/area.json）を読み込めませんでした。ファイルを直接開いている場合は、ローカルサーバー経由で開いてください。</div>`;
+      return;
+    }
+    $("budgetChip").textContent = man(rentCap());
+    $("dataList").innerHTML = SOURCE_GROUPS.map(([g, title]) => `<section class="src-group"><h4>${title}</h4>${DATA_SOURCES.filter((d) => d.group === g).map((d) => `
+      <div class="src-item"><div class="src-line"><b>${esc(d.what)}</b>${badge(d.kind)}</div><div class="src-provider">${providerLink(d)}</div>${d.note ? `<p>${esc(d.note)}</p>` : ""}</div>`).join("")}</section>`).join("") +
+      `<p class="note">周辺データの取得日 ${esc(state.data.generatedAt)}。公開データを加工して表示しています。</p>`;
+    routeFromHash();
+    try { state.sample = window.claude ? await window.claude.use("sample") : null; } catch { state.sample = null; }
+    if (state.sample) {
+      $("aiState").textContent = "AI 使用可"; $("aiState").classList.add("on");
+      if ($("letterBtn")) $("letterBtn").textContent = "AIで文章を整える";
+    } else disableAI();
+  }
+  start();
+})();
+</script>

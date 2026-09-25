@@ -1,0 +1,4 @@
+.git
+.claude
+scripts/.cache
+**/__pycache__
