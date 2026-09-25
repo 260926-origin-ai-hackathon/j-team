@@ -1,0 +1,12 @@
+# Vercel に送るのは、配信に必要な index.html と data/ だけ
+.git
+.claude
+scripts
+docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+vendor
+README.md
+.env*
+.vercel
