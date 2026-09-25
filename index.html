@@ -181,6 +181,17 @@
   .r3d-msg[hidden] { display: none; }
   .r3d-joy { position: absolute; left: 10px; bottom: 10px; width: 80px; height: 80px; border-radius: 50%; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.3); touch-action: none; }
   .r3d-nub { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.85); transform: translate(-50%, -50%); }
+  .furn-presets { display: flex; flex-wrap: wrap; gap: 5px; }
+  .furn-presets button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .furn-presets button:hover { border-color: var(--accent); color: var(--accent); }
+  .furn-custom { display: flex; gap: 6px; align-items: center; font-size: 12px; flex-wrap: wrap; }
+  .furn-custom input[type=number] { width: 58px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+  .furn-custom button, .furn-item button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 2px 10px; font-size: 12px; cursor: pointer; }
+  .furn-list { display: grid; gap: 4px; max-height: 190px; overflow-y: auto; }
+  .furn-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 4px 8px; border: 1px solid var(--line); border-radius: 10px; font-size: 12.5px; cursor: pointer; }
+  .furn-item[aria-current="true"] { border-color: #d9822f; background: #fdf3e8; }
+  .furn-item .w { color: #b3541e; font-size: 11.5px; }
+  .furn-item .ok { color: var(--accent); font-size: 11.5px; }
   .r3d-minimap { display: block; width: 100%; height: 170px; margin-top: 4px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; }
   .weights { display: grid; gap: 5px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
   .w-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; }
@@ -708,9 +719,54 @@
       }
     }
     const colliders = wallColliders(layout);
-    const furniture = new THREE.Group();
+    const furniture = new THREE.Group(); // 目安の家具（間取りのひな形についているもの）
     for (const f of layout.furniture) addFurniture(THREE, furniture, f);
     house.add(furniture);
+
+    // 自分で置いて試す家具。items = [{ id, kind, name, w, d, h, x, z, rot }]（寸法はメートル）
+    const userGroup = new THREE.Group();
+    house.add(userGroup);
+    let items = (opts.furniture || []).map((it) => ({ ...it }));
+    let selectedId = null;
+    const selMark = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xd9822f, transparent: true, opacity: 0.35, depthWrite: false }));
+    selMark.rotation.x = -Math.PI / 2;
+    selMark.visible = false;
+    house.add(selMark);
+    // 回したときの、床の上での大きさ（回すと幅と奥行きが入れ替わる）
+    const footprint = (it) => {
+      const odd = (it.rot || 0) % 2 === 1, w = odd ? it.d : it.w, d = odd ? it.w : it.d;
+      return { x1: it.x - w / 2, x2: it.x + w / 2, z1: it.z - d / 2, z2: it.z + d / 2 };
+    };
+    const overlap = (a, b) => a.x1 < b.x2 - 0.005 && a.x2 > b.x1 + 0.005 && a.z1 < b.z2 - 0.005 && a.z2 > b.z1 + 0.005;
+    function checks() {
+      return items.map((it) => {
+        const f = footprint(it), warn = [];
+        if (colliders.some((b) => overlap(f, b))) warn.push("壁に当たっている");
+        if (f.x1 < 0 || f.z1 < 0 || f.x2 > W || f.z2 > D) warn.push("部屋からはみ出している");
+        const other = items.find((o) => o.id !== it.id && overlap(f, footprint(o)));
+        if (other) warn.push(`${other.name}と重なっている`);
+        return { id: it.id, warn };
+      });
+    }
+    function drawItems() {
+      while (userGroup.children.length) {
+        const c = userGroup.children.pop();
+        c.traverse((o) => { o.geometry?.dispose(); o.material?.dispose?.(); });
+      }
+      for (const it of items) {
+        const g = addFurniture(THREE, userGroup, it);
+        g.userData.itemId = it.id;
+      }
+      const sel = items.find((it) => it.id === selectedId);
+      selMark.visible = !!sel;
+      if (sel) {
+        const f = footprint(sel);
+        selMark.scale.set(f.x2 - f.x1 + 0.12, f.z2 - f.z1 + 0.12, 1);
+        selMark.position.set(sel.x, 0.015, sel.z);
+      }
+    }
+    const changed = () => { drawItems(); opts.onFurniture?.(items.map((it) => ({ ...it })), checks(), selectedId); };
+    drawItems();
 
     // 状態
     const livingRooms = layout.rooms.filter((r) => r.kind === "living");
@@ -768,8 +824,38 @@
       const hit = new THREE.Vector3();
       return raycaster.ray.intersectPlane(floorPlane, hit) ? { x: hit.x, z: hit.z } : null;
     };
-    const onDown = (e) => { dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture?.(e.pointerId); opts.onInteract?.(); };
+    let dragItem = null, placing = false;
+    const onDown = (e) => {
+      opts.onInteract?.();
+      // 置いた家具の上で押したら、その家具をつかむ
+      const rect = canvas.getBoundingClientRect();
+      raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+      const hits = raycaster.intersectObjects(userGroup.children, true);
+      if (hits.length) {
+        let o = hits[0].object;
+        while (o && !o.userData.itemId) o = o.parent;
+        const it = o && items.find((x) => x.id === o.userData.itemId);
+        if (it) {
+          const p = floorHit(e);
+          dragItem = { it, offX: p ? it.x - p.x : 0, offZ: p ? it.z - p.z : 0, moved: false };
+          selectedId = it.id;
+          changed();
+          canvas.setPointerCapture?.(e.pointerId);
+          return;
+        }
+      }
+      dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture?.(e.pointerId);
+    };
     const onMove = (e) => {
+      if (dragItem) {
+        const p = floorHit(e);
+        if (!p) return;
+        dragItem.it.x = Math.round((p.x + dragItem.offX) * 100) / 100;
+        dragItem.it.z = Math.round((p.z + dragItem.offZ) * 100) / 100;
+        dragItem.moved = true;
+        drawItems();
+        return;
+      }
       if (!dragging) return;
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
@@ -778,15 +864,18 @@
       else { orbit.yaw -= dx * 0.006; orbit.pitch = Math.max(0.2, Math.min(1.45, orbit.pitch - dy * 0.005)); }
     };
     const onUp = (e) => {
+      if (dragItem) { const m = dragItem.moved; dragItem = null; if (m) changed(); return; }
       if (!dragging) return;
       dragging = false;
       if (dragDist > 6) return;
       const hit = floorHit(e);
       if (!hit || !roomAt(hit.x, hit.z)) return;
+      if (placing && selectedId) { selectedId = null; changed(); return; } // 家具を置いているときは、床のクリックで選択を外すだけ
+      if (mode === "dollhouse" && placing) return;
       if (mode === "dollhouse") enterWalkAt(hit.x, hit.z);
       else { target = hit; marker.position.set(hit.x, 0.02, hit.z); marker.visible = true; }
     };
-    const onCancel = () => { dragging = false; };
+    const onCancel = () => { dragging = false; if (dragItem) { dragItem = null; changed(); } };
     const onWheel = (e) => {
       e.preventDefault();
       if (mode === "dollhouse") orbit.radius = Math.max(4, Math.min(40, orbit.radius * (1 + e.deltaY * 0.001)));
@@ -856,6 +945,11 @@
         mmCtx.textAlign = "center";
         mmCtx.fillText(`${r.name}`, ox + (r.x + r.w / 2) * s, oz + (r.z + r.d / 2) * s - 2);
         mmCtx.fillText(`${tatami(r)}帖`, ox + (r.x + r.w / 2) * s, oz + (r.z + r.d / 2) * s + 10);
+      }
+      for (const it of items) {
+        const f = footprint(it);
+        mmCtx.fillStyle = it.id === selectedId ? "rgba(217,130,47,.8)" : "rgba(42,122,184,.55)";
+        mmCtx.fillRect(ox + f.x1 * s, oz + f.z1 * s, (f.x2 - f.x1) * s, (f.z2 - f.z1) * s);
       }
       mmCtx.fillStyle = "rgba(40,48,44,.9)";
       for (const b of colliders) mmCtx.fillRect(ox + b.x1 * s, oz + b.z1 * s, Math.max(1, (b.x2 - b.x1) * s), Math.max(1, (b.z2 - b.z1) * s));
@@ -939,6 +1033,44 @@
       layout,
       sunLabel: sunCfg.label,
       setMode: (m) => applyMode(m),
+      // 家具を置いて試す
+      addItem(preset) {
+        const size = Math.max(preset.w, preset.d);
+        let x = W / 2, z = D / 2;
+        if (mode === "walk") { // 目の前に置く（手前の端が約0.7m先に来るように）
+          const ahead = 0.7 + size / 2;
+          x = player.x - Math.sin(player.yaw) * ahead;
+          z = player.z - Math.cos(player.yaw) * ahead;
+        }
+        const it = { id: "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), kind: preset.kind, name: preset.name, w: preset.w, d: preset.d, h: preset.h, rot: 0, x, z };
+        // 置きたい場所に近くて、壁や他の家具にぶつからない場所を 10cm 刻みで探す（なければ置きたい場所のまま）
+        let best = null;
+        for (const r of [0, 1]) {
+          for (let cx = preset.w / 2; cx <= W - preset.w / 2 + 1e-6; cx += 0.1) {
+            for (let cz = preset.d / 2; cz <= D - preset.d / 2 + 1e-6; cz += 0.1) {
+              const c = { ...it, rot: r, x: cx, z: cz };
+              const f = footprint(c);
+              if (f.x1 < 0 || f.z1 < 0 || f.x2 > W || f.z2 > D) continue;
+              if (!roomAt(c.x, c.z) || colliders.some((b) => overlap(f, b)) || items.some((o) => overlap(f, footprint(o)))) continue;
+              const dist = Math.hypot(c.x - x, c.z - z) + r * 0.3;
+              if (!best || dist < best.dist) best = { dist, x: c.x, z: c.z, rot: r };
+            }
+          }
+        }
+        if (best) Object.assign(it, { x: best.x, z: best.z, rot: best.rot });
+        it.x = Math.round(it.x * 100) / 100; it.z = Math.round(it.z * 100) / 100;
+        items.push(it);
+        selectedId = it.id;
+        changed();
+        return it.id;
+      },
+      rotateItem(id) { const it = items.find((x) => x.id === id); if (it) { it.rot = ((it.rot || 0) + 1) % 4; selectedId = id; changed(); } },
+      removeItem(id) { items = items.filter((x) => x.id !== id); if (selectedId === id) selectedId = null; changed(); },
+      clearItems() { items = []; selectedId = null; changed(); },
+      selectItem(id) { selectedId = id; changed(); },
+      showSampleFurniture(on) { furniture.visible = on; },
+      setPlacing(on) { placing = on; },
+      checks,
       teleport: (room) => { enterWalkAt(room.x + room.w / 2, room.z + room.d * 0.3); player.yaw = Math.PI; },
       dispose() {
         disposed = true;
@@ -1013,9 +1145,31 @@
         box(f.w, 2.0, f.d, 0, mat(0xd8c6a8, 0.7));
         box(0.02, 1.9, 0.02, 0.05, mat(0x8a7456), 0, f.d / 2 + 0.01);
         break;
+      // ここから、家具を置いて試す機能で使う種類
+      case "fridge":
+        box(f.w, f.h ?? 1.4, f.d, 0, mat(0xf2f4f5, 0.35));
+        box(0.03, 0.4, 0.03, (f.h ?? 1.4) - 0.55, mat(0x9aa0a6, 0.3), f.w / 2 - 0.08, f.d / 2 + 0.015);
+        break;
+      case "tvstand":
+        box(f.w, 0.4, f.d, 0, mat(0x8a6a4c, 0.6));
+        box(Math.min(f.w - 0.1, 1.0), 0.6, 0.05, 0.42, mat(0x1d1f22, 0.3));
+        break;
+      case "shelf":
+        box(f.w, f.h ?? 1.8, f.d, 0, mat(0xc8a47a, 0.7));
+        for (let y = 0.4; y < (f.h ?? 1.8); y += 0.4) box(f.w - 0.04, 0.02, 0.02, y, mat(0x9b7d5c), 0, f.d / 2);
+        break;
+      case "chest":
+        box(f.w, f.h ?? 0.7, f.d, 0, mat(0xe9e4da, 0.6));
+        for (let y = 0.2; y < (f.h ?? 0.7); y += 0.23) box(f.w - 0.06, 0.02, 0.02, y, mat(0xb8b0a2), 0, f.d / 2);
+        break;
+      case "box":
+        box(f.w, f.h ?? 0.7, f.d, 0, new THREE.MeshStandardMaterial({ color: 0x8fd3f4, roughness: 0.6, transparent: true, opacity: 0.85 }));
+        break;
     }
     g.position.set(f.x, 0, f.z);
+    if (f.rot) g.rotation.y = (f.rot % 4) * Math.PI / 2;
     group.add(g);
+    return g;
   }
 
   function makeWoodTexture(THREE) {
@@ -1208,7 +1362,7 @@
   const state = {
     data: null, screen: "map", selected: null, tab: "room",
     layers: new Set(["heat"]), heatTheme: "all", sheet: null, weights: null,
-    sample: null,
+    sample: null, roomPane: "look", sampleFurn: false,
   };
   const maps = { big: null, mini: null };
   const layerGroups = {};
@@ -1913,11 +2067,17 @@
         onRoom: (name) => { $("r3dRoom").textContent = name ? `いまいる場所：${name}` : ""; $("r3dRoom").hidden = !name; },
         onMode: (m) => document.querySelectorAll("[data-r3dmode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.r3dmode === m))),
         onInteract: () => { $("r3dMsg").hidden = true; },
+        furniture: loadFurniture(p.id),
+        onFurniture: (items, checks, sel) => { saveFurniture(p.id, items); renderFurnList(items, checks, sel); },
       });
       if (token !== room3d.token) { api.dispose(); return; }
       room3d.api = api;
+      api.showSampleFurniture(state.roomPane === "look" || state.sampleFurn);
+      api.setPlacing(state.roomPane === "furn");
+      if (state.roomPane === "furn") api.setMode("dollhouse"); // 家具を置くときは上から見るほうが分かりやすい
+      renderFurnList(loadFurniture(p.id), api.checks(), null);
       if ($("r3dSun")) $("r3dSun").textContent = api.sunLabel;
-      $("r3dMsg").textContent = "ドラッグで見まわす／床をクリックで歩く";
+      $("r3dMsg").textContent = state.roomPane === "furn" ? "家具はドラッグで動かせます／それ以外のドラッグで見まわす" : "ドラッグで見まわす／床をクリックで歩く";
       setTimeout(() => { if (token === room3d.token) $("r3dMsg").hidden = true; }, 4000);
     } catch (e) {
       if (token !== room3d.token) return;
@@ -1966,14 +2126,62 @@
     map.setView(ll(p.x, p.y), -0.9);
   }
 
+  // ---------- 家具を置いて試す ----------
+  // 寸法は一人暮らしでよくある大きさ（cm）。高さは3Dの見た目だけに使う
+  const FURN_PRESETS = [
+    { kind: "bed", name: "ベッド（シングル）", w: 97, d: 195 },
+    { kind: "desk", name: "学習机", w: 100, d: 60 },
+    { kind: "shelf", name: "本棚", w: 80, d: 30, h: 180 },
+    { kind: "fridge", name: "冷蔵庫", w: 60, d: 65, h: 140 },
+    { kind: "washer", name: "洗濯機", w: 60, d: 60 },
+    { kind: "tvstand", name: "テレビ台", w: 120, d: 40 },
+    { kind: "lowtable", name: "ローテーブル", w: 90, d: 50 },
+    { kind: "sofa", name: "ソファ（2人掛け）", w: 160, d: 80 },
+    { kind: "chest", name: "衣装ケース", w: 40, d: 70, h: 70 },
+  ];
+  const furnKey = (pid) => "heyakarte.furniture." + pid;
+  function loadFurniture(pid) {
+    try { const v = JSON.parse(localStorage.getItem(furnKey(pid)) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+  }
+  function saveFurniture(pid, items) {
+    try { items.length ? localStorage.setItem(furnKey(pid), JSON.stringify(items)) : localStorage.removeItem(furnKey(pid)); } catch {}
+  }
+  function furniturePane() {
+    return `
+      <div class="furn-presets">${FURN_PRESETS.map((f, i) => `<button data-furnadd="${i}" title="${f.w}×${f.d}cm">＋${esc(f.name)}</button>`).join("")}</div>
+      <div class="furn-custom">持っている家具：幅<input type="number" id="furnW" value="80" min="10" max="400" step="5">×奥行<input type="number" id="furnD" value="40" min="10" max="400" step="5">cm<button id="furnCustom">置く</button>
+        <label style="margin-left:auto"><input type="checkbox" id="furnSample" ${state.sampleFurn ? "checked" : ""}> 目安の家具も出す</label></div>
+      <div class="furn-list" id="furnList"></div>
+      <p class="note">ドラッグで動かす・「回す」で90°回転。壁・はみ出し・重なりを知らせます（この端末に物件ごとに保存）。${badge("推定")} 部屋の寸法は間取りタイプと面積からの目安です。契約前に実寸を測ってください。</p>`;
+  }
+  function renderFurnList(items, checks, selectedId) {
+    const el = $("furnList"); if (!el) return;
+    if (!items.length) { el.innerHTML = `<p class="small muted">上のボタンで、目の前（上から見るときは部屋の真ん中）に家具を置きます。</p>`; return; }
+    const warn = Object.fromEntries(checks.map((c) => [c.id, c.warn]));
+    el.innerHTML = items.map((it) => {
+      const w = warn[it.id] || [], odd = (it.rot || 0) % 2 === 1;
+      const size = `${Math.round((odd ? it.d : it.w) * 100)}×${Math.round((odd ? it.w : it.d) * 100)}cm`;
+      return `<div class="furn-item" data-furnsel="${it.id}" aria-current="${it.id === selectedId}"><span>${esc(it.name)} <span class="small muted">${size}</span><br>${w.length ? `<span class="w">⚠ ${esc(w.join("・"))}</span>` : `<span class="ok">✓ 置けそう</span>`}</span><button data-furnrot="${it.id}">回す</button><button data-furndel="${it.id}">消す</button></div>`;
+    }).join("");
+    const cur = el.querySelector('[aria-current="true"]');
+    cur?.scrollIntoView({ block: "nearest" });
+  }
+  function addFurnitureFromUI(preset) {
+    const api = room3d.api; if (!api) return;
+    api.addItem({ kind: preset.kind, name: preset.name, w: preset.w / 100, d: preset.d / 100, h: preset.h ? preset.h / 100 : undefined });
+    $("r3dMsg").hidden = true;
+  }
+
   function tabContent(p, tab) {
     const n = p.near, h = p.hazard, tr = p.traffic, inc = income(), incT = incomeTotal();
     if (tab === "room") {
       const open = Math.round(p.noise.outdoor - 10);
       return `
       <div><div class="eyebrow">部屋の中を3Dで見る</div><div class="big-verdict num" style="font-size:20px">${p.layout}・${p.size}㎡・${p.floor}階／${p.floors}階建て</div></div>
-      <div class="row"><span class="seg" role="group" aria-label="見かた"><button data-r3dmode="walk" aria-pressed="true">歩いて見る</button><button data-r3dmode="dollhouse" aria-pressed="false">上から見る</button></span></div>
-      <div><div class="small muted">間取り（タップでその部屋へ移動）</div><canvas id="r3dMinimap" class="r3d-minimap"></canvas></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg" role="group" aria-label="見かた"><button data-r3dmode="walk" aria-pressed="true">歩いて見る</button><button data-r3dmode="dollhouse" aria-pressed="false">上から見る</button></span>
+        <span class="seg" role="group" aria-label="すること"><button data-roompane="look" aria-pressed="${state.roomPane === "look"}">部屋を見る</button><button data-roompane="furn" aria-pressed="${state.roomPane === "furn"}">家具を置く</button></span></div>
+      <div><div class="small muted">間取り（タップでその部屋へ移動${state.roomPane === "furn" ? "・青が置いた家具" : ""}）</div><canvas id="r3dMinimap" class="r3d-minimap"${state.roomPane === "furn" ? ' style="height:130px"' : ""}></canvas></div>
+      ${state.roomPane === "furn" ? furniturePane() : `
       <p class="small" id="r3dSun"></p>
       <dl class="rows num">
         <dt>窓の向き</dt><dd>${esc(p.facing)}${p.balcony ? "・バルコニーあり" : ""}</dd>
@@ -1981,7 +2189,7 @@
         <dt>外の音</dt><dd>窓を閉めて約${p.noise.indoor}dB／開けて約${open}dB<br><span class="small muted">${esc(dbFeel(p.noise.indoor))}（窓を閉めたとき）</span></dd>
       </dl>
       <p class="note">操作：ドラッグで見まわす／床をクリックでそこまで歩く／W A S D・矢印キー・左下のスティックで移動／ホイールで前後</p>
-      <p class="note">${badge("推定")} 3Dは間取り図から読み取ったものではなく、間取りタイプと面積から組み立てた簡易モデルです（部屋の配置・寸法・家具は目安）。窓を開けたときの音は、屋外の推定値から10dB引いた目安。3D内見のしくみは <a href="https://github.com/daichi05xxx-commits/kurashi-ai" target="_blank" rel="noopener">kurashi-ai</a> から移植しました。　${badge("架空")} 窓の向き・バルコニーはデモ用のデータ</p>`;
+      <p class="note">${badge("推定")} 3Dは間取り図から読み取ったものではなく、間取りタイプと面積から組み立てた簡易モデルです（部屋の配置・寸法・家具は目安）。窓を開けたときの音は、屋外の推定値から10dB引いた目安。3D内見のしくみは <a href="https://github.com/daichi05xxx-commits/kurashi-ai" target="_blank" rel="noopener">kurashi-ai</a> から移植しました。　${badge("架空")} 窓の向き・バルコニーはデモ用のデータ</p>`}`;
     }
     if (tab === "building") {
       const st = STRUCTURES[p.structure], q = quakeStandard(p);
@@ -2264,9 +2472,27 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       const t = e.target.closest(".tab"); if (!t) return;
       state.tab = t.dataset.tab; renderDetail();
     });
+    $("tabBody").addEventListener("change", (e) => {
+      if (e.target.id === "furnSample") { state.sampleFurn = e.target.checked; room3d.api?.showSampleFurniture(state.sampleFurn); }
+    });
     $("tabBody").addEventListener("click", async (e) => {
       const rm = e.target.closest("[data-r3dmode]");
       if (rm) { room3d.api?.setMode(rm.dataset.r3dmode); return; }
+      const pane = e.target.closest("[data-roompane]");
+      if (pane) { if (state.roomPane !== pane.dataset.roompane) { state.roomPane = pane.dataset.roompane; renderDetail(); } return; }
+      const fa = e.target.closest("[data-furnadd]");
+      if (fa) { addFurnitureFromUI(FURN_PRESETS[+fa.dataset.furnadd]); return; }
+      if (e.target.id === "furnCustom") {
+        const cm = (id) => Math.min(400, Math.max(10, Number($(id).value) || 0));
+        addFurnitureFromUI({ kind: "box", name: `自分の家具 ${cm("furnW")}×${cm("furnD")}`, w: cm("furnW"), d: cm("furnD"), h: 70 });
+        return;
+      }
+      const fr = e.target.closest("[data-furnrot]");
+      if (fr) { room3d.api?.rotateItem(fr.dataset.furnrot); return; }
+      const fd = e.target.closest("[data-furndel]");
+      if (fd) { room3d.api?.removeItem(fd.dataset.furndel); return; }
+      const fs = e.target.closest("[data-furnsel]");
+      if (fs) { room3d.api?.selectItem(fs.dataset.furnsel); return; }
       if (e.target.id === "letterBtn") makeLetter();
       if (e.target.id === "stopBtn") letterCtl?.abort();
       if (e.target.id === "copyBtn") {
