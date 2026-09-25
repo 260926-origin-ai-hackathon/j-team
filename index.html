@@ -107,11 +107,23 @@
   .start-hint { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: .08em; padding: 6px 18px; border-radius: 999px; background: var(--surface); border: 2px solid var(--sky); }
   .bubble { position: relative; background: var(--surface); border: 2px solid var(--sky); border-radius: 18px; padding: 16px 20px; color: var(--ink); }
   .bubble p { margin: 0; line-height: 1.75; }
+  .map-guide { position: absolute; right: 12px; bottom: 84px; z-index: 690; display: flex; align-items: flex-end; gap: 6px; pointer-events: none; max-width: min(340px, calc(100% - 24px)); }
+  .map-guide .mascot { flex: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.12)); }
+  .map-bubble { position: relative; padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; line-height: 1.5; margin-bottom: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  .map-bubble::after { content: ""; position: absolute; right: -8px; bottom: 16px; width: 12px; height: 12px; background: var(--surface); border-right: 2px solid var(--sky); border-top: 2px solid var(--sky); transform: rotate(45deg); }
+  @media (max-width: 860px) { .map-guide { display: none; } }
+  .d-guide { display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; max-width: 460px; }
+  .d-guide .mascot { flex: none; }
+  .d-bubble { position: relative; padding: 8px 14px; border-radius: 14px; font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--ink); }
+  .d-bubble::before { content: ""; position: absolute; left: -8px; top: 50%; width: 12px; height: 12px; margin-top: -6px; background: var(--surface); border-left: 2px solid var(--sky); border-bottom: 2px solid var(--sky); transform: rotate(45deg); }
+  .d-head .d-guide + .pv-price { margin-left: 0; }
   .guide { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
   .small-bubble { padding: 8px 12px; border-radius: 14px; }
   .small-bubble h2 { font-size: 17px; }
   .small-bubble .eyebrow { color: var(--sky-deep); }
   @media (prefers-reduced-motion: no-preference) {
+    .mascot.hop { animation: hop .35s ease-out; transform-origin: 50% 90%; }
+    @keyframes hop { 0% { transform: scale(.85) translateY(4px); } 60% { transform: scale(1.06); } 100% { transform: none; } }
     .start-hint { animation: hint 2.8s ease-in-out infinite; }
     @keyframes hint { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
     .mascot.start .mascot-body { animation: bob 2.8s ease-in-out infinite; transform-origin: 100px 200px; }
@@ -366,6 +378,7 @@
         <button class="heat-strip" id="heatStrip" hidden></button>
         <div class="panel sheet" id="sheet" hidden></div>
         <nav class="taskbar" id="taskbar" aria-label="地図の表示の切り替え"></nav>
+        <div class="map-guide" id="mapGuide" aria-live="polite"></div>
         <div class="readout" id="readout" hidden></div>
       </div>
       <aside class="side"><div class="panel" id="sidePanel"></div></aside>
@@ -1266,8 +1279,38 @@
 
   // ---------- キャラクター「ヘヤまる」 ----------
   // 水色の家の形をした案内役。カルテ（クリップボード）を持っている
-  function mascotSVG(size, variant = "") {
-    return `<svg class="mascot ${variant}" width="${size}" height="${Math.round(size * 1.1)}" viewBox="0 0 200 220" role="img" aria-label="ヘヤまる（水色の家の形をしたキャラクター）">
+  // 表情ごとの目・眉・口（と汗）。smile：ふつう／happy：にっこり／think：考え中／worry：困り顔／surprised：びっくり
+  const FACES = {
+    smile: {
+      eyes: `<ellipse cx="80" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/><ellipse cx="120" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/><circle cx="82.5" cy="120.5" r="2.6" fill="#ffffff"/><circle cx="122.5" cy="120.5" r="2.6" fill="#ffffff"/>`,
+      mouth: `<path d="M89 141q11 10 22 0" fill="none" stroke="#1E5F8A" stroke-width="4.5" stroke-linecap="round"/>`,
+    },
+    happy: {
+      eyes: `<path d="M71 127q9-11 18 0M111 127q9-11 18 0" fill="none" stroke="#1E5F8A" stroke-width="5" stroke-linecap="round"/>`,
+      mouth: `<path d="M86 138q14 18 28 0Z" fill="#1E5F8A" stroke="#1E5F8A" stroke-width="3" stroke-linejoin="round"/><path d="M93 146q7 5 14 0" fill="#F7A8B8"/>`,
+      blink: false,
+    },
+    think: {
+      eyes: `<ellipse cx="80" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/><ellipse cx="120" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/><circle cx="84" cy="119" r="2.8" fill="#ffffff"/><circle cx="124" cy="119" r="2.8" fill="#ffffff"/>`,
+      brows: `<path d="M71 110l17-2M112 108l17 2" stroke="#1E5F8A" stroke-width="4" stroke-linecap="round"/>`,
+      mouth: `<path d="M92 145h16" stroke="#1E5F8A" stroke-width="4.5" stroke-linecap="round"/>`,
+    },
+    worry: {
+      eyes: `<ellipse cx="80" cy="126" rx="6.5" ry="8" fill="#1E5F8A"/><ellipse cx="120" cy="126" rx="6.5" ry="8" fill="#1E5F8A"/><circle cx="82" cy="123" r="2.2" fill="#ffffff"/><circle cx="122" cy="123" r="2.2" fill="#ffffff"/>`,
+      brows: `<path d="M70 113l17-6M130 113l-17-6" stroke="#1E5F8A" stroke-width="4" stroke-linecap="round"/>`,
+      mouth: `<path d="M87 147q6.5-6 13 0t13 0" fill="none" stroke="#1E5F8A" stroke-width="4.5" stroke-linecap="round"/>`,
+      extra: `<path d="M56 100q-6 9 0 13q6-4 0-13Z" fill="#8FD3F4" stroke="#1E5F8A" stroke-width="3"/>`,
+    },
+    surprised: {
+      eyes: `<ellipse cx="80" cy="123" rx="8.5" ry="10.5" fill="#1E5F8A"/><ellipse cx="120" cy="123" rx="8.5" ry="10.5" fill="#1E5F8A"/><circle cx="83" cy="119" r="3" fill="#ffffff"/><circle cx="123" cy="119" r="3" fill="#ffffff"/>`,
+      brows: `<path d="M71 106q9-5 17 0M112 106q9-5 17 0" fill="none" stroke="#1E5F8A" stroke-width="4" stroke-linecap="round"/>`,
+      mouth: `<ellipse cx="100" cy="146" rx="6.5" ry="7.5" fill="#1E5F8A"/>`,
+    },
+  };
+
+  function mascotSVG(size, variant = "", face = "smile") {
+    const f = FACES[face] || FACES.smile;
+    return `<svg class="mascot ${variant} face-${face}" width="${size}" height="${Math.round(size * 1.1)}" viewBox="0 0 200 220" role="img" aria-label="ヘヤまる（水色の家の形をしたキャラクター）">
       <ellipse cx="100" cy="208" rx="58" ry="8" fill="#1E5F8A" opacity=".12"/>
       <g class="mascot-body">
         <ellipse cx="78" cy="196" rx="14" ry="8" fill="#3F9FD8"/>
@@ -1276,15 +1319,12 @@
         <path d="M24 100 100 34l76 66" fill="#3F9FD8" stroke="#1E5F8A" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
         <rect x="42" y="88" width="116" height="104" rx="22" fill="#8FD3F4" stroke="#1E5F8A" stroke-width="6"/>
         <path d="M44 100 100 50l56 50" fill="#8FD3F4"/>
-        <g class="mascot-eyes">
-          <ellipse cx="80" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/>
-          <ellipse cx="120" cy="124" rx="7.5" ry="9" fill="#1E5F8A"/>
-          <circle cx="82.5" cy="120.5" r="2.6" fill="#ffffff"/>
-          <circle cx="122.5" cy="120.5" r="2.6" fill="#ffffff"/>
-        </g>
+        <g class="${f.blink === false ? "" : "mascot-eyes"}">${f.eyes}</g>
+        ${f.brows || ""}
         <ellipse cx="66" cy="142" rx="9" ry="5.5" fill="#F7A8B8" opacity=".85"/>
         <ellipse cx="134" cy="142" rx="9" ry="5.5" fill="#F7A8B8" opacity=".85"/>
-        <path d="M89 141q11 10 22 0" fill="none" stroke="#1E5F8A" stroke-width="4.5" stroke-linecap="round"/>
+        ${f.mouth}
+        ${f.extra || ""}
         <rect x="88" y="158" width="24" height="34" rx="7" fill="#F5D547" stroke="#1E5F8A" stroke-width="4.5"/>
         <circle cx="106" cy="176" r="2.3" fill="#1E5F8A"/>
         <g class="mascot-arm">
@@ -1694,14 +1734,45 @@
   }
 
   // ---------- 右側（使い方／選んだ物件の概要） ----------
+  // ---------- 地図の上のヘヤまる ----------
+  // 何も選んでいないとき・物件を選んだとき・ヒートマップや重ねる情報を変えたときに、表情とひとことを変える
+  let guideTimer = null;
+  function setMapGuide(face, text, { temporary = false } = {}) {
+    const el = $("mapGuide");
+    if (!el) return;
+    clearTimeout(guideTimer);
+    el.innerHTML = `<div class="bubble map-bubble">${esc(text)}</div>${mascotSVG(78, "hop", face)}`;
+    if (temporary) guideTimer = setTimeout(() => mapGuideForSelection(), 4500);
+  }
+  function mapGuideForSelection() {
+    const p = state.selected && byId(state.selected);
+    if (!p) { setMapGuide("smile", "気になる札をタップしてね。ヒートマップが緑のところほど住みやすいよ"); return; }
+    // 良いところと気になるところを1つずつ拾って、表情を決める
+    const goods = [], bads = [];
+    if (!overBudget(p)) goods.push("予算内"); else bads.push("予算を少し超える");
+    const add = (g, good, bad) => { if (g[0] === "good") goods.push(good); else if (g[0] === "bad") bads.push(bad); };
+    add(lifeGrade(p), "スーパーも近い", "スーパーや病院が遠め");
+    add(trafficGrade(p), "車の音が少ない", "大きな道が近い");
+    add(crimeGrade(p), "犯罪が少なめ", "犯罪が多めのエリア");
+    add(hazardGrade(p), "災害のリスクが低め", "災害のリスクが高め");
+    if (p.noise.dValue <= 35) bads.push("隣の音が響きやすい");
+    const face = bads.length === 0 ? "happy" : bads.length === 1 ? "think" : "worry";
+    const q = (arr) => `「${arr.slice(0, 2).join("」「")}」`;
+    const text = bads.length === 0 ? `いいところは${q(goods)}。いい部屋かも！「詳しく見る」で中も見てみよう`
+      : goods.length ? `いいところは${q(goods)}、気になるのは${q(bads)}。「詳しく見る」で確かめよう`
+      : `気になるのは${q(bads)}。ほかの札も見てみよう`;
+    setMapGuide(face, text);
+  }
+
   function renderSide() {
+    mapGuideForSelection();
     const p = state.selected && byId(state.selected);
     if (!p) {
       const inBudget = state.data.properties.filter((x) => !overBudget(x)).length;
       $("sidePanel").innerHTML = `
-        <div class="intro guide">
-          ${mascotSVG(64, "small")}
-          <div class="bubble small-bubble"><div class="eyebrow">ヘヤまるのひとこと</div><h2>気になる場所をタップして、部屋を選ぼう</h2></div>
+        <div class="intro">
+          <div class="eyebrow">大学進学ではじめての一人暮らし</div>
+          <h2>気になる場所をタップして、部屋を選ぶ</h2>
         </div>
         <div class="howto">
           <b>1</b><span>地図の下のタスクバーで、ヒートマップのテーマや、スーパー・病院・交通量・浸水想定・防犯などを切り替える</span>
@@ -1745,14 +1816,34 @@
   }
 
   // ---------- 詳しい住宅情報 ----------
+  // 住宅詳細のヘヤまる：開いているタブと評価に合わせて、表情とひとことを変える
+  function mascotLine(p, tab) {
+    const byGrade = (g, good, warn, bad) => g === "good" ? ["happy", good] : g === "warn" ? ["think", warn] : ["worry", bad];
+    const d = p.noise.dValue;
+    switch (tab) {
+      case "room": return ["surprised", "部屋の中を歩いてみよう。「上から見る」で間取り全体も見られるよ"];
+      case "building": return d >= 45 ? ["happy", "壁がしっかりしていて、隣の音は気になりにくそう"] : d >= 40 ? ["think", "隣の音はふつう。夜の静けさは内見で確かめよう"] : ["worry", "隣の音が響きやすいかも。内見で必ず聞いてみて"];
+      case "life": return byGrade(lifeGrade(p)[0], "スーパーも病院も近くて、暮らしやすそう！", "買い物は少し歩くかも。道のりを見てみて", "スーパーや病院が遠め。自転車があると安心");
+      case "traffic": return byGrade(trafficGrade(p)[0], "車は少なめ。静かに過ごせそう", "車の音はふつう。窓を閉めれば気になりにくいよ", "大きな道が近いよ。音と排気ガスに気をつけて");
+      case "hazard": return byGrade(hazardGrade(p)[0], "浸水の想定はない場所。避難場所も覚えておこう", "近くに浸水想定の区域があるよ。階数も確かめてね", "災害のリスクが高め。親にも相談しよう");
+      case "crime": return byGrade(crimeGrade(p)[0], "まわりの犯罪は少なめ。安心して住めそう", "自転車盗が多めのエリア。鍵は2つ付けよう", "犯罪が多めの場所。夜道と駐輪場を確かめよう");
+      case "money": return byGrade(moneyGrade(p)[0], "毎月のお金に余裕がありそう！", "ちょっとギリギリかも。食費を見直してみよう", "毎月赤字になりそう。予算を見直そう");
+      case "check": return ["think", "ビデオ通話で、これだけ聞けばだいじょうぶ"];
+      case "parent": return ["happy", "親にも見てもらって、安心して決めよう"];
+      default: return ["smile", "気になるところをタブで見てみよう"];
+    }
+  }
+
   function renderDetail() {
     const p = byId(state.selected);
+    const [face, line] = mascotLine(p, state.tab);
     $("dHead").innerHTML = `
       <div>
         <div class="eyebrow">詳しい住宅情報 <span class="demo-flag">物件はデモ用の架空データ</span></div>
         <h2>${esc(p.name)}</h2>
         <div class="spec num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階／${p.floors}階建て${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}・${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</div>
       </div>
+      <div class="d-guide" aria-live="polite">${mascotSVG(68, "hop", face)}<div class="bubble d-bubble">${esc(line)}</div></div>
       <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
     const tabs = [
       ["room", "部屋の中（3D）", null], ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
@@ -2094,11 +2185,18 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
         return;
       }
       const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
-      if (t) { state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap(); return; }
+      if (t) {
+        state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap();
+        const hint = { all: "あなたの大事なことをまとめて", shop: "スーパーが近いところほど緑", med: "診療所が近いところほど緑", quiet: "静かなところほど緑", commute: "大学が近いところほど緑", safety: "浸水しにくいところほど緑", crime: "犯罪が少ないところほど緑", food: "飲食店が多いところほど緑", conv: "コンビニが近いところほど緑", bus: "バス停が近いところほど緑" }[t.dataset.t];
+        setMapGuide("surprised", `「${themeLabel(t.dataset.t)}」で塗り直したよ。${hint}`, { temporary: true });
+        return;
+      }
       if (!b) return;
       const k = b.dataset.k;
       state.layers.has(k) ? state.layers.delete(k) : state.layers.add(k);
       renderBigMap();
+      const ly = LAYERS.find((x) => x.k === k);
+      if (ly && k !== "heat") setMapGuide(state.layers.has(k) ? "happy" : "smile", state.layers.has(k) ? `${ly.label}を地図に出したよ` : `${ly.label}をしまったよ`, { temporary: true });
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sheet) { state.sheet = null; renderLayerChips(); } });
     $("sidePanel").addEventListener("click", (e) => {
