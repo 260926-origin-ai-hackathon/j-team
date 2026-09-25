@@ -120,6 +120,17 @@
   [aria-pressed="true"] > .switch::after { transform: translateX(14px); }
   .legend-row, .sheet .row { display: flex; flex-wrap: wrap; gap: 3px 10px; align-items: center; font-size: 12px; margin-top: 3px; }
   .legend-block { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 13px; }
+  .r3d-box { position: absolute; inset: 0; z-index: 800; background: #0a0d12; }
+  .r3d-box[hidden] { display: none; }
+  .r3d-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .r3d-canvas:active { cursor: grabbing; }
+  .r3d-room { position: absolute; top: 10px; left: 10px; padding: 5px 10px; border-radius: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 13px; font-weight: 700; pointer-events: none; }
+  .r3d-room:empty, .r3d-room[hidden] { display: none; }
+  .r3d-msg { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; font-size: 12.5px; pointer-events: none; white-space: nowrap; }
+  .r3d-msg[hidden] { display: none; }
+  .r3d-joy { position: absolute; left: 10px; bottom: 10px; width: 80px; height: 80px; border-radius: 50%; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.3); touch-action: none; }
+  .r3d-nub { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.85); transform: translate(-50%, -50%); }
+  .r3d-minimap { display: block; width: 100%; height: 170px; margin-top: 4px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; }
   .weights { display: grid; gap: 5px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
   .w-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
@@ -320,7 +331,8 @@
     <!-- 詳しい住宅情報 -->
     <section class="screen s-detail" data-screen="detail" hidden>
       <div class="d-head" id="dHead"></div>
-      <div class="mapwrap"><div class="map" id="miniMap"></div></div>
+      <div class="mapwrap"><div class="map" id="miniMap"></div>
+        <div class="r3d-box" id="room3dBox" hidden><div class="r3d-room" id="r3dRoom"></div><div class="r3d-msg" id="r3dMsg"></div></div></div>
       <div class="d-body">
         <div class="tabs" role="tablist" id="tabs"></div>
         <div class="tabbody" id="tabBody"></div>
@@ -328,6 +340,657 @@
     </section>
   </main>
 </div>
+
+<script>
+/*
+ * 部屋の中を3Dで見る（Room3D）
+ *
+ * kurashi-ai（https://github.com/daichi05xxx-commits/kurashi-ai）の
+ * src/lib/layouts.ts（間取りテンプレートと組み立て・当たり判定）と
+ * src/components/Walkthrough3D.tsx（three.js の部屋・光・操作）を、
+ * ヘヤカルテ用にビルドなしの JavaScript へ移植したもの。周辺の道路・騒音地図・家具の配置は移植していない。
+ *
+ * 3Dモデルは間取り図から読み取ったものではなく、間取りタイプ＋面積から組み立てた簡易モデル。
+ */
+(() => {
+  "use strict";
+  const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js";
+
+  /* ---------------- 間取り（kurashi-ai の layouts.ts から） ---------------- */
+  const door = (from, to) => ({ from, to, kind: "door" });
+  const TEMPLATES = {
+    // 1R・1K・1DK（ヘヤカルテの物件にある間取り）だけを取り込んでいる
+    "1R": {
+    width: 4,
+    depth: 5.5,
+    rooms: [
+      { name: "浴室・トイレ", kind: "bath", x: 0, z: 0, w: 1.6, d: 1.8 },
+      { name: "玄関・キッチン", kind: "kitchen", x: 1.6, z: 0, w: 2.4, d: 1.8 },
+      { name: "洋室", kind: "living", x: 0, z: 1.8, w: 4, d: 3.7 },
+    ],
+    innerWalls: [
+      { x1: 1.6, z1: 0, x2: 1.6, z2: 1.8, openings: [door(0.6, 1.3)] },
+      { x1: 0, z1: 1.8, x2: 1.6, z2: 1.8, openings: [] },
+    ],
+    outerOpenings: [
+      { side: "top", from: 3.0, to: 3.8, kind: "entrance" },
+      { side: "bottom", from: 0.8, to: 3.2, kind: "window" },
+    ],
+    furniture: [
+      { kind: "tub", x: 0.8, z: 0.45, w: 1.4, d: 0.7 },
+      { kind: "counter", x: 2.3, z: 0.3, w: 1.2, d: 0.6 },
+      { kind: "washer", x: 3.65, z: 1.4, w: 0.6, d: 0.6 },
+      { kind: "bed", x: 0.6, z: 4.4, w: 1.0, d: 2.0 },
+      { kind: "desk", x: 3.65, z: 2.9, w: 0.5, d: 1.0 },
+      { kind: "lowtable", x: 2.3, z: 3.9, w: 0.8, d: 0.6 },
+    ],
+  },
+  "1K": {
+    width: 4,
+    depth: 6.5,
+    rooms: [
+      { name: "浴室・洗面", kind: "bath", x: 0, z: 0, w: 1.6, d: 2.2 },
+      { name: "キッチン", kind: "kitchen", x: 1.6, z: 0, w: 2.4, d: 2.2 },
+      { name: "洋室", kind: "living", x: 0, z: 2.2, w: 4, d: 4.3 },
+    ],
+    innerWalls: [
+      { x1: 1.6, z1: 0, x2: 1.6, z2: 2.2, openings: [door(0.7, 1.4)] },
+      { x1: 0, z1: 2.2, x2: 4, z2: 2.2, openings: [door(2.6, 3.4)] },
+    ],
+    outerOpenings: [
+      { side: "top", from: 3.0, to: 3.8, kind: "entrance" },
+      { side: "bottom", from: 0.6, to: 3.4, kind: "window" },
+    ],
+    furniture: [
+      { kind: "tub", x: 0.8, z: 0.45, w: 1.4, d: 0.7 },
+      { kind: "washer", x: 0.4, z: 1.8, w: 0.6, d: 0.6 },
+      { kind: "counter", x: 2.25, z: 0.3, w: 1.1, d: 0.6 },
+      { kind: "closet", x: 0.7, z: 2.5, w: 1.2, d: 0.6 },
+      { kind: "bed", x: 0.6, z: 5.4, w: 1.0, d: 2.0 },
+      { kind: "desk", x: 3.65, z: 3.4, w: 0.5, d: 1.0 },
+      { kind: "lowtable", x: 2.4, z: 4.6, w: 0.8, d: 0.6 },
+    ],
+  },
+  "1DK": {
+    width: 5.5,
+    depth: 6.5,
+    rooms: [
+      { name: "浴室・洗面", kind: "bath", x: 0, z: 0, w: 1.8, d: 3.0 },
+      { name: "ダイニングキッチン", kind: "kitchen", x: 1.8, z: 0, w: 3.7, d: 3.0 },
+      { name: "洋室", kind: "living", x: 0, z: 3.0, w: 5.5, d: 3.5 },
+    ],
+    innerWalls: [
+      { x1: 1.8, z1: 0, x2: 1.8, z2: 3.0, openings: [door(1.2, 2.0)] },
+      { x1: 0, z1: 3.0, x2: 5.5, z2: 3.0, openings: [door(3.4, 4.2)] },
+    ],
+    outerOpenings: [
+      { side: "top", from: 4.3, to: 5.1, kind: "entrance" },
+      { side: "bottom", from: 0.8, to: 4.8, kind: "window" },
+    ],
+    furniture: [
+      { kind: "tub", x: 0.9, z: 0.45, w: 1.4, d: 0.7 },
+      { kind: "washer", x: 0.45, z: 2.5, w: 0.6, d: 0.6 },
+      { kind: "counter", x: 2.9, z: 0.3, w: 2.0, d: 0.6 },
+      { kind: "table", x: 3.2, z: 1.9, w: 0.9, d: 0.9 },
+      { kind: "closet", x: 0.8, z: 3.3, w: 1.6, d: 0.6 },
+      { kind: "bed", x: 0.6, z: 5.4, w: 1.0, d: 2.0 },
+      { kind: "desk", x: 5.2, z: 4.3, w: 0.5, d: 1.0 },
+      { kind: "lowtable", x: 3.0, z: 5.0, w: 0.8, d: 0.6 },
+    ],
+  },
+  };
+
+  function buildLayout(type, area) {
+    const tpl = TEMPLATES[type] ?? TEMPLATES["1K"];
+    const scale = Math.min(1.35, Math.max(0.8, Math.sqrt((area || tpl.width * tpl.depth) / (tpl.width * tpl.depth))));
+    const s = (n) => Math.round(n * scale * 100) / 100;
+    const W = s(tpl.width), D = s(tpl.depth);
+    const outer = (side) => {
+      const openings = tpl.outerOpenings.filter((o) => o.side === side).map((o) => ({ from: s(o.from), to: s(o.to), kind: o.kind }));
+      return {
+        top: { x1: 0, z1: 0, x2: W, z2: 0, outer: true, openings },
+        bottom: { x1: 0, z1: D, x2: W, z2: D, outer: true, openings },
+        left: { x1: 0, z1: 0, x2: 0, z2: D, outer: true, openings },
+        right: { x1: W, z1: 0, x2: W, z2: D, outer: true, openings },
+      }[side];
+    };
+    return {
+      type: type in TEMPLATES ? type : "1K", width: W, depth: D,
+      rooms: tpl.rooms.map((r) => ({ ...r, x: s(r.x), z: s(r.z), w: s(r.w), d: s(r.d) })),
+      walls: [outer("top"), outer("bottom"), outer("left"), outer("right"),
+        ...tpl.innerWalls.map((w) => ({ x1: s(w.x1), z1: s(w.z1), x2: s(w.x2), z2: s(w.z2), openings: w.openings.map((o) => ({ ...o, from: s(o.from), to: s(o.to) })) }))],
+      // 家具は実物のサイズのまま、位置だけ拡大縮小する
+      furniture: tpl.furniture.map((f) => ({ ...f, x: s(f.x), z: s(f.z) })),
+    };
+  }
+
+  /** 壁を「開口部で区切られた区間」に分割する */
+  function splitWall(wall) {
+    const horizontal = wall.z1 === wall.z2;
+    const start = horizontal ? Math.min(wall.x1, wall.x2) : Math.min(wall.z1, wall.z2);
+    const end = horizontal ? Math.max(wall.x1, wall.x2) : Math.max(wall.z1, wall.z2);
+    const parts = [];
+    let cursor = start;
+    for (const o of [...wall.openings].sort((a, b) => a.from - b.from)) {
+      if (o.from > cursor) parts.push({ from: cursor, to: o.from, opening: null });
+      parts.push({ from: o.from, to: o.to, opening: o });
+      cursor = o.to;
+    }
+    if (cursor < end) parts.push({ from: cursor, to: end, opening: null });
+    return parts;
+  }
+  const wallThickness = (wall) => (wall.outer ? 0.18 : 0.12);
+
+  /** 通り抜けられない部分（壁・窓・閉じた玄関ドア）の当たり判定用の矩形 */
+  function wallColliders(layout) {
+    const boxes = [];
+    for (const wall of layout.walls) {
+      const horizontal = wall.z1 === wall.z2, T = wallThickness(wall), fixed = horizontal ? wall.z1 : wall.x1;
+      const parts = splitWall(wall), start = parts[0]?.from ?? 0, end = parts[parts.length - 1]?.to ?? 0;
+      for (const part of parts) {
+        if (part.opening?.kind === "door") continue;
+        const from = part.from === start ? part.from - T / 2 : part.from;
+        const to = part.to === end ? part.to + T / 2 : part.to;
+        boxes.push(horizontal ? { x1: from, x2: to, z1: fixed - T / 2, z2: fixed + T / 2 } : { x1: fixed - T / 2, x2: fixed + T / 2, z1: from, z2: to });
+      }
+    }
+    return boxes;
+  }
+  const tatami = (room) => (room.w * room.d / 1.62).toFixed(1);
+
+  /* ---------------- 3D（kurashi-ai の Walkthrough3D.tsx から） ---------------- */
+  const WALL_H = 2.4, STORY_H = 2.9, EYE = 1.5, RADIUS = 0.22, SPEED = 1.6, DOOR_TOP = 2.05, SILL = 0.85;
+  const SUN = {
+    南: { fromWindow: true, elevation: 40, intensity: 2.4, color: 0xfff1dc, label: "南向き：日中を通して窓から日差しが入ります（正午ごろのイメージ）" },
+    東: { fromWindow: true, elevation: 18, intensity: 1.8, color: 0xfff4e2, label: "東向き：朝に低い角度の日差しが入ります（朝8時ごろのイメージ）" },
+    西: { fromWindow: true, elevation: 14, intensity: 2.0, color: 0xffc98f, label: "西向き：夕方に強い西日が入ります（夕方4時ごろのイメージ）" },
+    北: { fromWindow: false, elevation: 45, intensity: 1.4, color: 0xf2f5ff, label: "北向き：直射日光はほぼ入らず、やわらかい光になります" },
+  };
+  const ROOM_COLORS = { living: "rgba(199,165,118,.6)", bed: "rgba(146,178,150,.6)", kitchen: "rgba(230,190,120,.55)", bath: "rgba(120,175,196,.6)", hall: "rgba(180,172,150,.5)" };
+
+  let threePromise = null;
+  const loadThree = () => (threePromise ??= import(THREE_URL));
+
+  /**
+   * container に3Dの部屋を描く。
+   * opts: { type, area, floor, facing, balcony, minimap（間取り図を描く canvas）, onRoom(name), onMode(mode) }
+   * 戻り値の Promise は { setMode, teleport, dispose, sunLabel, layout } を返す
+   */
+  async function open(container, opts) {
+    const THREE = await loadThree();
+    const layout = buildLayout(opts.type, opts.area);
+    const W = layout.width, D = layout.depth;
+    const baseY = (Math.max(1, opts.floor || 1) - 1) * STORY_H, houseY = baseY + 0.06;
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "r3d-canvas";
+    container.prepend(canvas);
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    } catch (err) {
+      canvas.remove();
+      throw new Error("webgl");
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xcfe3f2);
+    scene.fog = new THREE.Fog(0xcfe3f2, 60, 220);
+    const camera = new THREE.PerspectiveCamera(65, 1, 0.05, 600);
+    camera.rotation.order = "YXZ";
+
+    // 光（窓の向きで日差しの角度・強さ・色を変える）
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x9a8a78, 1.9));
+    const sunCfg = SUN[opts.facing] ?? SUN["南"];
+    const sun = new THREE.DirectionalLight(sunCfg.color, sunCfg.intensity);
+    const elev = (sunCfg.elevation * Math.PI) / 180, dist = 60;
+    sun.position.set(W / 2 + 8, houseY + Math.sin(elev) * dist, sunCfg.fromWindow ? D / 2 + Math.cos(elev) * dist : D / 2 - Math.cos(elev) * dist);
+    sun.target.position.set(W / 2, houseY, D / 2);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    const ext = Math.max(W, D) / 2 + 8;
+    Object.assign(sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 1, far: 160 });
+    sun.shadow.bias = -0.0004;
+    scene.add(sun, sun.target);
+
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({ color: 0xb9c4ab, roughness: 1 }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(W / 2, 0, D / 2);
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const house = new THREE.Group();
+    house.position.y = houseY;
+    scene.add(house);
+    if (baseY > 0) { // 下の階（外観のボリュームだけ）
+      const lower = new THREE.Mesh(new THREE.BoxGeometry(W + 0.3, baseY + 0.06, D + 0.3), new THREE.MeshStandardMaterial({ color: 0xd8d2c6, roughness: 0.95 }));
+      lower.position.set(W / 2, (baseY + 0.06) / 2, D / 2);
+      lower.castShadow = lower.receiveShadow = true;
+      scene.add(lower);
+    }
+    for (const r of layout.rooms) {
+      const l = new THREE.PointLight(0xffe2b8, r.kind === "bath" || r.kind === "hall" ? 2.5 : 4.5, 7, 2);
+      l.position.set(r.x + r.w / 2, WALL_H - 0.25, r.z + r.d / 2);
+      house.add(l);
+    }
+    const woodTex = makeWoodTexture(THREE), tileTex = makeTileTexture(THREE);
+    for (const r of layout.rooms) {
+      const tex = (r.kind === "bath" ? tileTex : woodTex).clone();
+      tex.repeat.set(r.w / (r.kind === "bath" ? 0.6 : 1.2), r.d / (r.kind === "bath" ? 0.6 : 1.2));
+      tex.needsUpdate = true;
+      const tint = { living: 0xffffff, bed: 0xf2eee6, kitchen: 0xf6efe2, bath: 0xffffff, hall: 0xe9e2d6 }[r.kind];
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.d), new THREE.MeshStandardMaterial({ map: tex, color: tint, roughness: 0.75 }));
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(r.x + r.w / 2, 0, r.z + r.d / 2);
+      floor.receiveShadow = true;
+      house.add(floor);
+    }
+    if (opts.balcony) {
+      const balcony = new THREE.Mesh(new THREE.BoxGeometry(W, 0.1, 1.2), new THREE.MeshStandardMaterial({ color: 0xb9b6ae, roughness: 1 }));
+      balcony.position.set(W / 2, -0.05, D + 0.7);
+      balcony.receiveShadow = balcony.castShadow = true;
+      house.add(balcony);
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(W, 1.0, 0.05), new THREE.MeshStandardMaterial({ color: 0x8e9499, transparent: true, opacity: 0.55 }));
+      rail.position.set(W / 2, 0.5, D + 1.28);
+      house.add(rail);
+    }
+    const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ color: 0xf7f5f0, roughness: 1 }));
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.set(W / 2, WALL_H, D / 2);
+    house.add(ceiling);
+
+    const wallGroup = new THREE.Group();
+    house.add(wallGroup);
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xf1ede5, roughness: 0.95 });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0xdcd6cb, roughness: 0.9 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xcfe8f7, transparent: true, opacity: 0.18, roughness: 0.05 });
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x6f5a45, roughness: 0.7 });
+    for (const wall of layout.walls) {
+      const horizontal = wall.z1 === wall.z2, T = wallThickness(wall), fixed = horizontal ? wall.z1 : wall.x1;
+      const parts = splitWall(wall), start = parts[0]?.from ?? 0, end = parts[parts.length - 1]?.to ?? 0;
+      const addBox = (from, to, y0, y1, mat, thickness = T, cast = true) => {
+        const len = to - from;
+        const geo = horizontal ? new THREE.BoxGeometry(len, y1 - y0, thickness) : new THREE.BoxGeometry(thickness, y1 - y0, len);
+        const mesh = new THREE.Mesh(geo, mat);
+        const mid = (from + to) / 2;
+        mesh.position.set(horizontal ? mid : fixed, (y0 + y1) / 2, horizontal ? fixed : mid);
+        mesh.castShadow = cast;
+        mesh.receiveShadow = true;
+        wallGroup.add(mesh);
+      };
+      for (const part of parts) {
+        const from = part.from === start ? part.from - T / 2 : part.from;
+        const to = part.to === end ? part.to + T / 2 : part.to;
+        if (!part.opening) addBox(from, to, 0, WALL_H, wallMat);
+        else if (part.opening.kind === "window") {
+          addBox(part.from, part.to, 0, SILL, wallMat);
+          addBox(part.from, part.to, DOOR_TOP, WALL_H, wallMat);
+          addBox(part.from, part.to, SILL - 0.03, SILL, frameMat, T + 0.04);
+          addBox(part.from, part.to, SILL, DOOR_TOP, glassMat, 0.02, false);
+        } else {
+          addBox(part.from, part.to, DOOR_TOP, WALL_H, wallMat);
+          if (part.opening.kind === "entrance") addBox(part.from, part.to, 0, DOOR_TOP, doorMat, 0.05);
+        }
+      }
+    }
+    const colliders = wallColliders(layout);
+    const furniture = new THREE.Group();
+    for (const f of layout.furniture) addFurniture(THREE, furniture, f);
+    house.add(furniture);
+
+    // 状態
+    const livingRooms = layout.rooms.filter((r) => r.kind === "living");
+    const startRoom = [...livingRooms].sort((a, b) => b.w * b.d - a.w * a.d)[0] ?? layout.rooms[0];
+    const player = { x: startRoom.x + startRoom.w / 2, z: startRoom.z + startRoom.d * 0.3, yaw: Math.PI, pitch: -0.12 };
+    const orbit = { yaw: 0.35, pitch: 0.95, radius: Math.max(W, D) * 1.6 };
+    let mode = "walk", target = null, lastRoom = "", disposed = false;
+    const keys = {};
+
+    const marker = new THREE.Mesh(new THREE.RingGeometry(0.14, 0.2, 32), new THREE.MeshBasicMaterial({ color: 0xd9822f, transparent: true, opacity: 0.9, depthWrite: false }));
+    marker.rotation.x = -Math.PI / 2;
+    marker.visible = false;
+    house.add(marker);
+
+    const collides = (x, z) => colliders.some((b) => x + RADIUS > b.x1 && x - RADIUS < b.x2 && z + RADIUS > b.z1 && z - RADIUS < b.z2);
+    const inside = (x, z) => x > RADIUS && x < W - RADIUS && z > RADIUS && z < D - RADIUS;
+    const roomAt = (x, z) => layout.rooms.find((r) => x >= r.x && x <= r.x + r.w && z >= r.z && z <= r.z + r.d) ?? null;
+    function tryMove(dx, dz) {
+      let moved = false;
+      const nx = player.x + dx;
+      if (inside(nx, player.z) && !collides(nx, player.z)) { player.x = nx; moved ||= Math.abs(dx) > 1e-5; }
+      const nz = player.z + dz;
+      if (inside(player.x, nz) && !collides(player.x, nz)) { player.z = nz; moved ||= Math.abs(dz) > 1e-5; }
+      return moved;
+    }
+    function freeSpot(x, z) {
+      if (inside(x, z) && !collides(x, z)) return { x, z };
+      for (let r = 0.1; r < 1.5; r += 0.1) for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+        const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
+        if (inside(px, pz) && !collides(px, pz)) return { x: px, z: pz };
+      }
+      return { x: startRoom.x + startRoom.w / 2, z: startRoom.z + startRoom.d / 2 };
+    }
+    function applyMode(m) {
+      mode = m;
+      ceiling.visible = m === "walk";
+      wallGroup.scale.y = m === "walk" ? 1 : 0.55;
+      target = null;
+      marker.visible = false;
+      opts.onMode?.(m);
+    }
+    function enterWalkAt(x, z) {
+      const spot = freeSpot(x, z);
+      player.x = spot.x; player.z = spot.z; player.pitch = -0.12;
+      applyMode("walk");
+    }
+
+    // 入力：ドラッグで見まわす／床をクリックで歩く／ホイールで前後
+    const raycaster = new THREE.Raycaster();
+    const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -houseY);
+    let dragging = false, dragDist = 0, lastX = 0, lastY = 0;
+    const floorHit = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      raycaster.setFromCamera(new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
+      const hit = new THREE.Vector3();
+      return raycaster.ray.intersectPlane(floorPlane, hit) ? { x: hit.x, z: hit.z } : null;
+    };
+    const onDown = (e) => { dragging = true; dragDist = 0; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture?.(e.pointerId); opts.onInteract?.(); };
+    const onMove = (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      dragDist += Math.abs(dx) + Math.abs(dy);
+      if (mode === "walk") { player.yaw -= dx * 0.005; player.pitch = Math.max(-1.1, Math.min(1.1, player.pitch - dy * 0.005)); }
+      else { orbit.yaw -= dx * 0.006; orbit.pitch = Math.max(0.2, Math.min(1.45, orbit.pitch - dy * 0.005)); }
+    };
+    const onUp = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      if (dragDist > 6) return;
+      const hit = floorHit(e);
+      if (!hit || !roomAt(hit.x, hit.z)) return;
+      if (mode === "dollhouse") enterWalkAt(hit.x, hit.z);
+      else { target = hit; marker.position.set(hit.x, 0.02, hit.z); marker.visible = true; }
+    };
+    const onCancel = () => { dragging = false; };
+    const onWheel = (e) => {
+      e.preventDefault();
+      if (mode === "dollhouse") orbit.radius = Math.max(4, Math.min(40, orbit.radius * (1 + e.deltaY * 0.001)));
+      else { const step = -Math.sign(e.deltaY) * 0.25; tryMove(-Math.sin(player.yaw) * step, -Math.cos(player.yaw) * step); }
+    };
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("pointercancel", onCancel);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    const onKeyDown = (e) => {
+      const el = e.target;
+      if (el && ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)) return;
+      const k = e.key.toLowerCase();
+      if (!["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) return;
+      keys[k] = true;
+      e.preventDefault();
+      opts.onInteract?.();
+    };
+    const onKeyUp = (e) => { keys[e.key.toLowerCase()] = false; };
+    const onBlur = () => Object.keys(keys).forEach((k) => (keys[k] = false));
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+
+    // 画面左下のスティック（スマホ用）
+    const joy = { active: false, x: 0, y: 0, id: -1 };
+    const joyEl = document.createElement("div"), nub = document.createElement("div");
+    joyEl.className = "r3d-joy"; nub.className = "r3d-nub";
+    joyEl.setAttribute("role", "application"); joyEl.setAttribute("aria-label", "移動スティック");
+    joyEl.append(nub);
+    container.append(joyEl);
+    const JOY_R = 32;
+    const updateJoy = (e) => {
+      const rect = joyEl.getBoundingClientRect();
+      let dx = e.clientX - (rect.left + rect.width / 2), dy = e.clientY - (rect.top + rect.height / 2);
+      const len = Math.hypot(dx, dy);
+      if (len > JOY_R) { dx = (dx / len) * JOY_R; dy = (dy / len) * JOY_R; }
+      joy.x = dx / JOY_R; joy.y = dy / JOY_R;
+      nub.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    };
+    joyEl.addEventListener("pointerdown", (e) => { joy.active = true; joy.id = e.pointerId; joyEl.setPointerCapture?.(e.pointerId); if (mode !== "walk") applyMode("walk"); opts.onInteract?.(); updateJoy(e); });
+    joyEl.addEventListener("pointermove", (e) => { if (joy.active && e.pointerId === joy.id) updateJoy(e); });
+    const joyUp = (e) => { if (e.pointerId !== joy.id) return; joy.active = false; joy.x = joy.y = 0; nub.style.transform = "translate(-50%, -50%)"; };
+    joyEl.addEventListener("pointerup", joyUp);
+    joyEl.addEventListener("pointercancel", joyUp);
+
+    // 間取り図（クリックでその部屋へ移動）
+    const mm = opts.minimap, mmCtx = mm?.getContext("2d"), mmPad = 6;
+    const mmTransform = () => {
+      const w = mm.clientWidth, h = mm.clientHeight, s = Math.min((w - mmPad * 2) / W, (h - mmPad * 2) / D);
+      return { w, h, s, ox: (w - W * s) / 2, oz: (h - D * s) / 2 };
+    };
+    function drawMinimap() {
+      if (!mmCtx || !mm.clientWidth) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2), { w, h, s, ox, oz } = mmTransform();
+      if (mm.width !== Math.round(w * dpr)) { mm.width = Math.round(w * dpr); mm.height = Math.round(h * dpr); }
+      mmCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      mmCtx.clearRect(0, 0, w, h);
+      const current = roomAt(player.x, player.z);
+      for (const r of layout.rooms) {
+        mmCtx.fillStyle = ROOM_COLORS[r.kind];
+        mmCtx.fillRect(ox + r.x * s, oz + r.z * s, r.w * s, r.d * s);
+        if (current === r && mode === "walk") { mmCtx.strokeStyle = "#d9822f"; mmCtx.lineWidth = 2; mmCtx.strokeRect(ox + r.x * s + 1, oz + r.z * s + 1, r.w * s - 2, r.d * s - 2); }
+        mmCtx.fillStyle = "rgba(20,30,26,.75)";
+        mmCtx.font = "10px sans-serif";
+        mmCtx.textAlign = "center";
+        mmCtx.fillText(`${r.name}`, ox + (r.x + r.w / 2) * s, oz + (r.z + r.d / 2) * s - 2);
+        mmCtx.fillText(`${tatami(r)}帖`, ox + (r.x + r.w / 2) * s, oz + (r.z + r.d / 2) * s + 10);
+      }
+      mmCtx.fillStyle = "rgba(40,48,44,.9)";
+      for (const b of colliders) mmCtx.fillRect(ox + b.x1 * s, oz + b.z1 * s, Math.max(1, (b.x2 - b.x1) * s), Math.max(1, (b.z2 - b.z1) * s));
+      if (mode === "walk") {
+        mmCtx.save();
+        mmCtx.translate(ox + player.x * s, oz + player.z * s);
+        mmCtx.rotate(-player.yaw);
+        mmCtx.fillStyle = "rgba(217,130,47,.28)";
+        mmCtx.beginPath(); mmCtx.moveTo(0, 0); mmCtx.arc(0, 0, 22, -Math.PI / 2 - 0.55, -Math.PI / 2 + 0.55); mmCtx.closePath(); mmCtx.fill();
+        mmCtx.fillStyle = "#d9822f";
+        mmCtx.beginPath(); mmCtx.moveTo(0, -7); mmCtx.lineTo(5, 5); mmCtx.lineTo(-5, 5); mmCtx.closePath(); mmCtx.fill();
+        mmCtx.restore();
+      }
+      // 窓側（バルコニー側）の目印
+      mmCtx.fillStyle = "rgba(60,120,190,.9)";
+      mmCtx.font = "bold 10px sans-serif";
+      mmCtx.fillText(`窓・${opts.facing ?? "南"}`, ox + (W / 2) * s, oz + D * s + mmPad + 2 > h ? h - 2 : oz + D * s + 10);
+    }
+    const onMinimapClick = (e) => {
+      const rect = mm.getBoundingClientRect(), { s, ox, oz } = mmTransform();
+      const x = (e.clientX - rect.left - ox) / s, z = (e.clientY - rect.top - oz) / s;
+      if (roomAt(x, z)) { enterWalkAt(x, z); opts.onInteract?.(); }
+    };
+    mm?.addEventListener("click", onMinimapClick);
+
+    const resize = () => {
+      const w = container.clientWidth, h = container.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
+    resize();
+
+    // ループ
+    let raf = 0, last = performance.now();
+    const loop = (now) => {
+      if (disposed) return;
+      raf = requestAnimationFrame(loop);
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      if (mode === "walk") {
+        const f = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0) - joy.y;
+        const strafe = (keys.d ? 1 : 0) - (keys.a ? 1 : 0) + joy.x;
+        const turn = (keys.arrowleft ? 1 : 0) - (keys.arrowright ? 1 : 0);
+        player.yaw += turn * 1.8 * dt;
+        const mag = Math.hypot(f, strafe);
+        if (mag > 0.05) {
+          target = null; marker.visible = false;
+          const nf = f / Math.max(1, mag), ns = strafe / Math.max(1, mag), sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+          tryMove((-sin * nf + cos * ns) * SPEED * dt, (-cos * nf - sin * ns) * SPEED * dt);
+        } else if (target) {
+          const dx = target.x - player.x, dz = target.z - player.z, d = Math.hypot(dx, dz);
+          if (d < 0.06) { target = null; marker.visible = false; }
+          else {
+            let diff = Math.atan2(-dx, -dz) - player.yaw;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+            player.yaw += diff * Math.min(1, dt * 5);
+            const step = Math.min(d, SPEED * dt);
+            if (!tryMove((dx / d) * step, (dz / d) * step)) { target = null; marker.visible = false; }
+          }
+        }
+        camera.position.set(player.x, houseY + EYE, player.z);
+        camera.rotation.set(player.pitch, player.yaw, 0);
+      } else {
+        camera.position.set(W / 2 + orbit.radius * Math.sin(orbit.pitch) * Math.sin(orbit.yaw), houseY + orbit.radius * Math.cos(orbit.pitch), D / 2 + orbit.radius * Math.sin(orbit.pitch) * Math.cos(orbit.yaw));
+        camera.lookAt(W / 2, houseY, D / 2);
+      }
+      if (marker.visible) marker.rotation.z += dt * 2;
+      const name = mode === "walk" ? roomAt(player.x, player.z)?.name ?? "" : "";
+      if (name !== lastRoom) { lastRoom = name; opts.onRoom?.(name); }
+      renderer.render(scene, camera);
+      drawMinimap();
+    };
+    raf = requestAnimationFrame(loop);
+    applyMode("walk");
+
+    return {
+      layout,
+      sunLabel: sunCfg.label,
+      setMode: (m) => applyMode(m),
+      teleport: (room) => { enterWalkAt(room.x + room.w / 2, room.z + room.d * 0.3); player.yaw = Math.PI; },
+      dispose() {
+        disposed = true;
+        cancelAnimationFrame(raf);
+        ro.disconnect();
+        window.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("keyup", onKeyUp);
+        window.removeEventListener("blur", onBlur);
+        mm?.removeEventListener("click", onMinimapClick);
+        scene.traverse((obj) => {
+          obj.geometry?.dispose();
+          for (const m of Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : []) { m.map?.dispose(); m.dispose(); }
+        });
+        woodTex.dispose(); tileTex.dispose();
+        renderer.dispose();
+        canvas.remove(); joyEl.remove();
+      },
+    };
+  }
+
+  function addFurniture(THREE, group, f) {
+    const g = new THREE.Group();
+    const mat = (color, roughness = 0.8) => new THREE.MeshStandardMaterial({ color, roughness });
+    const box = (w, h, d, y, m, x = 0, z = 0) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      mesh.position.set(x, y + h / 2, z);
+      mesh.castShadow = mesh.receiveShadow = true;
+      g.add(mesh);
+    };
+    const along = f.d >= f.w;
+    switch (f.kind) {
+      case "bed": {
+        box(f.w, 0.28, f.d, 0, mat(0x8a6a4c));
+        box(f.w - 0.06, 0.18, f.d - 0.06, 0.28, mat(0xf4f1ea, 0.95));
+        const pz = along ? -f.d / 2 + 0.25 : 0, px = along ? 0 : -f.w / 2 + 0.25;
+        box(along ? f.w * 0.7 : 0.35, 0.1, along ? 0.35 : f.d * 0.7, 0.46, mat(0xffffff, 0.95), px, pz);
+        box(along ? f.w - 0.04 : f.w * 0.55, 0.05, along ? f.d * 0.55 : f.d - 0.04, 0.46, mat(0x9fb3c8, 0.9), along ? 0 : f.w * 0.2, along ? f.d * 0.2 : 0);
+        break;
+      }
+      case "desk":
+        box(f.w, 0.04, f.d, 0.7, mat(0xc8a47a, 0.6));
+        box(f.w - 0.1, 0.7, 0.04, 0, mat(0x9b7d5c), 0, along ? 0 : -f.d / 2 + 0.05);
+        box(0.35, 0.05, 0.3, 0.72, mat(0x2e3238, 0.4), 0, 0);
+        break;
+      case "table":
+        box(f.w, 0.04, f.d, 0.7, mat(0xa9784f, 0.6));
+        for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(0.05, 0.7, 0.05, 0, mat(0x6d4c33), (sx * (f.w - 0.1)) / 2, (sz * (f.d - 0.1)) / 2);
+        break;
+      case "lowtable":
+        box(f.w, 0.04, f.d, 0.32, mat(0xd2b48c, 0.6));
+        box(f.w - 0.1, 0.32, f.d - 0.1, 0, mat(0xb8976d));
+        box(f.w + 0.6, 0.01, f.d + 0.6, 0, mat(0xd9d2c3, 1));
+        break;
+      case "sofa":
+        box(f.w, 0.4, f.d, 0, mat(0x5b7c99));
+        box(f.w, 0.4, 0.18, 0.4, mat(0x4f6e89), 0, f.d / 2 - 0.09);
+        break;
+      case "counter":
+        box(f.w, 0.82, f.d, 0, mat(0xf2f0ec, 0.7));
+        box(f.w, 0.04, f.d, 0.82, mat(0x9aa0a6, 0.3));
+        box(Math.min(0.5, f.w * 0.3), 0.02, f.d * 0.6, 0.86, mat(0x5d6368, 0.2), -f.w * 0.25, 0);
+        box(0.5, 0.02, f.d * 0.6, 0.86, mat(0x1d1f22, 0.5), f.w * 0.25, 0);
+        break;
+      case "tub":
+        box(f.w, 0.55, f.d, 0, mat(0xf7f9fa, 0.3));
+        box(f.w - 0.12, 0.02, f.d - 0.12, 0.54, mat(0xbfe0ec, 0.1));
+        break;
+      case "washer":
+        box(f.w, 0.85, f.d, 0, mat(0xf4f5f6, 0.4));
+        break;
+      case "closet":
+        box(f.w, 2.0, f.d, 0, mat(0xd8c6a8, 0.7));
+        box(0.02, 1.9, 0.02, 0.05, mat(0x8a7456), 0, f.d / 2 + 0.01);
+        break;
+    }
+    g.position.set(f.x, 0, f.z);
+    group.add(g);
+  }
+
+  function makeWoodTexture(THREE) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 512;
+    const ctx = c.getContext("2d"), plank = 512 / 4;
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = `hsl(32, 38%, ${62 + ((i * 37) % 9)}%)`;
+      ctx.fillRect(i * plank, 0, plank, 512);
+      ctx.strokeStyle = "rgba(90,60,30,.12)";
+      for (let g = 0; g < 14; g++) {
+        ctx.beginPath();
+        const x = i * plank + ((g * 53) % plank);
+        ctx.moveTo(x, 0);
+        ctx.bezierCurveTo(x + 6, 170, x - 6, 340, x + 3, 512);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(60,40,20,.35)";
+      ctx.fillRect(i * plank, 0, 2, 512);
+      ctx.fillRect(i * plank, ((i * 173) % 512) | 0, plank, 2);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  function makeTileTexture(THREE) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#e9eef0";
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.strokeStyle = "#b9c3c8";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 0, 128, 128);
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  window.Room3D = { open, buildLayout, preload: loadThree };
+})();
+</script>
 
 <script>
 (() => {
@@ -448,6 +1111,8 @@
       note: "構造ごとに一般的な壁の材料を仮定し、材料の重さから質量則で計算した目安です（評価は ISO 717-1）。" },
     { group: "calc", what: "徒歩・自転車の分数", kind: "推定", provider: "道路網の道のりから計算",
       note: "OpenStreetMap の道路・歩道・階段をたどった道のりを、徒歩80m/分・自転車250m/分で割った目安です。道がデータに載っていない近道は反映されません。" },
+    { group: "calc", what: "部屋の中の3D", kind: "推定", provider: "kurashi-ai の3D内見を移植", url: "https://github.com/daichi05xxx-commits/kurashi-ai",
+      note: "間取り図から読み取ったものではなく、間取りタイプ（1R・1K・1DK）と面積から組み立てた簡易モデルです。窓の向き（日差し）は架空データです。" },
     { group: "calc", what: "耐震基準", kind: "推定", provider: "築年数から推定", note: "建った年を築年数から逆算しています。" },
     { group: "calc", what: "ヒートマップ", kind: "独自の目安", provider: "上の公開データから計算",
       note: "施設までの距離などに独自の基準で点を付けたものです。「総合」と「犯罪の少なさ」はエリアの中での比較です。" },
@@ -463,7 +1128,7 @@
 
   // ---------- 状態 ----------
   const state = {
-    data: null, screen: "map", selected: null, tab: "building",
+    data: null, screen: "map", selected: null, tab: "room",
     layers: new Set(["heat"]), heatTheme: "all", sheet: null, weights: null,
     sample: null,
   };
@@ -535,7 +1200,7 @@
     $("logo").hidden = screen === "detail";
     const hash = screen === "detail" ? "home-" + id : "map";
     if (push && location.hash.slice(1) !== hash) { try { history.pushState(null, "", "#" + hash); } catch { /* 表示先によっては履歴を触れない */ } }
-    if (screen === "map") { renderBigMap(); renderSide(); }
+    if (screen === "map") { hideRoom3D(); renderBigMap(); renderSide(); }
     else renderDetail();
   }
   function routeFromHash() {
@@ -985,13 +1650,52 @@
       </div>
       <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
     const tabs = [
-      ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
+      ["room", "部屋の中（3D）", null], ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
       ["money", "お金", moneyGrade(p)], ["check", "内見で聞くこと", null], ["parent", "親に相談", null],
     ];
     $("tabs").innerHTML = tabs.map(([k, label, v]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab === k}">${label}${v ? `<span class="v v-${v[0]}">${v[1]}</span>` : ""}</button>`).join("");
     $("tabBody").innerHTML = tabContent(p, state.tab);
     if (state.tab === "parent") { $("letter").value = letterTemplate(p); $("letterBtn").textContent = state.sample ? "AIで文章を整える" : "ひな形に戻す"; }
-    drawMiniMap(p);
+    if (state.tab === "room") showRoom3D(p);
+    else { hideRoom3D(); drawMiniMap(p); }
+  }
+
+  // ---------- 部屋の中（3D） ----------
+  // 3D内見の仕組み（間取りの組み立て・three.js の部屋と操作）は kurashi-ai から移植した window.Room3D を使う
+  const room3d = { api: null, token: 0 };
+  async function showRoom3D(p) {
+    const box = $("room3dBox"), token = ++room3d.token;
+    room3d.api?.dispose(); room3d.api = null;
+    box.hidden = false;
+    $("miniMap").style.visibility = "hidden";
+    $("r3dRoom").textContent = "";
+    $("r3dMsg").textContent = "3Dの部屋を準備しています…";
+    $("r3dMsg").hidden = false;
+    try {
+      const api = await window.Room3D.open(box, {
+        type: p.layout, area: p.size, floor: p.floor, facing: p.facing, balcony: p.balcony,
+        minimap: $("r3dMinimap"),
+        onRoom: (name) => { $("r3dRoom").textContent = name ? `いまいる場所：${name}` : ""; $("r3dRoom").hidden = !name; },
+        onMode: (m) => document.querySelectorAll("[data-r3dmode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.r3dmode === m))),
+        onInteract: () => { $("r3dMsg").hidden = true; },
+      });
+      if (token !== room3d.token) { api.dispose(); return; }
+      room3d.api = api;
+      if ($("r3dSun")) $("r3dSun").textContent = api.sunLabel;
+      $("r3dMsg").textContent = "ドラッグで見まわす／床をクリックで歩く";
+      setTimeout(() => { if (token === room3d.token) $("r3dMsg").hidden = true; }, 4000);
+    } catch (e) {
+      if (token !== room3d.token) return;
+      $("r3dMsg").textContent = e?.message === "webgl"
+        ? "お使いのブラウザでは3D表示を始められませんでした。右の間取りの情報をご覧ください。"
+        : "3D表示の部品（three.js）を読み込めませんでした。通信状況を確かめて、タブを開き直してください。";
+    }
+  }
+  function hideRoom3D() {
+    room3d.token++;
+    room3d.api?.dispose(); room3d.api = null;
+    $("room3dBox").hidden = true;
+    $("miniMap").style.visibility = "";
   }
 
   function drawMiniMap(p) {
@@ -1029,6 +1733,21 @@
 
   function tabContent(p, tab) {
     const n = p.near, h = p.hazard, tr = p.traffic, inc = income(), incT = incomeTotal();
+    if (tab === "room") {
+      const open = Math.round(p.noise.outdoor - 10);
+      return `
+      <div><div class="eyebrow">部屋の中を3Dで見る</div><div class="big-verdict num" style="font-size:20px">${p.layout}・${p.size}㎡・${p.floor}階／${p.floors}階建て</div></div>
+      <div class="row"><span class="seg" role="group" aria-label="見かた"><button data-r3dmode="walk" aria-pressed="true">歩いて見る</button><button data-r3dmode="dollhouse" aria-pressed="false">上から見る</button></span></div>
+      <div><div class="small muted">間取り（タップでその部屋へ移動）</div><canvas id="r3dMinimap" class="r3d-minimap"></canvas></div>
+      <p class="small" id="r3dSun"></p>
+      <dl class="rows num">
+        <dt>窓の向き</dt><dd>${esc(p.facing)}${p.balcony ? "・バルコニーあり" : ""}</dd>
+        <dt>隣の部屋の音</dt><dd>D-${p.noise.dValue} 相当　${esc(dFeel(p.noise.dValue))}</dd>
+        <dt>外の音</dt><dd>窓を閉めて約${p.noise.indoor}dB／開けて約${open}dB<br><span class="small muted">${esc(dbFeel(p.noise.indoor))}（窓を閉めたとき）</span></dd>
+      </dl>
+      <p class="note">操作：ドラッグで見まわす／床をクリックでそこまで歩く／W A S D・矢印キー・左下のスティックで移動／ホイールで前後</p>
+      <p class="note">${badge("推定")} 3Dは間取り図から読み取ったものではなく、間取りタイプと面積から組み立てた簡易モデルです（部屋の配置・寸法・家具は目安）。窓を開けたときの音は、屋外の推定値から10dB引いた目安。3D内見のしくみは <a href="https://github.com/daichi05xxx-commits/kurashi-ai" target="_blank" rel="noopener">kurashi-ai</a> から移植しました。　${badge("架空")} 窓の向き・バルコニーはデモ用のデータ</p>`;
+    }
     if (tab === "building") {
       const st = STRUCTURES[p.structure], q = quakeStandard(p);
       const meter = (v) => `<span class="meter3">${[1, 2, 3].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`;
@@ -1299,6 +2018,8 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       state.tab = t.dataset.tab; renderDetail();
     });
     $("tabBody").addEventListener("click", async (e) => {
+      const rm = e.target.closest("[data-r3dmode]");
+      if (rm) { room3d.api?.setMode(rm.dataset.r3dmode); return; }
       if (e.target.id === "letterBtn") makeLetter();
       if (e.target.id === "stopBtn") letterCtl?.abort();
       if (e.target.id === "copyBtn") {
