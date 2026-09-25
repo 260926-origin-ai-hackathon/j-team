@@ -11,22 +11,22 @@
 </style>
 <style>
   :root {
-    --bg: #eef2ef;
+    --bg: #EDF3F8;
     --surface: #ffffff;
-    --surface-2: #f6f8f6;
-    --ink: #1b2521;
-    --muted: #5b6862;
-    --line: #d5ddd8;
-    --accent: #0d7a65;
-    --accent-soft: #dcefe9;
+    --surface-2: #F5F9FC;
+    --ink: #17283A;
+    --muted: #566677;
+    --line: #D3DFE9;
+    --accent: #2A7AB8;
+    --accent-soft: #E3F4FC;
     --on-accent: #ffffff;
     --mark: #f5d547;
     --good: #2f8a52;
     --warn: #c47a16;
     --bad: #bf3f2c;
-    --map-ground: #f7f9f7;
-    --map-road: #c3ccc6;
-    --map-rail: #6d7a74;
+    --map-ground: #F6FAFD;
+    --map-road: #C5D1DB;
+    --map-rail: #6B7985;
     --flood-1: #8ec3ee;
     --flood-2: #3f8fd6;
     --flood-3: #1f5fa8;
@@ -36,19 +36,19 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
-      --bg: #111715; --surface: #19211e; --surface-2: #1f2925; --ink: #e4ece8; --muted: #9aa9a2;
-      --line: #2e3a35; --accent: #3cc3a2; --accent-soft: #173b33; --on-accent: #0b1411; --mark: #cdb03a;
+      --bg: #0F161D; --surface: #16212B; --surface-2: #1C2834; --ink: #E2ECF4; --muted: #96A6B5;
+      --line: #2A3947; --accent: #6BBEEA; --accent-soft: #15344A; --on-accent: #0A1822; --mark: #cdb03a;
       --good: #58c083; --warn: #e0a044; --bad: #ef7461;
-      --map-ground: #151c19; --map-road: #3a4842; --map-rail: #8b9993;
+      --map-ground: #121B23; --map-road: #33424F; --map-rail: #8B9AA7;
       --flood-1: #2d5f8c; --flood-2: #3f86c9; --flood-3: #7fb6ea;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #111715; --surface: #19211e; --surface-2: #1f2925; --ink: #e4ece8; --muted: #9aa9a2;
-    --line: #2e3a35; --accent: #3cc3a2; --accent-soft: #173b33; --on-accent: #0b1411; --mark: #cdb03a;
+    --bg: #0F161D; --surface: #16212B; --surface-2: #1C2834; --ink: #E2ECF4; --muted: #96A6B5;
+    --line: #2A3947; --accent: #6BBEEA; --accent-soft: #15344A; --on-accent: #0A1822; --mark: #cdb03a;
     --good: #58c083; --warn: #e0a044; --bad: #ef7461;
-    --map-ground: #151c19; --map-road: #3a4842; --map-rail: #8b9993;
+    --map-ground: #121B23; --map-road: #33424F; --map-rail: #8B9AA7;
     --flood-1: #2d5f8c; --flood-2: #3f86c9; --flood-3: #7fb6ea;
   }
 
@@ -164,11 +164,12 @@
   .seg button { border: none; background: none; padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--muted); font-weight: 700; }
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
-  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+  .theme-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  @media (max-width: 700px) { .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .theme { display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 7px 10px; cursor: pointer; }
   .theme b { font-size: 13.5px; }
   .theme span { font-size: 11px; color: var(--muted); }
-  .theme[aria-pressed="true"] { background: #2f9e5b; border-color: #2f9e5b; color: #fff; }
+  .theme[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .theme[aria-pressed="true"] span { color: rgba(255,255,255,.85); }
   .heat-strip { position: absolute; top: 10px; left: 52px; z-index: 650; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.1); font-size: 12.5px; cursor: pointer; }
   .heat-strip[hidden] { display: none; }
@@ -323,7 +324,7 @@
   <header class="top">
     <button class="btn ghost" id="backBtn" hidden>← 地図に戻る</button>
     <div class="logo" id="logo" role="link" tabindex="0" title="最初の画面へ" style="cursor:pointer">
-      <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="4" width="24" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9 4v-2M21 4v-2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M8 14h14M8 20h9" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 30 32 9l24 21" fill="#3F9FD8" stroke="#1E5F8A" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/><rect x="14" y="25" width="36" height="32" rx="8" fill="#8FD3F4" stroke="#1E5F8A" stroke-width="4.5"/><circle cx="26" cy="38" r="2.6" fill="#1E5F8A"/><circle cx="38" cy="38" r="2.6" fill="#1E5F8A"/><path d="M28 45q4 3.5 8 0" fill="none" stroke="#1E5F8A" stroke-width="2.6" stroke-linecap="round"/></svg>
       ヘヤカルテ
     </div>
     <div class="tagline">内見に行く前に、部屋の「まわり」まで分かる</div>
@@ -1068,7 +1069,7 @@
     { k: "flood", label: "浸水想定", color: "#3f8fd6" },
     { k: "shelter", label: "避難場所", color: "#2e6fb5", kinds: ["shelter"] },
     { k: "crime", label: "防犯", color: "#7b3fa8", kinds: ["police"] },
-    { k: "heat", label: "ヒートマップ", color: "#2f9e5b" },
+    { k: "heat", label: "ヒートマップ", color: "#2A7AB8" },
   ];
   // ヒートマップのテーマ。色が緑に近いほどその観点で住みやすい場所
   const HEAT_THEMES = [
