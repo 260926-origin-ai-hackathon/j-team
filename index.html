@@ -103,6 +103,7 @@
   .start-char { display: grid; justify-items: center; gap: 10px; border: none; background: none; padding: 16px 24px; border-radius: 28px; cursor: pointer; color: var(--sky-deep); }
   .start-char:hover .mascot { transform: scale(1.03); }
   .start-char .mascot { transition: transform .2s ease; }
+  .start-title { font-family: var(--display); font-weight: 900; font-size: clamp(40px, 6vw, 64px); line-height: 1.1; letter-spacing: .06em; color: var(--sky-deep); margin-top: -6px; }
   .start-hint { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: .08em; padding: 6px 18px; border-radius: 999px; background: var(--surface); border: 2px solid var(--sky); }
   .bubble { position: relative; background: var(--surface); border: 2px solid var(--sky); border-radius: 18px; padding: 16px 20px; color: var(--ink); }
   .bubble p { margin: 0; line-height: 1.75; }
@@ -351,8 +352,9 @@
     <!-- 地図 -->
     <!-- 最初の画面（キャラクターだけ。タップで地図へ） -->
     <section class="screen s-start" data-screen="start" hidden>
-      <button class="start-char" id="startBtn" aria-label="ヘヤまるをタップして、地図で部屋を探しはじめる">
+      <button class="start-char" id="startBtn" aria-label="ヘヤカルテ。ヘヤまるをタップして、地図で部屋を探しはじめる">
         <span class="mascot-wrap" id="startMascot"></span>
+        <span class="start-title">ヘヤカルテ</span>
         <span class="start-hint">タップしてはじめる</span>
       </button>
     </section>
@@ -1249,7 +1251,7 @@
     document.body.classList.toggle("on-start", screen === "start");
     const hash = screen === "detail" ? "home-" + id : screen;
     if (push && location.hash.slice(1) !== hash) { try { history.pushState(null, "", "#" + hash); } catch { /* 表示先によっては履歴を触れない */ } }
-    if (screen === "start") { hideRoom3D(); $("startMascot").innerHTML = mascotSVG(320, "start"); }
+    if (screen === "start") { hideRoom3D(); $("startMascot").innerHTML = mascotSVG(280, "start"); }
     else if (screen === "map") { hideRoom3D(); renderBigMap(); renderSide(); }
     else renderDetail();
   }
