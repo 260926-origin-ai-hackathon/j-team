@@ -50,6 +50,11 @@ Q_WALK = ('[out:json][timeout:180];(way["highway"~"^(trunk|primary|secondary|ter
           'living_street|service|pedestrian|footway|path|steps|cycleway|track|trunk_link|primary_link|secondary_link|'
           'tertiary_link)$"](%s););out body geom qt;' % BBOX)
 BIKE_M_PER_MIN = 250
+Q_FOOD = ('[out:json][timeout:120];(nwr["amenity"~"^(restaurant|cafe|fast_food|food_court)$"](%s););'
+          'out tags center qt;' % BBOX)
+Q_BUS = ('[out:json][timeout:120];(node["highway"="bus_stop"](%s);nwr["public_transport"="platform"]["bus"="yes"](%s););'
+         'out tags center qt;' % (BBOX, BBOX))
+FOOD_RADIUS = 400  # 飲食店の多さを数える半径（m）
 Q_POLICE = '[out:json][timeout:60];(nwr["amenity"="police"](%s););out tags center qt;' % BBOX
 
 # 防犯：大阪府警察 犯罪オープンデータ（町丁目ごとの発生）を、Geolonia 住所データの町丁目の代表点に置く
@@ -573,6 +578,16 @@ def main():
         pois.append({"kind": kind, "name": name, "xy": to_xy(lat, lon),
                      "hours": t.get("opening_hours", ""), "emergency": emergency})
 
+    # 飲食店（レストラン・カフェ・ファストフード）とバス停
+    for fname, query, kind in (("food.json", Q_FOOD, "restaurant"), ("bus.json", Q_BUS, "bus_stop")):
+        for e in overpass(fname, query)["elements"]:
+            lat = e.get("lat") or e.get("center", {}).get("lat")
+            lon = e.get("lon") or e.get("center", {}).get("lon")
+            if lat is None:
+                continue
+            pois.append({"kind": kind, "name": e["tags"].get("name", ""), "xy": to_xy(lat, lon), "hours": "",
+                         "emergency": False, "sub": e["tags"].get("amenity", "")})
+
     for e in overpass("police.json", Q_POLICE)["elements"]:
         lat = e.get("lat") or e.get("center", {}).get("lat")
         lon = e.get("lon") or e.get("center", {}).get("lon")
@@ -642,6 +657,7 @@ def main():
         rail_d = min(way_dist(p, r["pts"]) for r in roads if r["kind"] == "rail")
         traffic = max(front["rank"], 4 if big else 0, 3 if any(d <= 60 and r["rank"] == 3 for d, r in near_roads) else 0)
         conv_300 = sum(1 for q in pois if q["kind"] == "convenience" and dist(p, q["xy"]) <= 300)
+        food_near = sum(1 for q in pois if q["kind"] == "restaurant" and dist(p, q["xy"]) <= FOOD_RADIUS)
 
         fl_lv, fl_label = flood_level(hazard_pixel("01_flood_l2_shinsuishin_data", pr["lat"], pr["lon"]))
         landslide = any(hazard_pixel(l, pr["lat"], pr["lon"]) is not None for l in
@@ -666,9 +682,11 @@ def main():
                 "emergency": nearest(p, "hospital", lambda q: q["emergency"], key="emergency"),
                 "shelter": nearest(p, "shelter"),
                 "police": nearest(p, "police"),
+                "restaurant": nearest(p, "restaurant"),
+                "bus_stop": nearest(p, "bus_stop"),
             },
             "traffic": {"level": traffic, "front": ROAD_LABEL[front["rank"]], "frontName": front["name"],
-                        "bigRoads": big_names, "railM": round(rail_d), "conv300": conv_300},
+                        "bigRoads": big_names, "railM": round(rail_d), "conv300": conv_300, "food400": food_near},
             "hazard": {"flood": fl_lv, "floodLabel": fl_label, "landslide": landslide, "tsunami": tsunami,
                        "quake60": q60, "quake55": q55},
         })
@@ -684,7 +702,8 @@ def main():
     map_pois = [{"k": q["kind"], "n": q["name"], "x": round(q["xy"][0]), "y": round(q["xy"][1]),
                  **({"e": 1} if q.get("emergency") else {})}
                 for q in pois + shelters
-                if q["kind"] in ("supermarket", "convenience", "clinic", "hospital", "chemist", "shelter", "police")
+                if q["kind"] in ("supermarket", "convenience", "clinic", "hospital", "chemist", "shelter", "police",
+                                 "restaurant", "bus_stop")
                 and inside(q["xy"])]
     flood = hazard_grid("01_flood_l2_shinsuishin_data", GRID, *ext, classify=lambda px: flood_level(px)[0])
     slide = hazard_grid("05_dosekiryukeikaikuiki", GRID, *ext)
@@ -720,6 +739,13 @@ def main():
     for key, kind in (("supermarket", "supermarket"), ("convenience", "convenience"), ("clinic", "clinic"), ("hospital", "hospital")):
         walk_grid[key] = [cap(d) for d, _ in graph.lookup(field_for(key, kind)[1], wx, wy)]
     walk_grid["campus"] = [cap(d) for d, _ in graph.lookup(gate_field, wx, wy)]
+    for key in ("restaurant", "bus_stop"):
+        walk_grid[key] = [cap(d) for d, _ in graph.lookup(field_for(key, key)[1], wx, wy)]
+    # マスの中心から FOOD_RADIUS 以内の飲食店の数（多さ）
+    fx = np.array([q["xy"][0] for q in pois if q["kind"] == "restaurant"])
+    fy = np.array([q["xy"][1] for q in pois if q["kind"] == "restaurant"])
+    gx, gy = np.array(wx), np.array(wy)
+    walk_grid["food400"] = [int(v) for v in np.sum((gx[:, None] - fx[None, :]) ** 2 + (gy[:, None] - fy[None, :]) ** 2 <= FOOD_RADIUS ** 2, axis=1)]
 
     # 建物の1点だけでなく、すぐ近く（まわり1マス＝おおむね50m以内）の浸水想定も持たせる
     fcells = {(i, j): v for i, j, v in flood["cells"]}
