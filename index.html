@@ -223,12 +223,12 @@
   .rank-table td { padding: 2px 6px 2px 0; white-space: nowrap; }
   .rank-table td:last-child { font-size: 11px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
   .rank-table tr + tr { border-top: 1px solid var(--line); }
-  .rank-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  .rank-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
   .rank-cell { display: grid; gap: 0; padding: 4px 6px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); font-size: 11.5px; line-height: 1.35; min-width: 0; cursor: default; }
   .rank-cell .rc-k { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rank-cell .rc-v { white-space: nowrap; }
   .rank-cell .rc-v .lv { width: 15px; height: 15px; font-size: 9.5px; vertical-align: -2px; }
-  .rank-cell .rc-t { color: var(--muted); font-size: 10.5px; }
+  .rank-cell .rc-t { color: var(--muted); font-size: 10.5px; margin-left: 2px; }
   .readout { position: absolute; top: 10px; right: 10px; z-index: 650; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); font-size: 13px; pointer-events: none; }
   .readout[hidden] { display: none; }
   .kind { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; }
@@ -1039,7 +1039,7 @@
     { k: "all", label: "総合" }, { k: "shop", label: "買い物" }, { k: "med", label: "病院" },
     { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
     { k: "crime", label: "犯罪の少なさ" },
-    { k: "food", label: "飲食店" }, { k: "bus", label: "バス停" },
+    { k: "food", label: "飲食店" }, { k: "conv", label: "コンビニ" }, { k: "bus", label: "バス停" },
   ];
   const HEAT_CELL = 80;
   // 凡例に出す、テーマごとの色の基準（赤い側、緑の側、出どころ）
@@ -1053,6 +1053,7 @@
     crime: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（街頭犯罪7手口）"],
     food: ["飲食店まで道のり800m以上・まわりにほぼ無い", "150m以内・400m以内に20軒以上", "OpenStreetMapのレストラン・カフェ・ファストフードから"],
     bus: ["バス停まで道のり800m以上", "150m以内", "OpenStreetMapのバス停と道路から、道のりで計算"],
+    conv: ["コンビニまで道のり600m以上", "100m以内", "OpenStreetMapのコンビニと道路から、道のりで計算"],
   };
   // 評価は5段階。点（0〜1）を20点刻みで区切り、記号・言葉・色をいつも同じ組み合わせで使う
   const LEVELS = [
@@ -1066,8 +1067,8 @@
 
   // 「あなた向けの総合」の重み。テーマごとに 気にしない(0)／ふつう(1)／大事(3)
   const WEIGHT_STEPS = [[0, "気にしない"], [1, "ふつう"], [3, "大事"]];
-  const DEFAULT_WEIGHTS = { shop: 1, med: 1, quiet: 1, commute: 1, safety: 1, crime: 1, food: 1, bus: 1 };
-  const PERSONA_WEIGHTS = { shop: 3, med: 1, quiet: 1, commute: 1, safety: 3, crime: 3, food: 1, bus: 1 };
+  const DEFAULT_WEIGHTS = { shop: 1, med: 1, quiet: 1, commute: 1, safety: 1, crime: 1, food: 1, conv: 1, bus: 1 };
+  const PERSONA_WEIGHTS = { shop: 3, med: 1, quiet: 1, commute: 1, safety: 3, crime: 3, food: 1, conv: 1, bus: 1 };
   function loadWeights() {
     try { const w = JSON.parse(localStorage.getItem("heyakarte.weights") || "null"); if (w) return { ...DEFAULT_WEIGHTS, ...w }; } catch { /* 保存できない環境では毎回ふつうに戻る */ }
     return { ...DEFAULT_WEIGHTS };
@@ -1332,6 +1333,10 @@
       raw.food[k] = dFood; raw.foodN = raw.foodN || new Float32Array(cols * rows); raw.foodN[k] = nFood;
       field.bus[k] = lin(dBus, 150, 800);
       raw.bus[k] = dBus;
+      // コンビニ：いちばん近い店までの道のり
+      const dConv = walkAt("convenience", x, y);
+      field.conv[k] = lin(dConv, 100, 600);
+      raw.conv[k] = dConv;
     }
     // 「エリアの中で上位何%か」を出すために、テーマごとに点を並べておく
     const sorted = {};
@@ -1409,7 +1414,7 @@
       all: weightSummary(), shop: `スーパーまで道のり${m(r)}`, med: `診療所まで道のり${m(r)}`, quiet: `屋外 約${Math.round(r)}dB`,
       commute: `キャンパスまで道のり${m(r)}`, safety: r ? `浸水想定 ${state.data.hazard.floodLegend[r - 1]}` : "浸水想定なし",
       crime: `500m以内 年${Math.round(r)}件`,
-      food: `飲食店まで道のり${m(r)}`, bus: `バス停まで道のり${m(r)}`,
+      food: `飲食店まで道のり${m(r)}`, bus: `バス停まで道のり${m(r)}`, conv: `コンビニまで道のり${m(r)}`,
     }[theme];
   }
   // テーマごとに、エリアのマスが5段階それぞれにどれだけあるか（%）
@@ -1554,7 +1559,7 @@
   const THEME_HINT = {
     all: "テーマの平均", shop: "スーパーが近いほど緑", med: "診療所が近いほど緑", quiet: "車や電車の音が小さいほど緑",
     commute: "大学が近いほど緑", safety: "浸水しにくいほど緑", crime: "犯罪が少ないほど緑",
-    food: "飲食店が近くて多いほど緑", bus: "バス停が近いほど緑",
+    food: "飲食店が近くて多いほど緑", bus: "バス停が近いほど緑", conv: "コンビニが近いほど緑",
   };
   const LAYER_DESC = {
     shop: "スーパー・コンビニ・ドラッグストアの場所", med: "診療所・病院の場所",
@@ -1654,11 +1659,11 @@
         <div class="fact ${crimeGrade(p)[0]}"><div class="k">まわりの犯罪</div><div class="v">${crimeGrade(p)[1]}</div><div class="s">500m以内 年${p.crime.total}件・交番${p.near.police.min}分</div></div>
         <div class="fact ${p.noise.dValue >= 45 ? "good" : p.noise.dValue >= 40 ? "warn" : "bad"}"><div class="k">隣の部屋の音</div><div class="v">D-${p.noise.dValue}</div><div class="s">${esc(p.structure)}</div></div>
       </div>
-      <div class="small muted">この場所の評価（地図のエリア全体の中での順位） ${badge("独自の目安")}</div>
+      <div class="small muted">この場所の評価（◎とても良い〜×悪い・エリアの中での順位） ${badge("独自の目安")}</div>
       <div class="rank-grid num">${HEAT_THEMES.map((t) => {
         const hi = heatInfo(p.x, p.y, t.k);
         if (!hi) return "";
-        return `<div class="rank-cell" title="${esc(`${themeLabel(t.k)}：${hi.level.label}（エリアの上位${hi.top}%）・${hi.text}`)}"><span class="rc-k">${themeLabel(t.k)}</span><span class="rc-v">${levelChip(hi.level)}${hi.level.label}</span><span class="rc-t">上位${hi.top}%</span></div>`;
+        return `<div class="rank-cell" title="${esc(`${themeLabel(t.k)}：${hi.level.label}（エリアの上位${hi.top}%）・${hi.text}`)}"><span class="rc-k">${themeLabel(t.k)}</span><span class="rc-v">${levelChip(hi.level)}<span class="rc-t">上位${hi.top}%</span></span></div>`;
       }).join("")}</div>
       <button class="btn" id="openDetail" style="padding:12px" title="同じ札をもう一度タップしても開きます">詳しく見る →</button>`;
   }
