@@ -5,6 +5,8 @@
 
 チームHの「人生の転換点」ハッカソン提出物です（予選 2026-09-25、本選 2026-09-26）。
 
+**デモ：https://heyakarte.vercel.app** （ログインなしで開けます。AI で親への相談文を作る機能は Claude Artifact 版でだけ動き、ここではひな形の文章になります）
+
 ## ペルソナと機能の対応
 
 | ペルソナ | 機能 |
@@ -114,6 +116,14 @@ docker compose --profile data run --rm data
 ```
 
 作り直したあとは `docker compose up -d --build` でアプリに反映します。
+
+### Vercel（公開中のデモ）
+
+`https://heyakarte.vercel.app` に置いています。配信するのは `index.html` と `data/` だけです（`.vercelignore`）。作り直すときは、Vercel にログインした状態で次を実行します。
+
+```bash
+npx vercel deploy --prod
+```
 
 ### Docker を使わない場合
 
