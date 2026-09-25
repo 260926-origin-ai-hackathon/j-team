@@ -1038,7 +1038,7 @@
   const HEAT_THEMES = [
     { k: "all", label: "総合" }, { k: "shop", label: "買い物" }, { k: "med", label: "病院" },
     { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
-    { k: "crime", label: "犯罪の少なさ" },
+    { k: "crime", label: "防犯" },
     { k: "food", label: "飲食店" }, { k: "conv", label: "コンビニ" }, { k: "bus", label: "バス停" },
   ];
   const HEAT_CELL = 80;
@@ -1129,7 +1129,7 @@
       note: "間取り図から読み取ったものではなく、間取りタイプ（1R・1K・1DK）と面積から組み立てた簡易モデルです。窓の向き（日差し）は架空データです。" },
     { group: "calc", what: "耐震基準", kind: "推定", provider: "築年数から推定", note: "建った年を築年数から逆算しています。" },
     { group: "calc", what: "ヒートマップ", kind: "独自の目安", provider: "上の公開データから計算",
-      note: "施設までの距離などに独自の基準で点を付けたものです。「総合」と「犯罪の少なさ」はエリアの中での比較です。" },
+      note: "施設までの距離などに独自の基準で点を付けたものです。「総合」と「防犯」はエリアの中での比較です。" },
     { group: "calc", what: "構造ごとの特徴・生活費・初期費用", kind: "一般的な傾向", provider: "一般的な目安", note: "建物や人によって差があります。" },
     { group: "demo", what: "物件（名前・家賃・間取り・構造・築年数）", kind: "架空", provider: "デモ用に作成", note: "位置だけ実在の住宅地に置いています。" },
   ];
@@ -1605,7 +1605,7 @@
           <div class="sheet-head"><b>あなた向けの総合：何を大事にする？</b>
             <span class="row" style="margin:0"><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
           ${HEAT_THEMES.filter((t) => t.k !== "all").map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
-          <p class="note">「大事」は「ふつう」の3倍の重さで平均します。選ぶと「あなた向け」の総合に切り替わります。「おすすめ」は、ペルソナ（親も一緒に決める新入生）に合わせて、買い物・浸水しにくさ・犯罪の少なさを大事にした設定です。</p>
+          <p class="note">「大事」は「ふつう」の3倍の重さで平均します。選ぶと「あなた向け」の総合に切り替わります。「おすすめ」は、ペルソナ（親も一緒に決める新入生）に合わせて、買い物・浸水しにくさ・防犯を大事にした設定です。</p>
         </div>
         ${heatLegend()}`;
     } else if (state.sheet === "legend") {
