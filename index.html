@@ -112,9 +112,12 @@
   .map-bubble { position: relative; padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; line-height: 1.5; margin-bottom: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
   .map-bubble::after { content: ""; position: absolute; right: -8px; bottom: 16px; width: 12px; height: 12px; background: var(--surface); border-right: 2px solid var(--sky); border-top: 2px solid var(--sky); transform: rotate(45deg); }
   @media (max-width: 860px) { .map-guide { display: none; } }
-  .d-guide { display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; max-width: 460px; }
+  /* ひとことの長さでヘヤまるの位置や見出しの高さが変わらないよう、吹き出しの大きさを固定する */
+  .d-guide { display: flex; align-items: center; gap: 8px; flex: 0 0 420px; width: 420px; }
+  @media (max-width: 1200px) { .d-guide { flex-basis: 320px; width: 320px; } }
   .d-guide .mascot { flex: none; }
-  .d-bubble { position: relative; padding: 8px 14px; border-radius: 14px; font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--ink); }
+  .d-bubble { position: relative; flex: 1; min-width: 0; height: calc(2 * 1.5em + 18px); box-sizing: border-box; display: flex; align-items: center; padding: 8px 14px; border-radius: 14px; font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--ink); }
+  .d-bubble > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
   .d-bubble::before { content: ""; position: absolute; left: -8px; top: 50%; width: 12px; height: 12px; margin-top: -6px; background: var(--surface); border-left: 2px solid var(--sky); border-bottom: 2px solid var(--sky); transform: rotate(45deg); }
   .d-head .d-guide + .pv-price { margin-left: 0; }
   .guide { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
@@ -280,10 +283,11 @@
 
   /* ---- 詳しい住宅情報の画面 ---- */
   .s-detail { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); grid-template-rows: auto minmax(0, 1fr); gap: 12px 16px; }
-  .d-head { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 18px; }
-  .d-head h2 { font-size: clamp(22px, 2.6vw, 28px); font-weight: 900; }
-  .d-head .spec { color: var(--muted); font-size: 14px; }
-  .d-head .pv-price { margin-left: auto; }
+  .d-head { grid-column: 1 / -1; display: flex; flex-wrap: nowrap; align-items: center; gap: 6px 18px; }
+  .d-head > div:first-child { flex: 1; min-width: 0; }
+  .d-head h2 { font-size: clamp(22px, 2.6vw, 28px); font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-head .spec { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-head .pv-price { margin-left: auto; flex: none; }
   .d-body { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
   .tab { border: none; background: none; padding: 8px 12px; cursor: pointer; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; font-size: 14px; }
@@ -1843,7 +1847,7 @@
         <h2>${esc(p.name)}</h2>
         <div class="spec num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階／${p.floors}階建て${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}・${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</div>
       </div>
-      <div class="d-guide" aria-live="polite">${mascotSVG(68, "hop", face)}<div class="bubble d-bubble">${esc(line)}</div></div>
+      <div class="d-guide" aria-live="polite">${mascotSVG(68, "hop", face)}<div class="bubble d-bubble" title="${esc(line)}"><span>${esc(line)}</span></div></div>
       <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
     const tabs = [
       ["room", "部屋の中（3D）", null], ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
