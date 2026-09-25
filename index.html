@@ -99,26 +99,20 @@
   .s-start { display: grid; place-items: center; overflow: hidden; border-radius: 18px; background: var(--sky-soft); }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sky-soft: #14303f; } }
   :root[data-theme="dark"] { --sky-soft: #14303f; }
-  .start-hero { display: grid; grid-template-columns: auto minmax(0, 560px); gap: 40px; align-items: center; padding: 24px; }
   .mascot-wrap { display: grid; place-items: center; }
-  .start-talk { display: grid; gap: 18px; }
+  .start-char { display: grid; justify-items: center; gap: 10px; border: none; background: none; padding: 16px 24px; border-radius: 28px; cursor: pointer; color: var(--sky-deep); }
+  .start-char:hover .mascot { transform: scale(1.03); }
+  .start-char .mascot { transition: transform .2s ease; }
+  .start-hint { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: .08em; padding: 6px 18px; border-radius: 999px; background: var(--surface); border: 2px solid var(--sky); }
   .bubble { position: relative; background: var(--surface); border: 2px solid var(--sky); border-radius: 18px; padding: 16px 20px; color: var(--ink); }
   .bubble p { margin: 0; line-height: 1.75; }
-  .bubble .bubble-hi { font-family: var(--display); font-weight: 900; font-size: 24px; color: var(--sky-deep); margin-bottom: 4px; }
-  .start-talk > .bubble::before { content: ""; position: absolute; left: -12px; top: 36px; width: 18px; height: 18px; background: var(--surface); border-left: 2px solid var(--sky); border-bottom: 2px solid var(--sky); transform: rotate(45deg); }
-  .start-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: st; }
-  .start-steps li { display: grid; grid-template-columns: 30px 1fr; column-gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); counter-increment: st; }
-  .start-steps li::before { content: counter(st); grid-row: 1 / 3; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sky); color: #fff; font-family: var(--display); font-weight: 900; align-self: center; }
-  .start-steps b { font-family: var(--display); font-size: 16px; }
-  .start-steps span { font-size: 13px; color: var(--muted); }
-  .start-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
-  .start-btn { font-size: 17px; padding: 14px 28px; border-radius: 14px; background: var(--sky-deep); border-color: var(--sky-deep); color: #fff; }
-  .start-btn:hover { filter: brightness(1.1); }
   .guide { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
   .small-bubble { padding: 8px 12px; border-radius: 14px; }
   .small-bubble h2 { font-size: 17px; }
   .small-bubble .eyebrow { color: var(--sky-deep); }
   @media (prefers-reduced-motion: no-preference) {
+    .start-hint { animation: hint 2.8s ease-in-out infinite; }
+    @keyframes hint { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
     .mascot.start .mascot-body { animation: bob 2.8s ease-in-out infinite; transform-origin: 100px 200px; }
     .mascot .mascot-eyes { animation: blink 5s infinite; transform-origin: 100px 124px; }
     .mascot.start .mascot-arm { animation: wave 2.8s ease-in-out infinite; transform-origin: 160px 150px; }
@@ -126,7 +120,6 @@
     @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
     @keyframes wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
   }
-  @media (max-width: 860px) { .start-hero { grid-template-columns: 1fr; justify-items: center; gap: 16px; } .start-talk > .bubble::before { display: none; } }
   .s-map { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
   .mapwrap { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--map-ground); min-height: 0; }
   .map { position: absolute; inset: 0; }
@@ -356,26 +349,12 @@
 
   <main class="stage">
     <!-- 地図 -->
-    <!-- 最初の画面（キャラクター） -->
+    <!-- 最初の画面（キャラクターだけ。タップで地図へ） -->
     <section class="screen s-start" data-screen="start" hidden>
-      <div class="start-hero">
-        <div class="mascot-wrap" id="startMascot"></div>
-        <div class="start-talk">
-          <div class="bubble" role="status">
-            <p class="bubble-hi">はじめまして、ヘヤまるです。</p>
-            <p>大学のまわりで部屋を探すなら、いっしょに見ていこう。内見に行く前に、部屋の「まわり」まで分かるよ。</p>
-          </div>
-          <ol class="start-steps">
-            <li><b>地図で探す</b><span>スーパー・病院・駅・防犯・災害を地図に重ねて、住みやすい場所を見つける</span></li>
-            <li><b>部屋のカルテを見る</b><span>気になる部屋の中を3Dで歩いて、音・お金・内見で聞くことまで確かめる</span></li>
-            <li><b>親に相談する</b><span>親が気にする5つのことと、LINEに貼れる相談文をまとめる</span></li>
-          </ol>
-          <div class="start-cta">
-            <button class="btn start-btn" id="startBtn">地図で部屋を探す →</button>
-            <span class="small muted">近畿大学 東大阪キャンパスのまわりの部屋を表示します</span>
-          </div>
-        </div>
-      </div>
+      <button class="start-char" id="startBtn" aria-label="ヘヤまるをタップして、地図で部屋を探しはじめる">
+        <span class="mascot-wrap" id="startMascot"></span>
+        <span class="start-hint">タップしてはじめる</span>
+      </button>
     </section>
 
     <section class="screen s-map" data-screen="map" hidden>
@@ -1270,7 +1249,7 @@
     document.body.classList.toggle("on-start", screen === "start");
     const hash = screen === "detail" ? "home-" + id : screen;
     if (push && location.hash.slice(1) !== hash) { try { history.pushState(null, "", "#" + hash); } catch { /* 表示先によっては履歴を触れない */ } }
-    if (screen === "start") { hideRoom3D(); $("startMascot").innerHTML = mascotSVG(260, "start"); }
+    if (screen === "start") { hideRoom3D(); $("startMascot").innerHTML = mascotSVG(320, "start"); }
     else if (screen === "map") { hideRoom3D(); renderBigMap(); renderSide(); }
     else renderDetail();
   }
