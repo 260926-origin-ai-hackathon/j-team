@@ -11,14 +11,15 @@
 
 | 分類 | 使ったもの | どこで使っているか |
 |---|---|---|
-| 画面 | HTML・CSS・JavaScript（フレームワークなし・ビルドなし、`index.html` 1ファイル） | すべての画面。画面の切り替えは URL の `#` で行う |
+| フレームワーク | [Next.js](https://nextjs.org/) 16（App Router）・React 19・TypeScript | ページの配信とビルド、AI の API（`app/api/letter`）。公開デモは Next.js で動かしている |
+| 画面 | HTML・CSS・JavaScript（`index.html` 1ファイル） | すべての画面。Next.js はビルドのときに `index.html` を分けて配る（`scripts/build-next.mjs`）。同じファイルが Claude Artifact 版にもなる。画面の切り替えは URL の `#` で行う |
 | 地図 | [Leaflet](https://leafletjs.com/) 1.9.4 | 地図・物件の札・ヒートマップ・重ねる情報。背景タイルは使わず、OpenStreetMap の道路を線で描く |
 | 3D | [three.js](https://threejs.org/) 0.180.0 | 部屋の中の3D表示と家具の配置（jsDelivr から読み込む） |
-| AI | Claude（Claude Artifact の `sample` 機能） | 親への相談文を整える（Artifact 版のみ） |
+| AI | Claude（Next.js 版はサーバーから Claude API・[Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript)、Artifact 版は `sample` 機能） | 親への相談文を整える。Next.js 版は Vercel の環境変数 `ANTHROPIC_API_KEY` を入れると動く（無いときはひな形） |
 | 周辺データの作成 | Python 3・Pillow・NumPy | `scripts/build_area.py`。道のり（道路網の最短経路）、騒音、ハザード、犯罪件数を計算して `data/area.json` を作る |
 | 遮音の計算 | [python-acoustics](https://github.com/python-acoustics/python-acoustics)（BSD-3、必要な関数だけ取り込み） | 壁の材質から遮音性能（Rw）を計算 |
 | データ | OpenStreetMap（Overpass API）・国土地理院・J-SHIS・大阪府警・Geolonia 住所データ | 詳しくは「使ったOSS・オープンデータ」 |
-| 公開 | Vercel（静的ホスティング）・Claude Artifact | デモの公開 |
+| 公開 | Vercel（Next.js）・Claude Artifact | デモの公開 |
 | 開発環境 | Docker（nginx・Python） | 手元での表示とデータの作り直し |
 | 開発 | Claude Code | 設計・実装・データ処理 |
 
@@ -136,7 +137,15 @@ docker compose --profile data run --rm data
 
 ### Vercel（公開中のデモ）
 
-`https://heyakarte.vercel.app` に置いています。配信するのは `index.html` と `data/` だけです（`.vercelignore`）。作り直すときは、Vercel にログインした状態で次を実行します。
+`https://heyakarte.vercel.app` に Next.js のアプリとして置いています。ビルドの前に `scripts/build-next.mjs` が `index.html` を CSS・画面の HTML・JavaScript に分け、`data/area.json` と一緒に `public/` へ書き出します（どれも git には入れない）。画面を直すときは `index.html` を直せば、Next.js 版にも Artifact 版にも反映されます。
+
+手元で動かすとき：
+
+```bash
+npm install && npm run dev
+```
+
+親への相談文の AI を動かすには、Vercel のプロジェクト設定の Environment Variables に `ANTHROPIC_API_KEY` を入れます（手元では `.env.local`）。作り直すときは、Vercel にログインした状態で次を実行します。
 
 ```bash
 npx vercel deploy --prod
