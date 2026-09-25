@@ -61,7 +61,7 @@
     /* 日本語の改行は文節（単語のまとまり）か句読点のあとで。auto-phrase が使えないブラウザでは、句読点や小さい「っ」などが行頭に来ない改行にとどめる */
     word-break: auto-phrase; line-break: strict; overflow-wrap: break-word; text-wrap: pretty;
   }
-  h1, h2, h3 { font-family: var(--display); line-height: 1.3; text-wrap: balance; margin: 0; }
+  h1, h2, h3 { font-family: var(--display); line-height: 1.3; text-wrap: balance; margin: 0; overflow-wrap: anywhere; } /* 長い物件名は、はみ出すときだけ途中で折り返す */
   p { margin: 0; }
   .num { font-variant-numeric: tabular-nums; }
   button, input, select, textarea { font: inherit; color: inherit; }
@@ -76,6 +76,38 @@
   .logo[hidden] { display: none; }
   .tagline { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .spacer { flex: 1; }
+  /* 最初の画面はキャラとアプリ名だけ（上のボタン類は出さない） */
+  body.on-start header.top { display: none; }
+  body.on-start .app { grid-template-rows: minmax(0, 1fr); padding-top: 14px; }
+  /* お気に入り */
+  .fav-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .fav-btn svg { width: 16px; height: 16px; }
+  .fav-btn:hover { border-color: #e0607e; color: #e0607e; }
+  .fav-btn[aria-pressed="true"] { border-color: #e0607e; background: #fdecef; color: #d14668; }
+  .fav-btn[aria-pressed="true"] svg path { fill: currentColor; }
+  .fav-chip b { color: #d14668; }
+  .chip-btn[hidden] { display: none; }
+  .price-pin .heart { color: #e0607e; margin-right: 2px; }
+  .price-pin.on .heart { color: #fff; }
+  .s-favs { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
+  .favs-head { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+  .favs-head h2 { font-size: 24px; font-weight: 900; }
+  .favs-head .guide { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .favs-head .guide .bubble { padding: 8px 14px; font-size: 13.5px; border-radius: 14px; max-width: 380px; }
+  .favs-grid { min-height: 0; overflow-y: auto; display: grid; grid-auto-rows: max-content; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; align-content: start; padding-bottom: 4px; }
+  .fav-card { display: grid; gap: 8px; padding: 14px 16px; align-content: start; min-width: 0; }
+  .fav-card .fc-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .fav-card h3 { font-size: 17px; overflow-wrap: anywhere; }
+  .fav-card .fc-head > div:first-child { min-width: 0; }
+  .fav-card .fc-price { text-align: right; white-space: nowrap; }
+  .fav-card .fc-price strong { font-family: var(--display); font-size: 20px; font-weight: 900; color: var(--accent); }
+  .fc-grades { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .fc-grades span { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 8px; background: var(--surface-2); white-space: nowrap; }
+  .fc-grades .v { font-size: 11px; padding: 0 7px; border-radius: 999px; color: #fff; white-space: nowrap; }
+  .fc-actions { display: flex; gap: 6px; align-items: center; }
+  .fc-actions .btn { padding: 6px 14px; font-size: 13px; }
+  .favs-empty { display: grid; place-items: center; align-content: center; gap: 12px; text-align: center; border-radius: 18px; background: var(--sky-soft); }
+  .favs-sort { display: inline-flex; }
   .chip-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
   .chip-btn b { font-family: var(--display); color: var(--accent); }
   .ai-state { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
@@ -371,6 +403,7 @@
     </div>
     <div class="tagline">内見に行く前に、部屋の「まわり」まで分かる</div>
     <div class="spacer"></div>
+    <button class="chip-btn fav-chip" id="favChip" title="お気に入りの一覧へ"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.2 12.9a4.9 4.9 0 0 1 7-6.9l.8.8.8-.8a4.9 4.9 0 0 1 7 6.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>お気に入り <b class="num" id="favCount">0</b></button>
     <div style="position:relative">
       <button class="chip-btn" id="budgetBtn" aria-expanded="false">家賃の目安 <b class="num" id="budgetChip"></b> ✎</button>
       <div class="panel pop" id="budgetPop" hidden>
@@ -413,6 +446,12 @@
         <div class="readout" id="readout" hidden></div>
       </div>
       <aside class="side"><div class="panel" id="sidePanel"></div></aside>
+    </section>
+
+    <!-- お気に入りの一覧 -->
+    <section class="screen s-favs" data-screen="favs" hidden>
+      <div class="favs-head" id="favsHead"></div>
+      <div class="favs-grid" id="favsGrid"></div>
     </section>
 
     <!-- 詳しい住宅情報 -->
@@ -1369,6 +1408,7 @@
     data: null, screen: "map", selected: null, tab: "room",
     layers: new Set(["heat"]), heatTheme: "all", sheet: null, weights: null,
     sample: null, roomPane: "look", sampleFurn: false,
+    favs: [], favSort: "added", backTo: "map",
   };
   const maps = { big: null, mini: null };
   const layerGroups = {};
@@ -1431,16 +1471,21 @@
   // ---------- 画面の移動 ----------
   function go(screen, id, { push = true } = {}) {
     if (screen === "detail" && !(id && byId(id))) screen = "map";
+    // 住宅詳細の「戻る」は、来た画面（地図かお気に入り）へ
+    if (screen === "detail" && state.screen !== "detail") state.backTo = state.screen === "favs" ? "favs" : "map";
     state.screen = screen;
     if (id) state.selected = id;
     document.querySelectorAll(".screen").forEach((el) => { el.hidden = el.dataset.screen !== screen; });
-    $("backBtn").hidden = screen !== "detail";
+    $("backBtn").hidden = !["detail", "favs"].includes(screen);
+    $("backBtn").textContent = screen === "detail" && state.backTo === "favs" ? "← お気に入りに戻る" : "← 地図に戻る";
     $("logo").hidden = screen === "detail";
+    $("favChip").hidden = screen === "favs";
     document.body.classList.toggle("on-start", screen === "start");
     const hash = screen === "detail" ? "home-" + id : screen;
     if (push && location.hash.slice(1) !== hash) { try { history.pushState(null, "", "#" + hash); } catch { /* 表示先によっては履歴を触れない */ } }
     if (screen === "start") { hideRoom3D(); $("startMascot").innerHTML = mascotSVG(280, "start"); }
     else if (screen === "map") { hideRoom3D(); renderBigMap(); renderSide(); }
+    else if (screen === "favs") { hideRoom3D(); renderFavs(); }
     else renderDetail();
   }
   // 最初はキャラクターの画面。#map・#home-〇〇 で直接開いたときは、その画面から
@@ -1448,6 +1493,7 @@
     const h = location.hash.slice(1);
     if (h.startsWith("home-")) go("detail", h.slice(5), { push: false });
     else if (h === "map") go("map", null, { push: false });
+    else if (h === "favs") go("favs", null, { push: false });
     else go("start", null, { push: false });
   }
 
@@ -1789,7 +1835,7 @@
     map.focus.clearLayers();
     for (const p of state.data.properties) {
       const on = p.id === state.selected, cls = on ? "on" : overBudget(p) ? "over" : "";
-      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
+      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${isFav(p.id) ? `<span class="heart">♥</span>` : ""}${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
       m.on("click", (e) => { L.DomEvent.stopPropagation(e); selectPin(p.id); });
       m.addTo(map.pins);
     }
@@ -1997,7 +2043,7 @@
         </div>
         <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
       </div>
-      <div class="budget-line ${over ? "over" : "ok"} num">${over ? `予算（${man(rentCap())}）を ${yen(p.rent + p.fee - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}</div>
+      <div style="display:flex;gap:8px;align-items:center"><div class="budget-line ${over ? "over" : "ok"} num" style="flex:1">${over ? `予算（${man(rentCap())}）を ${yen(p.rent + p.fee - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}</div>${favBtn(p)}</div>
       <div class="facts num">
         <div class="fact"><div class="k">大学まで</div><div class="v">徒歩${p.campus.min}分</div><div class="s">自転車 約${p.campus.bike}分</div></div>
         <div class="fact ${lg[0]}"><div class="k">スーパー・病院</div><div class="v">${n.supermarket.min}分・${n.hospital.min}分</div><div class="s">${esc(n.supermarket.name)}</div></div>
@@ -2013,6 +2059,66 @@
         return `<div class="rank-cell" title="${esc(`${themeLabel(t.k)}：${hi.level.label}（エリアの上位${hi.top}%）・${hi.text}`)}"><span class="rc-k">${themeLabel(t.k)}</span><span class="rc-v">${levelChip(hi.level)}<span class="rc-t">上位${hi.top}%</span></span></div>`;
       }).join("")}</div>
       <button class="btn" id="openDetail" style="padding:12px" title="同じ札をもう一度タップしても開きます">詳しく見る →</button>`;
+  }
+
+  // ---------- お気に入り ----------
+  // 物件の id を、入れた順にこの端末へ保存する
+  const HEART_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.2 12.9a4.9 4.9 0 0 1 7-6.9l.8.8.8-.8a4.9 4.9 0 0 1 7 6.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  function loadFavs() {
+    try { const v = JSON.parse(localStorage.getItem("heyakarte.favs") || "[]"); return Array.isArray(v) ? v.filter((id) => byId(id)) : []; } catch { return []; }
+  }
+  function saveFavs() { try { localStorage.setItem("heyakarte.favs", JSON.stringify(state.favs)); } catch { /* 保存できない環境では開いている間だけ */ } }
+  const isFav = (id) => state.favs.includes(id);
+  const favBtn = (p, compact) => `<button class="fav-btn" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" title="${isFav(p.id) ? "お気に入りから外す" : "お気に入りに入れる"}">${HEART_SVG}${compact ? "" : isFav(p.id) ? "お気に入り済み" : "お気に入り"}</button>`;
+  function toggleFav(id) {
+    const on = !isFav(id);
+    state.favs = on ? [...state.favs, id] : state.favs.filter((x) => x !== id);
+    saveFavs();
+    updateFavCount();
+    document.querySelectorAll(`[data-fav="${id}"]`).forEach((b) => {
+      b.setAttribute("aria-pressed", String(on));
+      b.title = on ? "お気に入りから外す" : "お気に入りに入れる";
+      const label = b.textContent.trim();
+      if (label) b.lastChild.textContent = on ? "お気に入り済み" : "お気に入り";
+    });
+    if (state.screen === "map") { drawPins(); setMapGuide(on ? "happy" : "smile", on ? `${byId(id).name}をお気に入りに入れたよ。右上から一覧で見くらべられるよ` : "お気に入りから外したよ", { temporary: true }); }
+    if (state.screen === "favs") renderFavs();
+  }
+  function updateFavCount() { $("favCount").textContent = state.favs.length; }
+
+  const FAV_SORTS = [["added", "入れた順"], ["rent", "家賃が安い順"], ["campus", "大学に近い順"]];
+  function renderFavs() {
+    const list = state.favs.map(byId).filter(Boolean);
+    if (state.favSort === "rent") list.sort((a, b) => a.rent + a.fee - (b.rent + b.fee));
+    if (state.favSort === "campus") list.sort((a, b) => a.campus.min - b.campus.min);
+    const cheapest = list.length > 1 ? Math.min(...list.map((p) => p.rent + p.fee)) : null;
+    const [face, line] = list.length === 1 ? ["smile", "もう1件入れると、見くらべやすくなるよ"]
+      : ["happy", `${list.length}件を見くらべよう。気になる項目は「詳しく見る」で確かめてね`];
+    $("favsHead").innerHTML = `
+      <div><div class="eyebrow">見くらべる</div><h2>お気に入り <span class="num">${list.length}</span>件</h2></div>
+      ${list.length > 1 ? `<span class="seg favs-sort" role="group" aria-label="並べかた">${FAV_SORTS.map(([k, l]) => `<button data-favsort="${k}" aria-pressed="${state.favSort === k}">${l}</button>`).join("")}</span>` : ""}
+      ${list.length ? `<div class="guide">${mascotSVG(56, "hop", face)}<div class="bubble">${esc(line)}</div></div>` : ""}`;
+    if (!list.length) {
+      $("favsGrid").innerHTML = `<div class="favs-empty" style="grid-column:1/-1">
+        ${mascotSVG(150, "hop", "think")}
+        <p><b>お気に入りはまだありません</b><br><span class="small muted">地図で物件の札をタップして、${HEART_SVG.replace('width="16" height="16"', 'width="14" height="14" style="vertical-align:-2px"')}「お気に入り」を押すとここに集まります</span></p>
+        <button class="btn" data-gomap>地図で部屋をさがす</button></div>`;
+      return;
+    }
+    const grade = (label, g) => `<span>${label}<b class="v v-${g[0]}">${g[1]}</b></span>`;
+    $("favsGrid").innerHTML = list.map((p) => {
+      const over = overBudget(p), total = p.rent + p.fee;
+      return `<article class="panel fav-card">
+        <div class="fc-head">
+          <div><h3>${esc(p.name)}</h3><div class="small muted num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階</div></div>
+          <div class="fc-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
+        </div>
+        <div class="budget-line ${over ? "over" : "ok"} num">${over ? `予算を ${yen(total - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}${total === cheapest ? "・この中でいちばん安い" : ""}</div>
+        <div class="small num">大学まで徒歩${p.campus.min}分・スーパー${p.near.supermarket.min}分・病院${p.near.hospital.min}分</div>
+        <div class="fc-grades num">${grade("建物", buildingGrade(p))}${grade("暮らし", lifeGrade(p))}${grade("交通量", trafficGrade(p))}${grade("災害", hazardGrade(p))}${grade("防犯", crimeGrade(p))}${grade("お金", moneyGrade(p))}</div>
+        <div class="fc-actions"><button class="btn" data-favopen="${p.id}">詳しく見る →</button><button class="btn ghost" data-favmap="${p.id}">地図で見る</button><span class="spacer"></span>${favBtn(p, true)}</div>
+      </article>`;
+    }).join("");
   }
 
   // ---------- 詳しい住宅情報 ----------
@@ -2044,7 +2150,7 @@
         <div class="spec num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階／${p.floors}階建て${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}・${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</div>
       </div>
       <div class="d-guide" aria-live="polite">${mascotSVG(68, "hop", face)}<div class="bubble d-bubble" title="${esc(line)}"><span>${esc(line)}</span></div></div>
-      <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div></div>`;
+      <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div><div style="margin-top:4px">${favBtn(p)}</div></div>`;
     const tabs = [
       ["room", "部屋の中（3D）", null], ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
       ["money", "お金", moneyGrade(p)], ["check", "内見で聞くこと", null], ["parent", "親に相談", null],
@@ -2419,7 +2525,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
 
   // ---------- イベント ----------
   function bind() {
-    $("backBtn").addEventListener("click", () => go("map"));
+    $("backBtn").addEventListener("click", () => go(state.screen === "detail" ? state.backTo : "map"));
     $("startBtn").addEventListener("click", () => go("map"));
     $("logo").addEventListener("click", () => go("start"));
     $("logo").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go("start"); } });
@@ -2453,6 +2559,22 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       if (ly && k !== "heat") setMapGuide(state.layers.has(k) ? "happy" : "smile", state.layers.has(k) ? `${ly.label}を地図に出したよ` : `${ly.label}をしまったよ`, { temporary: true });
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sheet) { state.sheet = null; renderLayerChips(); } });
+    // お気に入りのボタンは、どの画面にあっても同じ動き
+    document.addEventListener("click", (e) => {
+      const fb = e.target.closest("[data-fav]");
+      if (fb) { e.stopPropagation(); toggleFav(fb.dataset.fav); }
+    }, true);
+    $("favChip").addEventListener("click", () => go("favs"));
+    $("favsHead").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-favsort]");
+      if (b) { state.favSort = b.dataset.favsort; renderFavs(); }
+    });
+    $("favsGrid").addEventListener("click", (e) => {
+      const o = e.target.closest("[data-favopen]"), m = e.target.closest("[data-favmap]");
+      if (o) { state.tab = "room"; go("detail", o.dataset.favopen); }
+      else if (m) { state.selected = m.dataset.favmap; go("map"); }
+      else if (e.target.closest("[data-gomap]")) go("map");
+    });
     $("sidePanel").addEventListener("click", (e) => {
       if (e.target.id === "openDetail") go("detail", state.selected);
       if (e.target.id === "moreSources") { e.stopPropagation(); $("dataPop").hidden = false; $("dataBtn").setAttribute("aria-expanded", "true"); }
@@ -2473,7 +2595,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     });
     for (const id of ["inScholar", "inAllow", "inJob"]) $(id).addEventListener("input", () => {
       $("budgetChip").textContent = man(rentCap());
-      if (state.screen === "map") { drawPins(); renderSide(); } else renderDetail();
+      if (state.screen === "map") { drawPins(); renderSide(); } else if (state.screen === "favs") renderFavs(); else if (state.screen === "detail") renderDetail();
     });
     $("tabs").addEventListener("click", (e) => {
       const t = e.target.closest(".tab"); if (!t) return;
@@ -2522,6 +2644,8 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     }
     $("budgetChip").textContent = man(rentCap());
     state.weights = loadWeights();
+    state.favs = loadFavs();
+    updateFavCount();
     $("dataList").innerHTML = SOURCE_GROUPS.map(([g, title]) => `<section class="src-group"><h4>${title}</h4>${DATA_SOURCES.filter((d) => d.group === g).map((d) => `
       <div class="src-item"><div class="src-line"><b>${esc(d.what)}</b>${badge(d.kind)}</div><div class="src-provider">${providerLink(d)}</div>${d.note ? `<p>${esc(d.note)}</p>` : ""}</div>`).join("")}</section>`).join("") +
       `<p class="note">周辺データの取得日 ${esc(state.data.generatedAt)}。公開データを加工して表示しています。</p>`;
