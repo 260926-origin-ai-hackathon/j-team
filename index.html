@@ -151,6 +151,15 @@
   .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .sheet-head h3 { font-size: 16px; }
   .sheet-list { display: grid; gap: 6px; }
+  .sheet-list.two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opt-row.fixed { height: 64px; align-items: center; overflow: hidden; }
+  .opt-row.fixed .opt-text .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .layer-strip { position: absolute; top: 10px; left: 52px; right: 10px; z-index: 645; display: flex; flex-wrap: wrap; gap: 4px; pointer-events: none; }
+  .layer-strip.below-heat { top: 46px; }
+  .layer-strip[hidden] { display: none; }
+  .ls-chip { pointer-events: auto; display: inline-flex; align-items: center; gap: 3px; padding: 3px 10px 3px 6px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.1); font-size: 12px; font-weight: 700; white-space: nowrap; cursor: default; }
+  .ls-chip .dot { margin-right: 0; }
+  .sw-bar { display: inline-block; width: 12px; height: 10px; border-radius: 2px; }
   .opt-row { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 9px 12px; cursor: pointer; }
   .opt-row.compact { display: inline-grid; grid-template-columns: auto auto; align-items: center; padding: 5px 10px; font-size: 13px; font-weight: 700; }
   .opt-row[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
@@ -380,6 +389,7 @@
       <div class="mapwrap">
         <div class="map" id="bigMap"></div>
         <button class="heat-strip" id="heatStrip" hidden></button>
+        <div class="layer-strip" id="layerStrip" hidden></div>
         <div class="panel sheet" id="sheet" hidden></div>
         <nav class="taskbar" id="taskbar" aria-label="地図の表示の切り替え"></nav>
         <div class="map-guide" id="mapGuide" aria-live="polite"></div>
@@ -1681,6 +1691,26 @@
     commute: "大学が近いほど緑", safety: "浸水しにくいほど緑", crime: "犯罪が少ないほど緑",
     food: "飲食店が近くて多いほど緑", bus: "バス停が近いほど緑", conv: "コンビニが近いほど緑",
   };
+  // 地図の上部に出す、オンにしている情報の短い凡例と出典（出典は印にカーソルを当てると出る）
+  const LAYER_SOURCE = {
+    shop: "出典：OpenStreetMap", med: "出典：OpenStreetMap", food: "出典：OpenStreetMap", bus: "出典：OpenStreetMap",
+    traffic: "道路の種類からの推定（実測ではない）", flood: "出典：国土地理院 洪水浸水想定区域（想定最大規模）。内水氾濫は含まない",
+    crime: "出典：大阪府警察 犯罪オープンデータ（2025年）を加工。交番は OpenStreetMap", shelter: "出典：国土地理院 指定緊急避難場所（洪水）",
+  };
+  function stripLegend(k) {
+    const d = (kind) => `<i class="dot" style="background:${POI_STYLE[kind].c}">${POI_STYLE[kind].t}</i>`;
+    const sw = (c, o = 1) => `<i class="sw-bar" style="background:${c};opacity:${o}"></i>`;
+    return {
+      shop: `${d("supermarket")}${d("convenience")}${d("chemist")}買い物`,
+      med: `${d("clinic")}${d("hospital")}病院`,
+      food: `${d("restaurant")}飲食店`,
+      bus: `${d("bus_stop")}バス停`,
+      traffic: `${sw(TRAFFIC_COLORS[5])}${sw(TRAFFIC_COLORS[4])}${sw(TRAFFIC_COLORS[3])}交通量（赤ほど多い）`,
+      flood: `${sw("var(--flood-1)", .7)}${sw("var(--flood-2)", .7)}${sw("var(--flood-3)", .7)}浸水想定（濃いほど深い）`,
+      crime: `<i class="dot" style="background:${CRIME_COLOR};opacity:.45"></i>${d("police")}防犯（円が大きいほど犯罪が多い）`,
+      shelter: `${d("shelter")}避難場所`,
+    }[k] || "";
+  }
   const LAYER_DESC = {
     shop: "スーパー・コンビニ・ドラッグストアの場所", med: "診療所・病院の場所",
     food: "レストラン・カフェ・ファストフードの場所", bus: "バス停の場所", traffic: "車の多い道路を色分け",
@@ -1704,18 +1734,23 @@
 
     // ヒートマップの5段階だけは、いつも地図の上に小さく出す
     $("heatStrip").hidden = !heatOn;
+    const activeOverlays = overlays.filter((ly) => state.layers.has(ly.k));
+    const strip = $("layerStrip");
+    strip.hidden = activeOverlays.length === 0;
+    strip.classList.toggle("below-heat", heatOn);
+    strip.innerHTML = activeOverlays.map((ly) => `<span class="ls-chip" title="${esc(LAYER_SOURCE[ly.k])}">${stripLegend(ly.k)}</span>`).join("");
     if (heatOn) $("heatStrip").innerHTML = `<b>${theme}</b> ${LEVELS.map((l) => levelChip(l)).join("")}<span class="muted">左ほど良い</span>`;
 
     const el = $("sheet");
     el.hidden = !state.sheet;
     if (state.sheet === "layers") {
       el.innerHTML = `<div class="sheet-head"><h3>地図に重ねる情報</h3><span class="muted small">いくつでも選べます</span></div>
-        <div class="sheet-list">${overlays.map((ly) => `
-          <button class="opt-row" data-k="${ly.k}" aria-pressed="${state.layers.has(ly.k)}">
+        <div class="sheet-list two-col">${overlays.map((ly) => `
+          <button class="opt-row fixed" data-k="${ly.k}" aria-pressed="${state.layers.has(ly.k)}">
             <span class="switch" aria-hidden="true"></span>
-            <span class="opt-text"><b style="--c:${ly.color}">${ly.label}</b><span class="muted small">${LAYER_DESC[ly.k]}</span>
-            ${state.layers.has(ly.k) ? `<span class="legend-row">${legendFor(ly.k)}</span>` : ""}</span>
-          </button>`).join("")}</div>`;
+            <span class="opt-text"><b style="--c:${ly.color}">${ly.label}</b><span class="muted small">${LAYER_DESC[ly.k]}</span></span>
+          </button>`).join("")}</div>
+        <p class="note">オンにした情報の印の意味と出典は、地図の上部に表示します。</p>`;
     } else if (state.sheet === "heat") {
       el.innerHTML = `<div class="sheet-head"><h3>ヒートマップ</h3>
           <button class="opt-row compact" data-k="heat" aria-pressed="${heatOn}"><span class="switch" aria-hidden="true"></span><span>${heatOn ? "表示中" : "オフ"}</span></button></div>
