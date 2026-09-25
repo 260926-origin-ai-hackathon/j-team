@@ -106,6 +106,15 @@
   .fc-grades span { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 8px; background: var(--surface-2); white-space: nowrap; }
   .fc-grades .v { font-size: 11px; padding: 0 7px; border-radius: 999px; color: #fff; white-space: nowrap; }
   .fc-actions { display: flex; gap: 6px; align-items: center; }
+  /* 優先順位（第1希望・第2希望…） */
+  .fc-rank { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .fc-rank b { font-family: var(--display); font-size: 12px; font-weight: 900; padding: 1px 9px; border-radius: 999px; background: var(--sky-soft); color: var(--sky-deep); border: 1.5px solid var(--sky); white-space: nowrap; }
+  .fc-rank b.first { background: #FFF1C7; border-color: #E8A317; color: #8A5E00; }
+  .fc-move { display: inline-flex; gap: 2px; }
+  .fc-move button { width: 26px; height: 22px; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; font-size: 11px; line-height: 1; cursor: pointer; color: var(--ink); }
+  .fc-move button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .fc-move button:disabled { opacity: .35; cursor: default; }
+  .price-pin .star small { font-size: 10px; font-weight: 900; margin-left: 1px; }
   .fc-actions .btn { padding: 6px 14px; font-size: 13px; }
   .favs-empty { display: grid; place-items: center; align-content: center; gap: 12px; text-align: center; border-radius: 18px; background: var(--sky-soft); }
   .favs-sort { display: inline-flex; }
@@ -1445,7 +1454,7 @@
     data: null, screen: "map", selected: null, tab: "room",
     layers: new Set(["heat"]), heatTheme: "all", sheet: null, weights: null,
     sample: null, roomPane: "look", sampleFurn: false,
-    favs: [], favSort: "added", backTo: "map",
+    favs: [], favSort: "priority", backTo: "map",
   };
   const maps = { big: null, mini: null };
   const layerGroups = {};
@@ -1872,7 +1881,7 @@
     map.focus.clearLayers();
     for (const p of state.data.properties) {
       const on = p.id === state.selected, cls = on ? "on" : overBudget(p) ? "over" : "";
-      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${isFav(p.id) ? `<span class="star">★</span>` : ""}${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
+      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${isFav(p.id) ? `<span class="star" title="第${favRank(p.id)}希望">★<small>${favRank(p.id)}</small></span>` : ""}${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
       m.on("click", (e) => { L.DomEvent.stopPropagation(e); selectPin(p.id); });
       m.addTo(map.pins);
     }
@@ -2106,7 +2115,10 @@
   }
   function saveFavs() { try { localStorage.setItem("heyakarte.favs", JSON.stringify(state.favs)); } catch { /* 保存できない環境では開いている間だけ */ } }
   const isFav = (id) => state.favs.includes(id);
-  const favBtn = (p, compact) => `<button class="fav-btn" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" title="${isFav(p.id) ? "お気に入りから外す" : "お気に入りに入れる"}">${STAR_SVG}${compact ? "" : isFav(p.id) ? "お気に入り済み" : "お気に入り"}</button>`;
+  // お気に入りに入れた順番が、そのまま優先順位（第1希望・第2希望…）。一覧の ▲▼ で入れ替える
+  const favRank = (id) => state.favs.indexOf(id) + 1;
+  const favLabel = (id) => isFav(id) ? `第${favRank(id)}希望` : "お気に入り";
+  const favBtn = (p, compact) => `<button class="fav-btn" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" title="${isFav(p.id) ? "お気に入りから外す" : "お気に入りに入れる"}">${STAR_SVG}${compact ? "" : favLabel(p.id)}</button>`;
   function toggleFav(id) {
     const on = !isFav(id);
     state.favs = on ? [...state.favs, id] : state.favs.filter((x) => x !== id);
@@ -2116,21 +2128,31 @@
       b.setAttribute("aria-pressed", String(on));
       b.title = on ? "お気に入りから外す" : "お気に入りに入れる";
       const label = b.textContent.trim();
-      if (label) b.lastChild.textContent = on ? "お気に入り済み" : "お気に入り";
+      if (label) b.lastChild.textContent = favLabel(id);
     });
-    if (state.screen === "map") { drawPins(); setMapGuide(on ? "happy" : "smile", on ? `${byId(id).name}をお気に入りに入れたよ。右上から一覧で見くらべられるよ` : "お気に入りから外したよ", { temporary: true }); }
+    if (state.screen === "map") { drawPins(); setMapGuide(on ? "happy" : "smile", on ? `${byId(id).name}を第${favRank(id)}希望に入れたよ。順位は右上の一覧で入れ替えられるよ` : "お気に入りから外したよ", { temporary: true }); }
     if (state.screen === "favs") renderFavs();
+  }
+  function moveFav(id, dir) {
+    const i = state.favs.indexOf(id), j = i + dir;
+    if (i < 0 || j < 0 || j >= state.favs.length) return;
+    [state.favs[i], state.favs[j]] = [state.favs[j], state.favs[i]];
+    saveFavs();
+    renderFavs();
+    document.querySelector(`[data-favcard="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
   function updateFavCount() { $("favCount").textContent = state.favs.length; }
 
-  const FAV_SORTS = [["added", "入れた順"], ["rent", "家賃が安い順"], ["campus", "大学に近い順"]];
+  const FAV_SORTS = [["priority", "優先順位"], ["rent", "家賃が安い順"], ["campus", "大学に近い順"]];
   function renderFavs() {
     const list = state.favs.map(byId).filter(Boolean);
     if (state.favSort === "rent") list.sort((a, b) => a.rent + a.fee - (b.rent + b.fee));
     if (state.favSort === "campus") list.sort((a, b) => a.campus.min - b.campus.min);
     const cheapest = list.length > 1 ? Math.min(...list.map((p) => p.rent + p.fee)) : null;
+    const first = byId(state.favs[0]);
     const [face, line] = list.length === 1 ? ["smile", "もう1件入れると、見くらべやすくなるよ"]
-      : ["happy", `${list.length}件を見くらべよう。気になる項目は「詳しく見る」で確かめてね`];
+      : state.favSort === "priority" ? ["happy", `第1希望は${first.name}。▲▼で順位を入れ替えられるよ`]
+      : ["happy", `${list.length}件を見くらべよう。第1希望は${first.name}だね`];
     $("favsHead").innerHTML = `
       <div><div class="eyebrow">見くらべる</div><h2>お気に入り <span class="num">${list.length}</span>件</h2></div>
       ${list.length > 1 ? `<span class="seg favs-sort" role="group" aria-label="並べかた">${FAV_SORTS.map(([k, l]) => `<button data-favsort="${k}" aria-pressed="${state.favSort === k}">${l}</button>`).join("")}</span>` : ""}
@@ -2143,11 +2165,13 @@
       return;
     }
     const grade = (label, g) => `<span>${label}<b class="v v-${g[0]}">${g[1]}</b></span>`;
+    const canMove = state.favSort === "priority" && list.length > 1;
     $("favsGrid").innerHTML = list.map((p) => {
-      const over = overBudget(p), total = p.rent + p.fee;
-      return `<article class="panel fav-card">
+      const over = overBudget(p), total = p.rent + p.fee, rank = favRank(p.id);
+      const move = canMove ? `<span class="fc-move"><button data-favmove="${p.id}" data-dir="-1" ${rank === 1 ? "disabled" : ""} aria-label="${esc(p.name)}の順位を上げる" title="順位を上げる">▲</button><button data-favmove="${p.id}" data-dir="1" ${rank === list.length ? "disabled" : ""} aria-label="${esc(p.name)}の順位を下げる" title="順位を下げる">▼</button></span>` : "";
+      return `<article class="panel fav-card" data-favcard="${p.id}">
         <div class="fc-head">
-          <div><h3>${esc(p.name)}</h3><div class="small muted num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階</div></div>
+          <div><div class="fc-rank"><b class="${rank === 1 ? "first" : ""}">第${rank}希望</b>${move}</div><h3>${esc(p.name)}</h3><div class="small muted num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階</div></div>
           <div class="fc-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
         </div>
         <div class="budget-line ${over ? "over" : "ok"} num">${over ? `予算を ${yen(total - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}${total === cheapest ? "・この中でいちばん安い" : ""}</div>
@@ -2634,6 +2658,8 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       if (b) { state.favSort = b.dataset.favsort; renderFavs(); }
     });
     $("favsGrid").addEventListener("click", (e) => {
+      const mv = e.target.closest("[data-favmove]");
+      if (mv) { moveFav(mv.dataset.favmove, Number(mv.dataset.dir)); return; }
       const o = e.target.closest("[data-favopen]"), m = e.target.closest("[data-favmap]");
       if (o) { state.tab = "room"; go("detail", o.dataset.favopen); }
       else if (m) { state.selected = m.dataset.favmap; go("map"); }
