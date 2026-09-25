@@ -82,13 +82,14 @@
   /* お気に入り */
   .fav-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .fav-btn svg { width: 16px; height: 16px; }
-  .fav-btn:hover { border-color: #e0607e; color: #e0607e; }
-  .fav-btn[aria-pressed="true"] { border-color: #e0607e; background: #fdecef; color: #d14668; }
-  .fav-btn[aria-pressed="true"] svg path { fill: currentColor; }
-  .fav-chip b { color: #d14668; }
+  .fav-btn:hover { border-color: #E8A317; color: #B97F0A; }
+  .fav-btn[aria-pressed="true"] { border-color: #E8A317; background: #FFF6DC; color: #B97F0A; }
+  .fav-btn[aria-pressed="true"] svg path { fill: #F5B82E; stroke: #C98A0B; }
+  .fav-chip b { color: #B97F0A; }
+  .fav-chip svg path { fill: #F5B82E; stroke: #C98A0B; }
   .chip-btn[hidden] { display: none; }
-  .price-pin .heart { color: #e0607e; margin-right: 2px; }
-  .price-pin.on .heart { color: #fff; }
+  .price-pin .star { color: #E8A317; margin-right: 2px; }
+  .price-pin.on .star { color: #FFD66B; }
   .s-favs { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
   .favs-head { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
   .favs-head h2 { font-size: 24px; font-weight: 900; }
@@ -293,7 +294,7 @@
   .budget-line { font-size: 13px; padding: 6px 10px; border-radius: 8px; }
   .budget-line.ok { background: var(--accent-soft); } .budget-line.over { background: color-mix(in srgb, var(--bad) 14%, transparent); }
   @media (max-width: 860px) {
-    .s-map { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+    .s-map { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
     .side .panel { max-height: 46vh; }
   }
 
@@ -388,9 +389,42 @@
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .status { font-size: 13px; color: var(--muted); }
   @media (max-width: 860px) {
-    .s-detail { grid-template-columns: 1fr; grid-template-rows: auto 180px minmax(0, 1fr); }
+    .s-detail { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 180px minmax(0, 1fr); }
     .two, .checklist { grid-template-columns: 1fr; }
     .pchecks { grid-template-columns: repeat(3, 1fr); }
+    /* 住宅詳細の見出し：物件名と家賃を1行目、ヘヤまるとひとことを2行目に */
+    .d-head { flex-wrap: wrap; gap: 6px 12px; }
+    .d-guide { order: 3; flex: 1 1 100%; width: auto; }
+    .d-guide .mascot { width: 46px; height: 46px; }
+    .d-bubble { height: auto; min-height: 44px; font-size: 13px; }
+    .s-detail { grid-template-rows: auto 210px minmax(0, 1fr); gap: 10px; }
+    .favs-head .guide { flex: 1 1 100%; margin-left: 0; }
+  }
+  .chip-btn .sm { display: none; }
+  /* スマホ：上のボタンは短い表記にして1行に収める */
+  @media (max-width: 640px) {
+    body { padding-inline: 12px; }
+    header.top { gap: 6px; padding-block: 8px; }
+    .logo { font-size: 17px; gap: 5px; }
+    .logo svg { width: 24px; height: 24px; }
+    .chip-btn { padding: 5px 10px; font-size: 12.5px; gap: 4px; }
+    .chip-btn .lbl { display: none; }
+    .chip-btn .sm { display: inline; }
+    #backBtn { padding: 6px 12px; font-size: 13px; }
+    .pop { position: fixed; left: 12px; right: 12px; top: 54px; width: auto; max-height: calc(100vh - 70px); overflow-y: auto; }
+    .panel { padding: 14px; border-radius: 12px; }
+    .d-head h2 { font-size: 20px; }
+    .d-head .spec { font-size: 12.5px; }
+    .d-head .pv-price strong { font-size: 22px; }
+    .d-head .pv-price .small { font-size: 11.5px; }
+    .tab { padding: 8px 10px; font-size: 13.5px; }
+    .favs-head h2 { font-size: 20px; }
+    .favs-head .guide .mascot { width: 44px; height: 44px; }
+    .favs-grid { grid-template-columns: 1fr; }
+    .fav-card { padding: 12px 14px; }
+    .fc-actions .btn { padding: 7px 12px; }
+    .fav-btn { padding: 6px 12px; }
+    .r3d-msg { white-space: normal; left: 100px; right: 10px; transform: none; text-align: center; border-radius: 12px; }
   }
 </style>
 
@@ -403,9 +437,9 @@
     </div>
     <div class="tagline">内見に行く前に、部屋の「まわり」まで分かる</div>
     <div class="spacer"></div>
-    <button class="chip-btn fav-chip" id="favChip" title="お気に入りの一覧へ"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.2 12.9a4.9 4.9 0 0 1 7-6.9l.8.8.8-.8a4.9 4.9 0 0 1 7 6.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>お気に入り <b class="num" id="favCount">0</b></button>
+    <button class="chip-btn fav-chip" id="favChip" title="お気に入りの一覧へ"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">お気に入り</span> <b class="num" id="favCount">0</b></button>
     <div style="position:relative">
-      <button class="chip-btn" id="budgetBtn" aria-expanded="false">家賃の目安 <b class="num" id="budgetChip"></b> ✎</button>
+      <button class="chip-btn" id="budgetBtn" aria-expanded="false"><span class="lbl">家賃の目安</span> <b class="num" id="budgetChip"></b> ✎</button>
       <div class="panel pop" id="budgetPop" hidden>
         <div class="eyebrow">毎月入ってくるお金</div>
         <label for="inScholar">奨学金<input id="inScholar" class="num" type="number" step="1000" min="0" value="50000"><span>円</span></label>
@@ -415,7 +449,7 @@
       </div>
     </div>
     <div style="position:relative">
-      <button class="chip-btn" id="dataBtn" aria-expanded="false">データについて</button>
+      <button class="chip-btn" id="dataBtn" aria-expanded="false"><span class="lbl">データについて</span><span class="sm">出典</span></button>
       <div class="panel pop data-pop" id="dataPop" hidden>
         <div class="eyebrow">この画面の情報の出どころ</div>
         <div id="dataList"></div>
@@ -1835,7 +1869,7 @@
     map.focus.clearLayers();
     for (const p of state.data.properties) {
       const on = p.id === state.selected, cls = on ? "on" : overBudget(p) ? "over" : "";
-      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${isFav(p.id) ? `<span class="heart">♥</span>` : ""}${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
+      const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${isFav(p.id) ? `<span class="star">★</span>` : ""}${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
       m.on("click", (e) => { L.DomEvent.stopPropagation(e); selectPin(p.id); });
       m.addTo(map.pins);
     }
@@ -2063,13 +2097,13 @@
 
   // ---------- お気に入り ----------
   // 物件の id を、入れた順にこの端末へ保存する
-  const HEART_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.2 12.9a4.9 4.9 0 0 1 7-6.9l.8.8.8-.8a4.9 4.9 0 0 1 7 6.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  const STAR_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
   function loadFavs() {
     try { const v = JSON.parse(localStorage.getItem("heyakarte.favs") || "[]"); return Array.isArray(v) ? v.filter((id) => byId(id)) : []; } catch { return []; }
   }
   function saveFavs() { try { localStorage.setItem("heyakarte.favs", JSON.stringify(state.favs)); } catch { /* 保存できない環境では開いている間だけ */ } }
   const isFav = (id) => state.favs.includes(id);
-  const favBtn = (p, compact) => `<button class="fav-btn" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" title="${isFav(p.id) ? "お気に入りから外す" : "お気に入りに入れる"}">${HEART_SVG}${compact ? "" : isFav(p.id) ? "お気に入り済み" : "お気に入り"}</button>`;
+  const favBtn = (p, compact) => `<button class="fav-btn" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" title="${isFav(p.id) ? "お気に入りから外す" : "お気に入りに入れる"}">${STAR_SVG}${compact ? "" : isFav(p.id) ? "お気に入り済み" : "お気に入り"}</button>`;
   function toggleFav(id) {
     const on = !isFav(id);
     state.favs = on ? [...state.favs, id] : state.favs.filter((x) => x !== id);
@@ -2101,7 +2135,7 @@
     if (!list.length) {
       $("favsGrid").innerHTML = `<div class="favs-empty" style="grid-column:1/-1">
         ${mascotSVG(150, "hop", "think")}
-        <p><b>お気に入りはまだありません</b><br><span class="small muted">地図で物件の札をタップして、${HEART_SVG.replace('width="16" height="16"', 'width="14" height="14" style="vertical-align:-2px"')}「お気に入り」を押すとここに集まります</span></p>
+        <p><b>お気に入りはまだありません</b><br><span class="small muted">地図で物件の札をタップして、${STAR_SVG.replace('width="16" height="16"', 'width="14" height="14" style="vertical-align:-2px"')}「お気に入り」のスターを押すとここに集まります</span></p>
         <button class="btn" data-gomap>地図で部屋をさがす</button></div>`;
       return;
     }
