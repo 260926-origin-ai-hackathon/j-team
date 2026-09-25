@@ -1019,11 +1019,15 @@
     hospital: { c: "#bf3f2c", t: "病", label: "病院" },
     shelter: { c: "#2e6fb5", t: "避", label: "避難場所" },
     police: { c: "#1f3a8a", t: "交", label: "交番・警察署" },
+    restaurant: { c: "#c8641e", t: "食", label: "飲食店" },
+    bus_stop: { c: "#0f7ea8", t: "バ", label: "バス停" },
   };
   // 地図に重ねる情報（ペルソナが気にしていること）
   const LAYERS = [
     { k: "shop", label: "スーパー・買い物", color: "#2f8a52", kinds: ["supermarket", "convenience", "chemist"] },
     { k: "med", label: "病院", color: "#bf3f2c", kinds: ["clinic", "hospital"] },
+    { k: "food", label: "飲食店", color: "#c8641e", kinds: ["restaurant"] },
+    { k: "bus", label: "バス停", color: "#0f7ea8", kinds: ["bus_stop"] },
     { k: "traffic", label: "交通量", color: "#d9822b" },
     { k: "flood", label: "浸水想定", color: "#3f8fd6" },
     { k: "shelter", label: "避難場所", color: "#2e6fb5", kinds: ["shelter"] },
@@ -1539,6 +1543,8 @@
     return {
       shop: ["supermarket", "convenience", "chemist"].map(dot).join("") + src("実データ", "OpenStreetMap"),
       med: ["clinic", "hospital"].map(dot).join("") + src("実データ", "OpenStreetMap"),
+      food: dot("restaurant") + `<span class="muted">レストラン・カフェ・ファストフード</span>` + src("実データ", "OpenStreetMap"),
+      bus: dot("bus_stop") + src("実データ", "OpenStreetMap"),
       traffic: `<span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`,
       flood: `<span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`,
       crime: `<span><i style="background:${CRIME_COLOR};opacity:.35;border-radius:50%;width:12px;height:12px"></i>町丁目ごとの犯罪の件数（円が大きいほど多い）</span>${dot("police")}${src("実データ", "大阪府警察 犯罪オープンデータ（2025年）を加工・交番はOpenStreetMap")}`,
@@ -1551,7 +1557,8 @@
     food: "飲食店が近くて多いほど緑", bus: "バス停が近いほど緑",
   };
   const LAYER_DESC = {
-    shop: "スーパー・コンビニ・ドラッグストアの場所", med: "診療所・病院の場所", traffic: "車の多い道路を色分け",
+    shop: "スーパー・コンビニ・ドラッグストアの場所", med: "診療所・病院の場所",
+    food: "レストラン・カフェ・ファストフードの場所", bus: "バス停の場所", traffic: "車の多い道路を色分け",
     flood: "大雨で川があふれたときの浸水想定", crime: "町丁目ごとの犯罪の件数と交番", shelter: "洪水のときの避難場所",
   };
 
@@ -1738,7 +1745,7 @@
       L.marker(ll(p.x, p.y + r), { icon: L.divIcon({ className: "", html: "", iconSize: [0, 0] }), interactive: false }).addTo(map)
         .bindTooltip(`徒歩${min}分`, { permanent: true, direction: "top", className: "lbl" });
     }
-    const show = mode === "hazard" ? ["shelter"] : mode === "crime" ? ["police"] : mode === "traffic" ? [] : ["supermarket", "convenience", "chemist", "clinic", "hospital"];
+    const show = mode === "hazard" ? ["shelter"] : mode === "crime" ? ["police"] : mode === "traffic" ? [] : ["supermarket", "convenience", "chemist", "clinic", "hospital", "bus_stop"];
     const nearest = new Set(Object.values(p.near).map((q) => q.x + "," + q.y));
     for (const q of state.data.map.pois) {
       if (!show.includes(q.k) || Math.hypot(q.x - p.x, q.y - p.y) > 1000) continue;

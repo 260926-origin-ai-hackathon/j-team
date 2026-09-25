@@ -702,7 +702,8 @@ def main():
     map_pois = [{"k": q["kind"], "n": q["name"], "x": round(q["xy"][0]), "y": round(q["xy"][1]),
                  **({"e": 1} if q.get("emergency") else {})}
                 for q in pois + shelters
-                if q["kind"] in ("supermarket", "convenience", "clinic", "hospital", "chemist", "shelter", "police")
+                if q["kind"] in ("supermarket", "convenience", "clinic", "hospital", "chemist", "shelter", "police",
+                                 "restaurant", "bus_stop")
                 and inside(q["xy"])]
     flood = hazard_grid("01_flood_l2_shinsuishin_data", GRID, *ext, classify=lambda px: flood_level(px)[0])
     slide = hazard_grid("05_dosekiryukeikaikuiki", GRID, *ext)
