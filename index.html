@@ -1,3 +1,4 @@
+<html lang="ja">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ヘヤカルテ</title>
@@ -57,6 +58,8 @@
   body {
     background: var(--bg); color: var(--ink); font-family: var(--body);
     font-size: 15px; line-height: 1.65; overflow: hidden; margin: 0; padding-inline: 16px; padding-block: 0;
+    /* 日本語の改行は文節（単語のまとまり）か句読点のあとで。auto-phrase が使えないブラウザでは、句読点や小さい「っ」などが行頭に来ない改行にとどめる */
+    word-break: auto-phrase; line-break: strict; overflow-wrap: break-word; text-wrap: pretty;
   }
   h1, h2, h3 { font-family: var(--display); line-height: 1.3; text-wrap: balance; margin: 0; }
   p { margin: 0; }
@@ -296,7 +299,10 @@
   .readout[hidden] { display: none; }
   .kind { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; letter-spacing: 0; }
   .k-real { color: var(--good); } .k-est { color: var(--warn); } .k-own { color: #7a5ac0; } .k-fake { color: var(--muted); border-style: dashed; }
-  .heat-img { image-rendering: auto; }
+  .heat-img { image-rendering: auto; transition: opacity .2s; }
+  /* ツールバーのシートを開いているあいだは、ヒートマップを透かして地図の上の表示を減らす */
+  .mapwrap.sheet-open .heat-img { opacity: .18 !important; }
+  .mapwrap.sheet-open .heat-strip, .mapwrap.sheet-open .layer-strip { display: none; }
   .pop[hidden] { display: none; }
   .pop label { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-top: 8px; }
   .pop input { text-align: right; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 6px 8px; width: 100%; }
@@ -1897,6 +1903,7 @@
 
     const el = $("sheet");
     el.hidden = !state.sheet;
+    el.closest(".mapwrap").classList.toggle("sheet-open", !!state.sheet);
     if (state.sheet === "layers") {
       el.innerHTML = `<div class="sheet-head"><h3>地図に重ねる情報</h3><span class="muted small">いくつでも選べます</span></div>
         <div class="sheet-list two-col">${overlays.map((ly) => `
