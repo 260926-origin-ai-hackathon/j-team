@@ -234,7 +234,7 @@
   .furn-item[aria-current="true"] { border-color: #d9822f; background: #fdf3e8; }
   .furn-item .w { color: #b3541e; font-size: 11.5px; }
   .furn-item .ok { color: var(--accent); font-size: 11.5px; }
-  .r3d-minimap { display: block; width: 100%; height: 170px; margin-top: 4px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; }
+  .r3d-minimap { display: block; width: 100%; height: 140px; margin-top: 4px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; }
   .weights { display: grid; gap: 5px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
   .w-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
@@ -292,6 +292,20 @@
   .pv-price { text-align: right; white-space: nowrap; }
   .pv-price strong { font-family: var(--display); font-size: 26px; font-weight: 900; }
   .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  /* 地図の右側：いいところ／気になるところ */
+  .pc-grid { display: grid; gap: 8px; }
+  .pc-col { border-radius: 12px; padding: 10px 12px; }
+  .pc-col.good { background: color-mix(in srgb, var(--good) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--good) 35%, transparent); }
+  .pc-col.bad { background: color-mix(in srgb, var(--warn) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
+  .pc-h { font-family: var(--display); font-weight: 900; font-size: 14px; margin-bottom: 4px; }
+  .pc-col.good .pc-h { color: var(--good); } .pc-col.bad .pc-h { color: var(--warn); }
+  .pc-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .pc-col li { display: grid; font-size: 13px; line-height: 1.45; }
+  .pc-col li b { font-size: 15px; }
+  .pc-col li span { color: var(--muted); font-size: 12px; }
+  .key-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .key-nums span { display: grid; text-align: center; padding: 6px 4px; border-radius: 10px; background: var(--surface-2); font-weight: 700; font-size: 14px; }
+  .key-nums small { font-size: 11px; color: var(--muted); font-weight: 400; }
   .fact { padding: 6px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); min-width: 0; }
   .fact .k { font-size: 11.5px; color: var(--muted); }
   .fact .v { font-family: var(--display); font-size: 16px; font-weight: 900; line-height: 1.35; }
@@ -360,9 +374,13 @@
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
   .tab { border: none; background: none; padding: 8px 12px; cursor: pointer; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; font-size: 14px; }
   .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .subtabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .subtab { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
+  .subtab[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .subtab .v { font-size: 11px; padding: 0 6px; border-radius: 999px; color: #fff; }
   .tab .v { margin-left: 5px; font-size: 11px; padding: 0 6px; border-radius: 999px; color: #fff; }
   .v-good { background: var(--good); } .v-warn { background: var(--warn); } .v-bad { background: var(--bad); }
-  .tabbody { min-height: 0; overflow: auto; padding-top: 14px; display: grid; align-content: start; gap: 12px; }
+  .tabbody { min-height: 0; overflow: auto; padding-top: 12px; display: grid; align-content: start; gap: 10px; }
   dl.rows { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; font-size: 14.5px; align-content: start; }
   dl.rows dt { color: var(--muted); white-space: nowrap; }
   dl.rows dd { margin: 0; }
@@ -426,7 +444,9 @@
     .d-head .spec { font-size: 12.5px; }
     .d-head .pv-price strong { font-size: 22px; }
     .d-head .pv-price .small { font-size: 11.5px; }
-    .tab { padding: 8px 10px; font-size: 13.5px; }
+    .tab { padding: 8px 5px; font-size: 12.5px; }
+    .tab .v { margin-left: 3px; padding: 0 5px; font-size: 10.5px; }
+    .subtab { padding: 4px 10px; font-size: 12.5px; }
     .favs-head h2 { font-size: 20px; }
     .favs-head .guide .mascot { width: 44px; height: 44px; }
     .favs-grid { grid-template-columns: 1fr; }
@@ -464,7 +484,7 @@
         <div id="dataList"></div>
       </div>
     </div>
-    <div class="ai-state" id="aiState">AIを確認中…</div>
+    <div class="ai-state" id="aiState" hidden>AIを確認中…</div>
   </header>
 
   <main class="stage">
@@ -1459,7 +1479,7 @@
     data: null, screen: "map", selected: null, tab: "room",
     layers: new Set(["heat"]), heatTheme: "all", sheet: null, weights: null,
     sample: null, roomPane: "look", sampleFurn: false,
-    favs: [], ranks: {}, favSort: "priority", backTo: "map",
+    favs: [], ranks: {}, favSort: "priority", backTo: "map", lastSub: {},
   };
   const maps = { big: null, mini: null };
   const layerGroups = {};
@@ -2064,18 +2084,30 @@
     el.innerHTML = `<div class="bubble map-bubble">${esc(text)}</div>${mascotSVG(78, "hop", face)}`;
     if (temporary) guideTimer = setTimeout(() => mapGuideForSelection(), 4500);
   }
+  // 物件の「いいところ」と「気になるところ」。地図のヘヤまると右側のまとめで同じものを使う
+  // short はヘヤまるのひとこと用、detail は右側に出す補足
+  function prosCons(p) {
+    const goods = [], bads = [], warns = [];
+    const n = p.near;
+    if (!overBudget(p)) goods.push({ short: "予算内", detail: `家賃＋管理費 ${yen(p.rent + p.fee)}（予算 ${man(rentCap())}）` });
+    else bads.push({ short: "予算を少し超える", detail: `予算より ${yen(p.rent + p.fee - rentCap())} 高い` });
+    // 良くも悪くもない（ふつう）ものは warns に入れ、悪い点がないときだけ「気になるところ」に出す
+    const add = (g, good, bad, detail, warn) => { const it = { detail }; if (g[0] === "good") goods.push({ ...it, short: good }); else if (g[0] === "bad") bads.push({ ...it, short: bad }); else warns.push({ ...it, short: warn }); };
+    add(lifeGrade(p), "スーパーも近い", "スーパーや病院が遠め", `スーパー徒歩${n.supermarket.min}分・病院${n.hospital.min}分`, "買い物・病院はふつう");
+    add(trafficGrade(p), "車の音が少ない", "大きな道が近い", p.traffic.bigRoads.length ? `近くに${p.traffic.bigRoads.join("・")}` : `家の前は${p.traffic.front}`, "車の量はふつう");
+    add(crimeGrade(p), "犯罪が少なめ", "犯罪が多めのエリア", `500m以内 年${p.crime.total}件・交番${n.police.min}分`, "犯罪の件数はふつう");
+    add(hazardGrade(p), "災害のリスクが低め", "災害のリスクが高め", floodShort(p), "災害は念のため確認");
+    if (p.noise.dValue >= 50) goods.push({ short: "隣の音が響きにくい", detail: `${p.structure}・D-${p.noise.dValue}相当` });
+    if (p.noise.dValue <= 35) bads.push({ short: "隣の音が響きやすい", detail: `${p.structure}・D-${p.noise.dValue}相当` });
+    if (p.campus.min <= 12) goods.push({ short: "大学に近い", detail: `徒歩${p.campus.min}分` });
+    else if (p.campus.min >= 30) bads.push({ short: "大学まで遠い", detail: `徒歩${p.campus.min}分（自転車 約${p.campus.bike}分）` });
+    return { goods, bads, warns };
+  }
   function mapGuideForSelection() {
     const p = state.selected && byId(state.selected);
     if (!p) { setMapGuide("smile", "気になる札をタップしてね。ヒートマップが緑のところほど住みやすいよ"); return; }
-    // 良いところと気になるところを1つずつ拾って、表情を決める
-    const goods = [], bads = [];
-    if (!overBudget(p)) goods.push("予算内"); else bads.push("予算を少し超える");
-    const add = (g, good, bad) => { if (g[0] === "good") goods.push(good); else if (g[0] === "bad") bads.push(bad); };
-    add(lifeGrade(p), "スーパーも近い", "スーパーや病院が遠め");
-    add(trafficGrade(p), "車の音が少ない", "大きな道が近い");
-    add(crimeGrade(p), "犯罪が少なめ", "犯罪が多めのエリア");
-    add(hazardGrade(p), "災害のリスクが低め", "災害のリスクが高め");
-    if (p.noise.dValue <= 35) bads.push("隣の音が響きやすい");
+    // 良いところと気になるところを拾って、表情を決める
+    const pc = prosCons(p), goods = pc.goods.map((x) => x.short), bads = pc.bads.map((x) => x.short);
     const face = bads.length === 0 ? "happy" : bads.length === 1 ? "think" : "worry";
     const q = (arr) => `「${arr.slice(0, 2).join("」「")}」`;
     const text = bads.length === 0 ? `いいところは${q(goods)}。いい部屋かも！「詳しく見る」で中も見てみよう`
@@ -2100,14 +2132,10 @@
           <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
         </div>
         <p class="small">いまの予算（家賃＋管理費 <b class="num">${man(rentCap())}</b> まで）に合う部屋は <b class="num">${inBudget}件</b>／全${state.data.properties.length}件</p>
-        <div class="sources">
-          <div class="src-head"><b>データの出どころ</b><button class="linkbtn" id="moreSources">くわしく見る</button></div>
-          <table class="src-table">${DATA_SOURCES.filter((d) => d.group !== "calc").map((d) => `<tr><td>${esc(d.what)}</td><td>${providerLink(d)}</td></tr>`).join("")}</table>
-          <p>騒音・徒歩分数・ヒートマップなどは、これらをもとに計算した目安です。</p>
-        </div>`;
+        <p class="small muted">周辺の情報は公開データから計算した目安です。出どころは <button class="linkbtn" id="moreSources" style="font-size:inherit;padding:0">データについて</button> から見られます。</p>`;
       return;
     }
-    const n = p.near, lg = lifeGrade(p), tg = trafficGrade(p), hg = hazardGrade(p), over = overBudget(p);
+    const n = p.near, over = overBudget(p);
     $("sidePanel").innerHTML = `
       <div class="pv-head">
         <div>
@@ -2118,20 +2146,21 @@
         <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
       </div>
       <div style="display:flex;gap:8px;align-items:center"><div class="budget-line ${over ? "over" : "ok"} num" style="flex:1">${over ? `予算（${man(rentCap())}）を ${yen(p.rent + p.fee - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}</div>${favBtn(p)}</div>
-      <div class="facts num">
-        <div class="fact"><div class="k">大学まで</div><div class="v">徒歩${p.campus.min}分</div><div class="s">自転車 約${p.campus.bike}分</div></div>
-        <div class="fact ${lg[0]}"><div class="k">スーパー・病院</div><div class="v">${n.supermarket.min}分・${n.hospital.min}分</div><div class="s">${esc(n.supermarket.name)}</div></div>
-        <div class="fact ${tg[0]}"><div class="k">まわりの交通量</div><div class="v">${tg[1]}</div><div class="s">${esc(p.traffic.front)}</div></div>
-        <div class="fact ${hg[0]}"><div class="k">災害</div><div class="v">${hg[1]}</div><div class="s">${floodShort(p)}</div></div>
-        <div class="fact ${crimeGrade(p)[0]}"><div class="k">まわりの犯罪</div><div class="v">${crimeGrade(p)[1]}</div><div class="s">500m以内 年${p.crime.total}件・交番${p.near.police.min}分</div></div>
-        <div class="fact ${p.noise.dValue >= 45 ? "good" : p.noise.dValue >= 40 ? "warn" : "bad"}"><div class="k">隣の部屋の音</div><div class="v">D-${p.noise.dValue}</div><div class="s">${esc(p.structure)}</div></div>
+      ${(() => {
+        const pc = prosCons(p);
+        const li = (x) => `<li><b>${esc(x.short)}</b><span>${esc(x.detail)}</span></li>`;
+        return `<div class="pc-grid">
+          <div class="pc-col good"><div class="pc-h">いいところ</div><ul>${pc.goods.slice(0, 3).map(li).join("") || `<li class="muted">とくになし</li>`}</ul></div>
+          <div class="pc-col bad"><div class="pc-h">気になるところ</div><ul>${(pc.bads.length ? pc.bads : pc.warns).slice(0, 3).map(li).join("") || `<li class="muted">とくになし</li>`}</ul></div>
+        </div>`;
+      })()}
+      <div class="key-nums num">
+        <span><small>大学まで</small>徒歩${p.campus.min}分</span>
+        <span><small>スーパー</small>${n.supermarket.min}分</span>
+        <span><small>病院</small>${n.hospital.min}分</span>
+        <span><small>交番</small>${n.police.min}分</span>
       </div>
-      <div class="small muted">この場所の評価（◎とても良い〜×悪い・エリアの中での順位） ${badge("独自の目安")}</div>
-      <div class="rank-grid num">${MAIN_THEMES.map((t) => {
-        const hi = heatInfo(p.x, p.y, t.k);
-        if (!hi) return "";
-        return `<div class="rank-cell" title="${esc(`${themeLabel(t.k)}：${hi.level.label}（エリアの上位${hi.top}%）・${hi.text}`)}"><span class="rc-k">${themeLabel(t.k)}</span><span class="rc-v">${levelChip(hi.level)}<span class="rc-t">上位${hi.top}%</span></span></div>`;
-      }).join("")}</div>
+      <p class="small muted" style="margin:0">建物・災害・防犯などのくわしい評価は「詳しく見る」で確かめられます。</p>
       <button class="btn" id="openDetail" style="padding:12px" title="同じ札をもう一度タップしても開きます">詳しく見る →</button>`;
   }
 
@@ -2243,6 +2272,12 @@
     }
   }
 
+  const TAB_GROUPS = [
+    { k: "room", label: "部屋", tabs: [["room", "部屋の中（3D）"], ["building", "建物"]] },
+    { k: "around", label: "まわり", tabs: [["life", "暮らし"], ["traffic", "交通量"]] },
+    { k: "safety", label: "安全", tabs: [["hazard", "災害"], ["crime", "防犯"]] },
+    { k: "money", label: "お金と相談", tabs: [["money", "お金"], ["check", "内見で聞くこと"], ["parent", "親に相談"]] },
+  ];
   function renderDetail() {
     const p = byId(state.selected);
     const [face, line] = mascotLine(p, state.tab);
@@ -2254,12 +2289,18 @@
       </div>
       <div class="d-guide" aria-live="polite">${mascotSVG(68, "hop", face)}<div class="bubble d-bubble" title="${esc(line)}"><span>${esc(line)}</span></div></div>
       <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div><div style="margin-top:4px">${favBtn(p)}</div></div>`;
-    const tabs = [
-      ["room", "部屋の中（3D）", null], ["building", "建物", buildingGrade(p)], ["life", "暮らし", lifeGrade(p)], ["traffic", "交通量", trafficGrade(p)], ["hazard", "災害", hazardGrade(p)], ["crime", "防犯", crimeGrade(p)],
-      ["money", "お金", moneyGrade(p)], ["check", "内見で聞くこと", null], ["parent", "親に相談", null],
-    ];
-    $("tabs").innerHTML = tabs.map(([k, label, v]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab === k}">${label}${v ? `<span class="v v-${v[0]}">${v[1]}</span>` : ""}</button>`).join("");
-    $("tabBody").innerHTML = tabContent(p, state.tab);
+    // タブは4つのまとまり。まとまりの中の細かい項目は、本文の上の切り替えで選ぶ
+    const grades = { building: buildingGrade(p), life: lifeGrade(p), traffic: trafficGrade(p), hazard: hazardGrade(p), crime: crimeGrade(p), money: moneyGrade(p) };
+    const group = TAB_GROUPS.find((g) => g.tabs.some(([k]) => k === state.tab)) || TAB_GROUPS[0];
+    const worst = (g) => { const gs = g.tabs.map(([k]) => grades[k]).filter(Boolean); return gs.find((x) => x[0] === "bad") || gs.find((x) => x[0] === "warn") || gs[0]; };
+    const dotText = { good: "良い", warn: "注意", bad: "要確認" };
+    $("tabs").innerHTML = TAB_GROUPS.map((g) => {
+      const w = worst(g), open = state.lastSub[g.k] || g.tabs[0][0];
+      return `<button class="tab" role="tab" data-tab="${open}" aria-selected="${g === group}">${g.label}${w ? `<span class="v v-${w[0]}">${dotText[w[0]]}</span>` : ""}</button>`;
+    }).join("");
+    state.lastSub[group.k] = state.tab;
+    const subnav = `<div class="subtabs" role="tablist" aria-label="${group.label}の項目">${group.tabs.map(([k, label]) => `<button class="subtab" data-subtab="${k}" aria-selected="${state.tab === k}">${label}${grades[k] ? `<span class="v v-${grades[k][0]}">${grades[k][1]}</span>` : ""}</button>`).join("")}</div>`;
+    $("tabBody").innerHTML = subnav + tabContent(p, state.tab);
     if (state.tab === "parent") { $("letter").value = letterTemplate(p); $("letterBtn").textContent = state.sample ? "AIで文章を整える" : "ひな形に戻す"; }
     if (state.tab === "room") showRoom3D(p);
     else { hideRoom3D(); drawMiniMap(p); }
@@ -2393,7 +2434,7 @@
     if (tab === "room") {
       const open = Math.round(p.noise.outdoor - 10);
       return `
-      <div><div class="eyebrow">部屋の中を3Dで見る</div><div class="big-verdict num" style="font-size:20px">${p.layout}・${p.size}㎡・${p.floor}階／${p.floors}階建て</div></div>
+      <div class="big-verdict num" style="font-size:18px">${p.layout}・${p.size}㎡・${p.floor}階／${p.floors}階建て</div>
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg" role="group" aria-label="見かた"><button data-r3dmode="walk" aria-pressed="true">歩いて見る</button><button data-r3dmode="dollhouse" aria-pressed="false">上から見る</button></span>
         <span class="seg" role="group" aria-label="すること"><button data-roompane="look" aria-pressed="${state.roomPane === "look"}">部屋を見る</button><button data-roompane="furn" aria-pressed="${state.roomPane === "furn"}">家具を置く</button></span></div>
       <div><div class="small muted">間取り（タップでその部屋へ移動${state.roomPane === "furn" ? "・青が置いた家具" : ""}）</div><canvas id="r3dMinimap" class="r3d-minimap"${state.roomPane === "furn" ? ' style="height:130px"' : ""}></canvas></div>
@@ -2458,7 +2499,7 @@
       const bike = c.kinds["自転車盗"] || 0;
       return `
       <div><div class="eyebrow">まわりの犯罪（500m以内・${state.data.crime.year}年の1年間）</div><div class="big-verdict ${g[0]}">${g[1]}<span class="num" style="font-size:16px;margin-left:10px">年${c.total}件・夜（18〜6時）${c.night}件</span></div></div>
-      <div class="fc-grades num">${CRIME_SUB_THEMES.map((t) => { const r = crimeSubGrade(p, t.group); return `<span title="${esc(THEME_HINT[t.k])}">${t.label} 年${r.n}件<b class="v v-${r.grade[0]}">${r.grade[1]}</b></span>`; }).join("")}</div>
+      <div class="fc-grades num" style="grid-template-columns:repeat(3,minmax(0,1fr))">${CRIME_SUB_THEMES.map((t) => { const r = crimeSubGrade(p, t.group); return `<span title="${esc(t.label)}：年${r.n}件（${esc(THEME_HINT[t.k])}）" style="white-space:normal;flex-wrap:wrap">${t.label}<b class="v v-${r.grade[0]}">${r.n}件・${r.grade[1]}</b></span>`; }).join("")}</div>
       <div class="bars">${Object.entries(c.kinds).map(([k, v]) => `<div class="bar-row"><span>${esc(k)}</span><i style="width:${(v / max) * 100}%"></i><b class="num">${v}件</b></div>`).join("") || `<p class="muted">この範囲で発生の記録はありません</p>`}</div>
       <dl class="rows num">
         <dt>いちばん近い交番</dt><dd>徒歩${p.near.police.min}分　${esc(p.near.police.name)}</dd>
@@ -2466,7 +2507,7 @@
         ${bike ? `<dt>気をつけること</dt><dd>いちばん多いのは自転車盗（${bike}件）。鍵を2つ付け、屋根や防犯カメラのある駐輪場か確かめる</dd>` : ""}
       </dl>
       <p class="note">${badge("実データ")} 「犯罪発生情報（${state.data.crime.year}年）」（大阪府警察 <a href="https://www.police.pref.osaka.lg.jp/seikatsu/9290.html" target="_blank" rel="noopener">犯罪オープンデータ</a>）を加工して作成。町丁目の位置は Geolonia 住所データ（CC BY 4.0）、交番は OpenStreetMap。</p>
-      <p class="note">${badge("推定")} 発生は町丁目単位なので、町丁目の代表点が物件から500m以内にあるものを数えています。空き巣などの侵入盗や性犯罪は、このデータに含まれません。自転車・バイク盗／車の被害／夜の犯罪の「少なめ／多め」も、それぞれエリア全体の件数と比べた結果で、地図のヒートマップ（防犯の内訳）でも見られます。「少なめ／多め」は、地図のエリア全体で同じように数えた件数と比べた結果です（エリアの中で少ないほうの1割は年${crimeRange[0]}件以下、多いほうの1割は年${crimeRange[1]}件以上）。</p>`;
+      <p class="note">${badge("推定")} 発生は町丁目単位なので、代表点が物件から500m以内の町丁目を数えています。侵入盗や性犯罪は含みません。「少なめ／多め」は地図のエリア全体との比較です（全体の件数では、少ないほうの1割が年${crimeRange[0]}件以下、多いほうの1割が年${crimeRange[1]}件以上）。</p>`;
     }
     if (tab === "hazard") {
       const g = hazardGrade(p);
@@ -2515,7 +2556,8 @@
         <button class="btn ghost" id="copyBtn">コピー</button>
         <button class="btn ghost" id="stopBtn" hidden>止める</button>
         <span class="status" id="letterStatus"></span>
-      </div>`;
+      </div>
+      <p class="note" id="aiNote">${state.sample ? "「AIで文章を整える」を押すと、上の事実だけを使って Claude が文章を書き直します。" : "いまはひな形の文章です。気になるところは自由に直してから送ってください。"}</p>`;
   }
 
   function checklist(p) {
@@ -2649,6 +2691,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
   }
   function disableAI() {
     state.sample = null;
+    if ($("aiNote")) $("aiNote").textContent = "いまはひな形の文章です。気になるところは自由に直してから送ってください。";
     $("aiState").textContent = "AIなし（ひな形で動作）";
     $("aiState").classList.remove("on");
     if ($("letterBtn")) $("letterBtn").textContent = "ひな形に戻す";
@@ -2740,6 +2783,8 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       if (e.target.id === "furnSample") { state.sampleFurn = e.target.checked; room3d.api?.showSampleFurniture(state.sampleFurn); }
     });
     $("tabBody").addEventListener("click", async (e) => {
+      const st = e.target.closest("[data-subtab]");
+      if (st) { if (state.tab !== st.dataset.subtab) { state.tab = st.dataset.subtab; renderDetail(); } return; }
       const rm = e.target.closest("[data-r3dmode]");
       if (rm) { room3d.api?.setMode(rm.dataset.r3dmode); return; }
       const pane = e.target.closest("[data-roompane]");
@@ -2791,6 +2836,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     if (state.sample) {
       $("aiState").textContent = "AI 使用可"; $("aiState").classList.add("on");
       if ($("letterBtn")) $("letterBtn").textContent = "AIで文章を整える";
+      if ($("aiNote")) $("aiNote").textContent = "「AIで文章を整える」を押すと、上の事実だけを使って Claude が文章を書き直します。";
     } else disableAI();
   }
   start();
