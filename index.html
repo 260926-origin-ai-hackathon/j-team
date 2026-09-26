@@ -1809,16 +1809,6 @@
     return s >= 0.6 ? ["good", "少なめ"] : s >= 0.3 ? ["warn", "ふつう"] : ["bad", "多め"];
   }
 
-  // 物件のまわり500mの、手口別・時間帯別の件数と評価（ヒートマップの内訳テーマと同じ物差し）
-  function crimeSubGrade(p, group) {
-    const kinds = state.data.crime.grid.groupKinds[group];
-    const n = group === "night" ? p.crime.night : kinds.reduce((a, k) => a + (p.crime.kinds[k] || 0), 0);
-    crimeScore(0, 0, group);
-    const [lo, hi] = crimeRanges[group];
-    const s = Math.max(0, Math.min(1, (hi - n) / (hi - lo)));
-    return { n, grade: s >= 0.6 ? ["good", "少なめ"] : s >= 0.3 ? ["warn", "ふつう"] : ["bad", "多め"] };
-  }
-
   function heatColor(v) { return levelOf(v).color; }
 
   // その地点の評価：5段階、エリアの中での順位、実際の値
@@ -2499,7 +2489,6 @@
       const bike = c.kinds["自転車盗"] || 0;
       return `
       <div><div class="eyebrow">まわりの犯罪（500m以内・${state.data.crime.year}年の1年間）</div><div class="big-verdict ${g[0]}">${g[1]}<span class="num" style="font-size:16px;margin-left:10px">年${c.total}件・夜（18〜6時）${c.night}件</span></div></div>
-      <div class="fc-grades num" style="grid-template-columns:repeat(3,minmax(0,1fr))">${CRIME_SUB_THEMES.map((t) => { const r = crimeSubGrade(p, t.group); return `<span title="${esc(t.label)}：年${r.n}件（${esc(THEME_HINT[t.k])}）" style="white-space:normal;flex-wrap:wrap">${t.label}<b class="v v-${r.grade[0]}">${r.n}件・${r.grade[1]}</b></span>`; }).join("")}</div>
       <div class="bars">${Object.entries(c.kinds).map(([k, v]) => `<div class="bar-row"><span>${esc(k)}</span><i style="width:${(v / max) * 100}%"></i><b class="num">${v}件</b></div>`).join("") || `<p class="muted">この範囲で発生の記録はありません</p>`}</div>
       <dl class="rows num">
         <dt>いちばん近い交番</dt><dd>徒歩${p.near.police.min}分　${esc(p.near.police.name)}</dd>
