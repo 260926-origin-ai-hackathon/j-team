@@ -1346,7 +1346,12 @@
     { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
     { k: "crime", label: "防犯" },
     { k: "food", label: "飲食店" }, { k: "conv", label: "コンビニ" }, { k: "bus", label: "バス停" },
+    // 防犯の内訳（手口別・時間帯別）。総合の平均には入れない（防犯と二重に数えないため）
+    { k: "crimeBike", label: "自転車・バイク盗", sub: "crime", group: "bike" },
+    { k: "crimeCar", label: "車の被害", sub: "crime", group: "car" },
+    { k: "crimeNight", label: "夜の犯罪", sub: "crime", group: "night" },
   ];
+  const MAIN_THEMES = HEAT_THEMES.filter((t) => !t.sub), CRIME_SUB_THEMES = HEAT_THEMES.filter((t) => t.sub === "crime");
   const HEAT_CELL = 80;
   // 凡例に出す、テーマごとの色の基準（赤い側、緑の側、出どころ）
   const HEAT_SCALE = {
@@ -1357,6 +1362,9 @@
     commute: ["キャンパスまで道のり3km以上", "400m以内", "キャンパスの出入口まで、道のりで計算"],
     safety: ["浸水想定 3m以上", "浸水想定なし", "国土地理院 洪水浸水想定区域"],
     crime: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（街頭犯罪7手口）"],
+    crimeBike: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（自転車盗・オートバイ盗）"],
+    crimeCar: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（車上ねらい・部品ねらい・自動車盗）"],
+    crimeNight: ["このエリアの中で多い", "少ない", "大阪府警察 犯罪オープンデータ（7手口のうち18時〜翌6時に発生したもの）"],
     food: ["飲食店まで道のり800m以上・まわりにほぼ無い", "150m以内・400m以内に20軒以上", "OpenStreetMapのレストラン・カフェ・ファストフードから"],
     bus: ["バス停まで道のり800m以上", "150m以内", "OpenStreetMapのバス停と道路から、道のりで計算"],
     conv: ["コンビニまで道のり600m以上", "100m以内", "OpenStreetMapのコンビニと道路から、道のりで計算"],
@@ -1706,6 +1714,7 @@
       const crime = crimeScore(x, y);
       field.crime[k] = crime;
       raw.crime[k] = crimeDensityAt(x, y) ?? 0;
+      for (const t of CRIME_SUB_THEMES) { field[t.k][k] = crimeScore(x, y, t.group); raw[t.k][k] = crimeDensityAt(x, y, t.group) ?? 0; }
       // 飲食店：近さと、400m以内の軒数（20軒で満点）を半分ずつ。バス停：近さ
       const dFood = walkAt("restaurant", x, y), nFood = walkAt("food400", x, y), dBus = walkAt("bus_stop", x, y);
       field.food[k] = lin(dFood, 150, 800) * 0.5 + Math.min(1, nFood / 20) * 0.5;
@@ -1752,25 +1761,42 @@
   }
 
   // マスごとの「まわり500m以内の年間件数」（物件と同じ数え方）。エリアの中の下位10%〜上位10%を「少ない〜多い」とする
+  // 手口別（group：bike・car・night）も同じ数え方・同じ物差し（エリアの下位10%〜上位10%）で比べる
   let crimeRange = null;
-  function crimeDensityAt(x, y) {
+  const crimeRanges = {};
+  const crimeGridValues = (group) => group ? state.data.crime.grid.groups[group] : state.data.crime.grid.near;
+  function crimeDensityAt(x, y, group) {
     const g = state.data.crime.grid;
     const i = Math.floor((x - g.x0) / g.cell), j = Math.floor((y - g.y0) / g.cell);
-    return i < 0 || j < 0 || i >= g.cols || j >= g.rows ? null : g.near[j * g.cols + i];
+    return i < 0 || j < 0 || i >= g.cols || j >= g.rows ? null : crimeGridValues(group)[j * g.cols + i];
   }
-  function crimeScore(x, y) {
-    if (!crimeRange) {
-      const v = state.data.crime.grid.near.slice().sort((a, b) => a - b);
-      crimeRange = [v[Math.floor(v.length * 0.1)], v[Math.floor(v.length * 0.9)]];
+  function crimeScore(x, y, group) {
+    const key = group || "all";
+    if (!crimeRanges[key]) {
+      const v = crimeGridValues(group).slice().sort((a, b) => a - b);
+      const lo = v[Math.floor(v.length * 0.1)], hi = v[Math.floor(v.length * 0.9)];
+      crimeRanges[key] = [lo, Math.max(hi, lo + 1)];
+      if (!group) crimeRange = crimeRanges[key];
     }
-    const d = crimeDensityAt(x, y) ?? crimeRange[1];
-    return Math.max(0, Math.min(1, (crimeRange[1] - d) / (crimeRange[1] - crimeRange[0])));
+    const [lo, hi] = crimeRanges[key];
+    const d = crimeDensityAt(x, y, group) ?? hi;
+    return Math.max(0, Math.min(1, (hi - d) / (hi - lo)));
   }
   function crimeGrade(p) {
     // 物件の件数そのもので判定する（ヒートマップのマスと同じ物差し）
     const [lo, hi] = crimeRange || (crimeScore(0, 0), crimeRange);
     const s = Math.max(0, Math.min(1, (hi - p.crime.total) / (hi - lo)));
     return s >= 0.6 ? ["good", "少なめ"] : s >= 0.3 ? ["warn", "ふつう"] : ["bad", "多め"];
+  }
+
+  // 物件のまわり500mの、手口別・時間帯別の件数と評価（ヒートマップの内訳テーマと同じ物差し）
+  function crimeSubGrade(p, group) {
+    const kinds = state.data.crime.grid.groupKinds[group];
+    const n = group === "night" ? p.crime.night : kinds.reduce((a, k) => a + (p.crime.kinds[k] || 0), 0);
+    crimeScore(0, 0, group);
+    const [lo, hi] = crimeRanges[group];
+    const s = Math.max(0, Math.min(1, (hi - n) / (hi - lo)));
+    return { n, grade: s >= 0.6 ? ["good", "少なめ"] : s >= 0.3 ? ["warn", "ふつう"] : ["bad", "多め"] };
   }
 
   function heatColor(v) { return levelOf(v).color; }
@@ -1793,6 +1819,7 @@
       all: weightSummary(), shop: `スーパーまで道のり${m(r)}`, med: `診療所まで道のり${m(r)}`, quiet: `屋外 約${Math.round(r)}dB`,
       commute: `キャンパスまで道のり${m(r)}`, safety: r ? `浸水想定 ${state.data.hazard.floodLegend[r - 1]}` : "浸水想定なし",
       crime: `500m以内 年${Math.round(r)}件`,
+      crimeBike: `500m以内 自転車・バイク盗 年${Math.round(r)}件`, crimeCar: `500m以内 車の被害 年${Math.round(r)}件`, crimeNight: `500m以内 夜（18〜6時）の犯罪 年${Math.round(r)}件`,
       food: `飲食店まで道のり${m(r)}`, bus: `バス停まで道のり${m(r)}`, conv: `コンビニまで道のり${m(r)}`,
     }[theme];
   }
@@ -1938,6 +1965,7 @@
   const THEME_HINT = {
     all: "テーマの平均", shop: "スーパーが近いほど緑", med: "診療所が近いほど緑", quiet: "車や電車の音が小さいほど緑",
     commute: "大学が近いほど緑", safety: "浸水しにくいほど緑", crime: "犯罪が少ないほど緑",
+    crimeBike: "自転車・バイクの盗難が少ないほど緑", crimeCar: "車上ねらいなどが少ないほど緑", crimeNight: "夜の犯罪が少ないほど緑",
     food: "飲食店が近くて多いほど緑", bus: "バス停が近いほど緑", conv: "コンビニが近いほど緑",
   };
   // 地図の上部に出す、オンにしている情報の短い凡例と出典（出典は印にカーソルを当てると出る）
@@ -2002,14 +2030,17 @@
           </button>`).join("")}</div>
         <p class="note">オンにした情報の印の意味と出典は、地図の上部に表示します。</p>`;
     } else if (state.sheet === "heat") {
+      const themeBtn = (t) => `<button class="theme" data-t="${t.k}" aria-pressed="${heatOn && state.heatTheme === t.k}"><b>${themeLabel(t.k)}</b><span>${t.k === "all" ? esc(weightSummary()) : THEME_HINT[t.k]}</span></button>`;
       el.innerHTML = `<div class="sheet-head"><h3>ヒートマップ</h3>
           <button class="opt-row compact" data-k="heat" aria-pressed="${heatOn}"><span class="switch" aria-hidden="true"></span><span>${heatOn ? "表示中" : "オフ"}</span></button></div>
         <p class="small muted">何を基準に住みやすさを塗るかを選びます。</p>
-        <div class="theme-grid">${HEAT_THEMES.map((t) => `<button class="theme" data-t="${t.k}" aria-pressed="${heatOn && state.heatTheme === t.k}"><b>${themeLabel(t.k)}</b><span>${t.k === "all" ? esc(weightSummary()) : THEME_HINT[t.k]}</span></button>`).join("")}</div>
+        <div class="theme-grid">${MAIN_THEMES.map(themeBtn).join("")}</div>
+        <div class="small muted" style="margin-top:2px">防犯の内訳（大阪府警察の犯罪オープンデータを手口・時間帯で分けたもの）</div>
+        <div class="theme-grid sub">${CRIME_SUB_THEMES.map(themeBtn).join("")}</div>
         <div class="weights">
           <div class="sheet-head"><b>あなた向けの総合：何を大事にする？</b>
             <span class="row" style="margin:0"><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
-          ${HEAT_THEMES.filter((t) => t.k !== "all").map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
+          ${MAIN_THEMES.filter((t) => t.k !== "all").map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
           <p class="note">「大事」は「ふつう」の3倍の重さで平均します。選ぶと「あなた向け」の総合に切り替わります。「おすすめ」は、ペルソナ（親も一緒に決める新入生）に合わせて、買い物・浸水しにくさ・防犯を大事にした設定です。</p>
         </div>
         ${heatLegend()}`;
@@ -2096,7 +2127,7 @@
         <div class="fact ${p.noise.dValue >= 45 ? "good" : p.noise.dValue >= 40 ? "warn" : "bad"}"><div class="k">隣の部屋の音</div><div class="v">D-${p.noise.dValue}</div><div class="s">${esc(p.structure)}</div></div>
       </div>
       <div class="small muted">この場所の評価（◎とても良い〜×悪い・エリアの中での順位） ${badge("独自の目安")}</div>
-      <div class="rank-grid num">${HEAT_THEMES.map((t) => {
+      <div class="rank-grid num">${MAIN_THEMES.map((t) => {
         const hi = heatInfo(p.x, p.y, t.k);
         if (!hi) return "";
         return `<div class="rank-cell" title="${esc(`${themeLabel(t.k)}：${hi.level.label}（エリアの上位${hi.top}%）・${hi.text}`)}"><span class="rc-k">${themeLabel(t.k)}</span><span class="rc-v">${levelChip(hi.level)}<span class="rc-t">上位${hi.top}%</span></span></div>`;
@@ -2427,6 +2458,7 @@
       const bike = c.kinds["自転車盗"] || 0;
       return `
       <div><div class="eyebrow">まわりの犯罪（500m以内・${state.data.crime.year}年の1年間）</div><div class="big-verdict ${g[0]}">${g[1]}<span class="num" style="font-size:16px;margin-left:10px">年${c.total}件・夜（18〜6時）${c.night}件</span></div></div>
+      <div class="fc-grades num">${CRIME_SUB_THEMES.map((t) => { const r = crimeSubGrade(p, t.group); return `<span title="${esc(THEME_HINT[t.k])}">${t.label} 年${r.n}件<b class="v v-${r.grade[0]}">${r.grade[1]}</b></span>`; }).join("")}</div>
       <div class="bars">${Object.entries(c.kinds).map(([k, v]) => `<div class="bar-row"><span>${esc(k)}</span><i style="width:${(v / max) * 100}%"></i><b class="num">${v}件</b></div>`).join("") || `<p class="muted">この範囲で発生の記録はありません</p>`}</div>
       <dl class="rows num">
         <dt>いちばん近い交番</dt><dd>徒歩${p.near.police.min}分　${esc(p.near.police.name)}</dd>
@@ -2434,7 +2466,7 @@
         ${bike ? `<dt>気をつけること</dt><dd>いちばん多いのは自転車盗（${bike}件）。鍵を2つ付け、屋根や防犯カメラのある駐輪場か確かめる</dd>` : ""}
       </dl>
       <p class="note">${badge("実データ")} 「犯罪発生情報（${state.data.crime.year}年）」（大阪府警察 <a href="https://www.police.pref.osaka.lg.jp/seikatsu/9290.html" target="_blank" rel="noopener">犯罪オープンデータ</a>）を加工して作成。町丁目の位置は Geolonia 住所データ（CC BY 4.0）、交番は OpenStreetMap。</p>
-      <p class="note">${badge("推定")} 発生は町丁目単位なので、町丁目の代表点が物件から500m以内にあるものを数えています。空き巣などの侵入盗や性犯罪は、このデータに含まれません。「少なめ／多め」は、地図のエリア全体で同じように数えた件数と比べた結果です（エリアの中で少ないほうの1割は年${crimeRange[0]}件以下、多いほうの1割は年${crimeRange[1]}件以上）。</p>`;
+      <p class="note">${badge("推定")} 発生は町丁目単位なので、町丁目の代表点が物件から500m以内にあるものを数えています。空き巣などの侵入盗や性犯罪は、このデータに含まれません。自転車・バイク盗／車の被害／夜の犯罪の「少なめ／多め」も、それぞれエリア全体の件数と比べた結果で、地図のヒートマップ（防犯の内訳）でも見られます。「少なめ／多め」は、地図のエリア全体で同じように数えた件数と比べた結果です（エリアの中で少ないほうの1割は年${crimeRange[0]}件以下、多いほうの1割は年${crimeRange[1]}件以上）。</p>`;
     }
     if (tab === "hazard") {
       const g = hazardGrade(p);
@@ -2646,7 +2678,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
       if (t) {
         state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap();
-        const hint = { all: "あなたの大事なことをまとめて", shop: "スーパーが近いところほど緑", med: "診療所が近いところほど緑", quiet: "静かなところほど緑", commute: "大学が近いところほど緑", safety: "浸水しにくいところほど緑", crime: "犯罪が少ないところほど緑", food: "飲食店が多いところほど緑", conv: "コンビニが近いところほど緑", bus: "バス停が近いところほど緑" }[t.dataset.t];
+        const hint = { all: "あなたの大事なことをまとめて", shop: "スーパーが近いところほど緑", med: "診療所が近いところほど緑", quiet: "静かなところほど緑", commute: "大学が近いところほど緑", safety: "浸水しにくいところほど緑", crime: "犯罪が少ないところほど緑", crimeBike: "自転車・バイクの盗難が少ないところほど緑", crimeCar: "車上ねらいなどが少ないところほど緑", crimeNight: "夜（18時〜翌6時）の犯罪が少ないところほど緑", food: "飲食店が多いところほど緑", conv: "コンビニが近いところほど緑", bus: "バス停が近いところほど緑" }[t.dataset.t];
         setMapGuide("surprised", `「${themeLabel(t.dataset.t)}」で塗り直したよ。${hint}`, { temporary: true });
         return;
       }
