@@ -12,6 +12,7 @@
 """
 
 import csv
+import zipfile
 import hashlib
 import heapq
 import io
@@ -65,6 +66,12 @@ CRIME_KINDS = {  # ファイル名 → 手口
 }
 CRIME_CITIES = ["東大阪市", "八尾市", "大阪市生野区", "大阪市東成区", "大阪市平野区"]
 CRIME_RADIUS = 500  # 物件のまわり何mの発生を数えるか
+
+# 先輩（大学生）が多そうな場所：国勢調査（2020年）の500mメッシュ統計の「世帯主が20〜29歳の1人世帯数」。
+# 個人や建物は分からない国の集計を、さらに500m四方のまま使う（プライバシーのため細かくしない）
+YOUNG_MESH1 = ["5135", "5235"]  # この地図の範囲にかかる1次メッシュ
+YOUNG_STATS_ID = "T001141"      # 令和2年国勢調査 4次メッシュ（500m）人口及び世帯
+YOUNG_COL = "T001141048"        # 世帯主の年齢が20～29歳の1人世帯数
 
 # キャンパスの基準点（OSM relation 13854100 の中心付近と、主な出入口）
 CAMPUS = {"name": "近畿大学 東大阪キャンパス", "lat": 34.6514, "lon": 135.5902}
@@ -320,6 +327,43 @@ def load_crimes():
                 c["night"] += 1
     print(f"crime: {matched}/{total} 件を町丁目の位置に置いた")
     return counts
+
+
+def mesh4_box(code):
+    """4次メッシュ（500m）のコードから、南西と北東の緯度経度を出す。"""
+    c = str(code)
+    lat = int(c[0:2]) / 1.5 + int(c[4]) * 5 / 60 + int(c[6]) * 30 / 3600
+    lon = 100 + int(c[2:4]) + int(c[5]) * 7.5 / 60 + int(c[7]) * 45 / 3600
+    q = int(c[8])
+    if q in (3, 4):
+        lat += 15 / 3600
+    if q in (2, 4):
+        lon += 22.5 / 3600
+    return lat, lon, lat + 15 / 3600, lon + 22.5 / 3600
+
+
+def load_young_singles(ext):
+    """地図の範囲にかかる500mメッシュごとに、20代の1人世帯の数を返す（秘匿で数字がないメッシュは0）。"""
+    cells = []
+    for m1 in YOUNG_MESH1:
+        url = f"https://www.e-stat.go.jp/gis/statmap-search/data?statsId={YOUNG_STATS_ID}&code={m1}&downloadType=2"
+        raw = cached(f"young_{YOUNG_STATS_ID}_{m1}.zip", lambda: http_get(url, binary=True))
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            text = z.read(z.namelist()[0]).decode("cp932")
+        rows = list(csv.reader(io.StringIO(text)))
+        col = rows[0].index(YOUNG_COL)
+        for r in rows[2:]:
+            if not r or not r[0].isdigit():
+                continue
+            la1, lo1, la2, lo2 = mesh4_box(r[0])
+            x1, y1 = to_xy(la1, lo1)
+            x2, y2 = to_xy(la2, lo2)
+            if x2 < ext[0] or x1 > ext[2] or y2 < ext[1] or y1 > ext[3]:
+                continue
+            n = int(r[col]) if r[col].isdigit() else 0
+            cells.append([round(x1), round(y1), round(x2), round(y2), n])
+    print(f"young singles: {len(cells)} メッシュ（500m）、合計 {sum(c[4] for c in cells)} 世帯")
+    return cells
 
 
 def crime_near(p, counts):
@@ -768,6 +812,7 @@ def main():
         "walk": walk_grid,
         "crime": {"year": CRIME_YEAR, "radius": CRIME_RADIUS, "towns": crime_towns,
                   "grid": crime_grid(crimes, ext, NOISE_CELL)},
+        "young": {"year": 2020, "cells": load_young_singles(ext)},
         "sources": [
             "© OpenStreetMap contributors (ODbL)",
             "国土地理院 重ねるハザードマップ（洪水浸水想定区域［想定最大規模］・土砂災害警戒区域・津波浸水想定）",
@@ -776,6 +821,7 @@ def main():
             "騒音・遮音：道路の種類ごとの仮定値からの推定と、python-acoustics（BSD-3）の質量則・ISO 717-1 評価による計算",
             f"「犯罪発生情報（{CRIME_YEAR}年）」（大阪府警察 犯罪オープンデータ https://www.police.pref.osaka.lg.jp/seikatsu/9290.html）を加工して作成",
             "町丁目の位置：Geolonia 住所データ（CC BY 4.0） https://github.com/geolonia/japanese-addresses",
+            "「令和2年国勢調査 地域メッシュ統計（500mメッシュ）」（総務省統計局、政府統計の総合窓口 e-Stat https://www.e-stat.go.jp/）を加工して作成",
         ],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

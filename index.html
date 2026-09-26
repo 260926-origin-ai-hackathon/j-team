@@ -1366,6 +1366,8 @@
     { k: "quiet", label: "静かさ" }, { k: "commute", label: "通学" }, { k: "safety", label: "浸水しにくさ" },
     { k: "crime", label: "防犯" },
     { k: "food", label: "飲食店" }, { k: "conv", label: "コンビニ" }, { k: "bus", label: "バス停" },
+    // 先輩（大学生）が多そうな場所。住みやすさの良し悪しではないので、総合の平均には入れない
+    { k: "young", label: "先輩が多い" },
   ];
   const HEAT_CELL = 80;
   // 凡例に出す、テーマごとの色の基準（赤い側、緑の側、出どころ）
@@ -1380,6 +1382,7 @@
     food: ["飲食店まで道のり800m以上・まわりにほぼ無い", "150m以内・400m以内に20軒以上", "OpenStreetMapのレストラン・カフェ・ファストフードから"],
     bus: ["バス停まで道のり800m以上", "150m以内", "OpenStreetMapのバス停と道路から、道のりで計算"],
     conv: ["コンビニまで道のり600m以上", "100m以内", "OpenStreetMapのコンビニと道路から、道のりで計算"],
+    young: ["このエリアの中で少ない", "多い", "国勢調査（2020年）500m四方の「20代の一人暮らし世帯」の数。個人や建物は分からない大まかな集計"],
   };
   // 評価は5段階。点（0〜1）を20点刻みで区切り、記号・言葉・色をいつも同じ組み合わせで使う
   const LEVELS = [
@@ -1390,6 +1393,9 @@
     { min: -1, mark: "×", label: "悪い", color: [200, 65, 47] },
   ];
   const levelOf = (v) => LEVELS.find((l) => v >= l.min);
+  // 「先輩が多い」は良し悪しではないので、段階の言葉を「多い・少ない」にする
+  const YOUNG_LABELS = ["とても多い", "多い", "ふつう", "少ない", "とても少ない"];
+  const levelLabel = (theme, l) => theme === "young" ? YOUNG_LABELS[LEVELS.indexOf(l)] : l.label;
 
   // 「あなた向けの総合」の重み。テーマごとに 気にしない(0)／ふつう(1)／大事(3)
   const WEIGHT_STEPS = [[0, "気にしない"], [1, "ふつう"], [3, "大事"]];
@@ -1443,6 +1449,8 @@
       note: "確率論的地震動予測地図（2020年版）の、建物の地点を含む250m四方の値です。" },
     { group: "data", what: "犯罪の件数", kind: "実データ", provider: "大阪府警察 犯罪オープンデータ", url: "https://www.police.pref.osaka.lg.jp/seikatsu/9290.html",
       note: "「犯罪発生情報（2025年）」を加工して作成。自転車盗・ひったくりなど街頭犯罪7手口だけで、空き巣などの侵入盗や性犯罪は含みません。" },
+    { group: "data", what: "先輩が多い場所（20代の一人暮らし世帯）", kind: "実データ", provider: "総務省統計局 令和2年国勢調査 地域メッシュ統計（政府統計の総合窓口 e-Stat）", url: "https://www.e-stat.go.jp/gis/statmap-search?type=1&toukeiCode=00200521",
+      note: "500m四方ごとの「世帯主の年齢が20〜29歳の1人世帯数」（2020年10月時点）を加工して作成。大学生だけを数えたものではなく、若い社会人も含みます。プライバシーのため500m四方より細かくはせず、個人や建物は分かりません。ヒートマップの「先輩が多い」に使い、総合の平均には入れていません。" },
     { group: "data", what: "町丁目の位置", kind: "実データ", provider: "Geolonia 住所データ", url: "https://github.com/geolonia/japanese-addresses",
       note: "CC BY 4.0。犯罪の件数を地図に置くのに使っています。" },
     { group: "calc", what: "交通量・屋外の騒音", kind: "推定", provider: "道路の種類から計算",
@@ -1455,7 +1463,7 @@
       note: "間取り図から読み取ったものではなく、間取りタイプ（1R・1K・1DK）と面積から組み立てた簡易モデルです。窓の向き（日差し）は架空データです。" },
     { group: "calc", what: "耐震基準", kind: "推定", provider: "築年数から推定", note: "建った年を築年数から逆算しています。" },
     { group: "calc", what: "ヒートマップ", kind: "独自の目安", provider: "上の公開データから計算",
-      note: "施設までの距離などに独自の基準で点を付けたものです。「総合」と「防犯」はエリアの中での比較です。" },
+      note: "施設までの距離などに独自の基準で点を付けたものです。「総合」「防犯」「先輩が多い」はエリアの中での比較です。" },
     { group: "calc", what: "構造ごとの特徴・生活費・初期費用", kind: "一般的な傾向", provider: "一般的な目安", note: "建物や人によって差があります。" },
     { group: "demo", what: "物件（名前・家賃・間取り・構造・築年数）", kind: "架空", provider: "デモ用に作成", note: "位置だけ実在の住宅地に置いています。" },
   ];
@@ -1733,6 +1741,9 @@
       field.bus[k] = lin(dBus, 150, 800);
       raw.bus[k] = dBus;
       // コンビニ：いちばん近い店までの道のり
+      const nYoung = youngAt(x, y);
+      field.young[k] = youngScore(nYoung);
+      raw.young[k] = nYoung;
       const dConv = walkAt("convenience", x, y);
       field.conv[k] = lin(dConv, 100, 600);
       raw.conv[k] = dConv;
@@ -1786,6 +1797,20 @@
     const d = crimeDensityAt(x, y) ?? crimeRange[1];
     return Math.max(0, Math.min(1, (crimeRange[1] - d) / (crimeRange[1] - crimeRange[0])));
   }
+  // 先輩が多そうな場所：国勢調査の500m四方ごとの「世帯主が20〜29歳の1人世帯」の数。
+  // プライバシーのため500m四方より細かくせず、エリアの中の下位10%〜上位10%を「少ない〜多い」にする
+  let youngRange = null;
+  function youngAt(x, y) {
+    const c = state.data.young?.cells.find(([x1, y1, x2, y2]) => x >= x1 && x < x2 && y >= y1 && y < y2);
+    return c ? c[4] : 0;
+  }
+  function youngScore(n) {
+    if (!youngRange) {
+      const v = (state.data.young?.cells || []).map((c) => c[4]).sort((a, b) => a - b);
+      youngRange = v.length ? [v[Math.floor(v.length * 0.1)], Math.max(v[Math.floor(v.length * 0.9)], v[Math.floor(v.length * 0.1)] + 1)] : [0, 1];
+    }
+    return Math.max(0, Math.min(1, (n - youngRange[0]) / (youngRange[1] - youngRange[0])));
+  }
   function crimeGrade(p) {
     // 物件の件数そのもので判定する（ヒートマップのマスと同じ物差し）
     const [lo, hi] = crimeRange || (crimeScore(0, 0), crimeRange);
@@ -1814,6 +1839,7 @@
       commute: `キャンパスまで道のり${m(r)}`, safety: r ? `浸水想定 ${state.data.hazard.floodLegend[r - 1]}` : "浸水想定なし",
       crime: `500m以内 年${Math.round(r)}件`,
       food: `飲食店まで道のり${m(r)}`, bus: `バス停まで道のり${m(r)}`, conv: `コンビニまで道のり${m(r)}`,
+      young: r ? `20代の一人暮らし 約${Math.max(10, Math.round(r / 10) * 10)}世帯（500m四方）` : "20代の一人暮らしはほぼなし（500m四方）",
     }[theme];
   }
   // テーマごとに、エリアのマスが5段階それぞれにどれだけあるか（%）
@@ -1919,7 +1945,7 @@
     const hi = heatInfo(latlng.lng, latlng.lat, state.heatTheme);
     if (!hi) { el.hidden = true; return; }
     const t = HEAT_THEMES.find((x) => x.k === state.heatTheme);
-    el.innerHTML = `<div class="small muted">この地点の「${themeLabel(t.k)}」</div><div>${levelChip(hi.level)} <b>${hi.level.label}</b>　<span class="num">エリアの上位${hi.top}%</span></div><div class="small muted num">${esc(hi.text)}</div>`;
+    el.innerHTML = `<div class="small muted">この地点の「${themeLabel(t.k)}」</div><div>${levelChip(hi.level)} <b>${levelLabel(t.k, hi.level)}</b>　<span class="num">エリアの上位${hi.top}%</span></div><div class="small muted num">${esc(hi.text)}</div>`;
     el.hidden = false;
   }
 
@@ -1959,6 +1985,7 @@
     all: "テーマの平均", shop: "スーパーが近いほど緑", med: "診療所が近いほど緑", quiet: "車や電車の音が小さいほど緑",
     commute: "大学が近いほど緑", safety: "浸水しにくいほど緑", crime: "犯罪が少ないほど緑",
     food: "飲食店が近くて多いほど緑", bus: "バス停が近いほど緑", conv: "コンビニが近いほど緑",
+    young: "20代の一人暮らしが多いほど緑",
   };
   // 地図の上部に出す、オンにしている情報の短い凡例と出典（出典は印にカーソルを当てると出る）
   const LAYER_SOURCE = {
@@ -1988,7 +2015,7 @@
 
   function heatLegend() {
     const scale = HEAT_SCALE[state.heatTheme], share = levelShares(state.heatTheme);
-    return `<div class="row">${LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${l.label}<span class="muted num" style="font-weight:400">（${share[n]}%）</span></span>`).join("")}</div>
+    return `<div class="row">${LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${levelLabel(state.heatTheme, l)}<span class="muted num" style="font-weight:400">（${share[n]}%）</span></span>`).join("")}</div>
       <p class="note">（　）は、このエリアのうちその段階にあたる場所の割合。×：${scale[0]}　◎：${scale[1]}</p>
       <div class="row">${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}</div>`;
   }
@@ -2008,7 +2035,7 @@
     strip.hidden = activeOverlays.length === 0;
     strip.classList.toggle("below-heat", heatOn);
     strip.innerHTML = activeOverlays.map((ly) => `<span class="ls-chip" title="${esc(LAYER_SOURCE[ly.k])}">${stripLegend(ly.k)}</span>`).join("");
-    if (heatOn) $("heatStrip").innerHTML = `<b>${theme}</b> ${LEVELS.map((l) => levelChip(l)).join("")}<span class="muted">左ほど良い</span>`;
+    if (heatOn) $("heatStrip").innerHTML = `<b>${theme}</b> ${LEVELS.map((l) => levelChip(l)).join("")}<span class="muted">${state.heatTheme === "young" ? "左ほど多い" : "左ほど良い"}</span>`;
 
     const el = $("sheet");
     el.hidden = !state.sheet;
@@ -2030,7 +2057,7 @@
         <div class="weights">
           <div class="sheet-head"><b>あなた向けの総合：何を大事にする？</b>
             <span class="row" style="margin:0"><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
-          ${HEAT_THEMES.filter((t) => t.k !== "all").map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
+          ${HEAT_THEMES.filter((t) => t.k in DEFAULT_WEIGHTS).map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
           <p class="note">「大事」は「ふつう」の3倍の重さで平均します。選ぶと「あなた向け」の総合に切り替わります。「おすすめ」は、ペルソナ（親も一緒に決める新入生）に合わせて、買い物・浸水しにくさ・防犯を大事にした設定です。</p>
         </div>
         ${heatLegend()}`;
@@ -2690,7 +2717,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
       if (t) {
         state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap();
-        const hint = { all: "あなたの大事なことをまとめて", shop: "スーパーが近いところほど緑", med: "診療所が近いところほど緑", quiet: "静かなところほど緑", commute: "大学が近いところほど緑", safety: "浸水しにくいところほど緑", crime: "犯罪が少ないところほど緑", food: "飲食店が多いところほど緑", conv: "コンビニが近いところほど緑", bus: "バス停が近いところほど緑" }[t.dataset.t];
+        const hint = { all: "あなたの大事なことをまとめて", shop: "スーパーが近いところほど緑", med: "診療所が近いところほど緑", quiet: "静かなところほど緑", commute: "大学が近いところほど緑", safety: "浸水しにくいところほど緑", crime: "犯罪が少ないところほど緑", food: "飲食店が多いところほど緑", conv: "コンビニが近いところほど緑", bus: "バス停が近いところほど緑", young: "20代の一人暮らしが多いところほど緑。先輩が住んでいそうな大まかな目安だよ" }[t.dataset.t];
         setMapGuide("surprised", `「${themeLabel(t.dataset.t)}」で塗り直したよ。${hint}`, { temporary: true });
         return;
       }
