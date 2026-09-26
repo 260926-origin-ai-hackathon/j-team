@@ -65,11 +65,6 @@ CRIME_KINDS = {  # ファイル名 → 手口
 }
 CRIME_CITIES = ["東大阪市", "八尾市", "大阪市生野区", "大阪市東成区", "大阪市平野区"]
 CRIME_RADIUS = 500  # 物件のまわり何mの発生を数えるか
-# ヒートマップで手口ごとに見るときのまとめ方（夜は手口に関係なく、18時〜翌6時に起きたもの）
-CRIME_GROUPS = {
-    "bike": ["自転車盗", "オートバイ盗"],
-    "car": ["車上ねらい", "部品ねらい", "自動車盗"],
-}  # ひったくりはこのエリアでは年に数件で、マスごとに比べられないので分けない
 
 # キャンパスの基準点（OSM relation 13854100 の中心付近と、主な出入口）
 CAMPUS = {"name": "近畿大学 東大阪キャンパス", "lat": 34.6514, "lon": 135.5902}
@@ -347,17 +342,11 @@ def crime_grid(counts, ext, cell):
     gy = np.array([ext[1] + (j + .5) * cell for j in range(rows) for i in range(cols)])
     cx = np.array([c["xy"][0] for c in counts.values()])
     cy = np.array([c["xy"][1] for c in counts.values()])
-    inside = ((gx[:, None] - cx[None, :]) ** 2 + (gy[:, None] - cy[None, :]) ** 2) <= CRIME_RADIUS ** 2
-
-    def near(weight):
-        w = np.array([weight(c) for c in counts.values()], dtype=float)
-        return [int(v) for v in np.sum(np.where(inside, w[None, :], 0), axis=1)]
-
-    groups = {g: near(lambda c, ks=ks: sum(c["kinds"].get(k, 0) for k in ks)) for g, ks in CRIME_GROUPS.items()}
-    groups["night"] = near(lambda c: c["night"])
+    w = np.array([sum(c["kinds"].values()) for c in counts.values()], dtype=float)
+    d2 = (gx[:, None] - cx[None, :]) ** 2 + (gy[:, None] - cy[None, :]) ** 2
+    near = np.sum(np.where(d2 <= CRIME_RADIUS ** 2, w[None, :], 0), axis=1)
     return {"cell": cell, "x0": round(ext[0]), "y0": round(ext[1]), "cols": cols, "rows": rows,
-            "near": near(lambda c: sum(c["kinds"].values())), "groups": groups,
-            "groupKinds": CRIME_GROUPS}
+            "near": [int(v) for v in near]}
 
 
 # ---------- 騒音（道路・線路からの屋外の音と、構造ごとの遮音） ----------
