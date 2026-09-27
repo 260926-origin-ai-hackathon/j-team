@@ -58,6 +58,7 @@
 | 画面 | HTML・CSS・JavaScript（`index.html` 1ファイル） | すべての画面。Next.js はビルドのときに `index.html` を分けて配る（`scripts/build-next.mjs`）。同じファイルが Claude Artifact 版にもなる。画面の切り替えは URL の `#` で行う |
 | 地図 | [Leaflet](https://leafletjs.com/) 1.9.4 | 地図・物件の札・ヒートマップ・重ねる情報。背景タイルは使わず、OpenStreetMap の道路を線で描く |
 | 3D | [three.js](https://threejs.org/) 0.180.0 | 部屋の中の3D表示と家具の配置（jsDelivr から読み込む） |
+| バックエンド | Next.js の Route Handlers・[PostgreSQL](https://www.postgresql.org/)（[node-postgres](https://github.com/brianc/node-postgres)）・Node.js の crypto（scrypt・HMAC） | ログインと端末間の保存、物件の掲載情報の API と管理画面（`app/api/*`・`app/admin`・`lib/*`）。本番は Vercel から作れる Neon などの Postgres を想定 |
 | AI | Claude（Next.js 版はサーバーから Claude API・[Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript)、Artifact 版は `sample` 機能） | 親への相談文を整える。Next.js 版は Vercel の環境変数 `ANTHROPIC_API_KEY` を入れると動く（無いときはひな形） |
 | 周辺データの作成 | Python 3・Pillow・NumPy | `scripts/build_area.py`。道のり（道路網の最短経路）、騒音、ハザード、犯罪件数を計算して `data/area.json` を作る |
 | 遮音の計算 | [python-acoustics](https://github.com/python-acoustics/python-acoustics)（BSD-3、必要な関数だけ取り込み） | 壁の材質から遮音性能（Rw）を計算 |
@@ -197,6 +198,38 @@ npm install && npm run dev
 npx vercel deploy --prod
 ```
 
+### バックエンド（ログイン・端末間の保存・物件の管理画面）
+
+Next.js 版では、データベース（PostgreSQL）を設定すると次の機能が使えるようになります。設定していないとき（Claude Artifact 版も）は、どれも出さず今までどおり動きます。
+
+- **ログインと端末間の保存**：右上の「ログイン」から、ユーザー名とパスワードで登録・ログインできます。ログイン中は、お気に入り・優先順位・ヒートマップの重み・置いた家具がサーバーにも保存され、スマホとパソコンなど別の端末でログインしても同じになります。登録すると、その端末にあったお気に入りなどがそのまま引き継がれます
+- **物件の掲載情報の API と管理画面**：管理者が `/admin` で、家賃・管理費・敷金・礼金・物件名を変えたり、満室の物件を「掲載しない」にしたりできます。保存するとすぐに地図とお気に入りに反映されます（掲載しない物件は地図から消え、お気に入りでは「満室」と表示）。周辺の情報（道のり・騒音・ハザードなど）は変わりません。物件そのものを増やすときは、周辺の計算が必要なので `scripts/build_area.py` に追加します
+
+| API | 内容 |
+| --- | --- |
+| `GET /api/me` | バックエンドが使えるか、ログイン中のユーザー、保存してある内容 |
+| `POST /api/auth/register`・`/api/auth/login`・`/api/auth/logout` | 登録・ログイン・ログアウト |
+| `PUT /api/state` | ログイン中のユーザーの保存内容を置き換える（「heyakarte.」で始まる項目だけ、200KBまで） |
+| `GET /api/listings` | 物件の掲載情報（管理画面で変えたもの）。画面は `data/area.json` の物件にこれを重ねる |
+| `PUT`・`DELETE /api/admin/listings` | 掲載情報を変える・元に戻す（管理者だけ） |
+
+安全のための作り：パスワードは scrypt でハッシュ化して保存し、元のパスワードは保存しません。ログイン状態は、ユーザーIDと期限に `AUTH_SECRET` で署名した Cookie（HttpOnly・SameSite=Lax、本番は Secure）で持ちます。SQL はすべてプレースホルダで値を渡します。管理者は画面から登録できず、下のスクリプトでだけ作れます。
+
+**本番（Vercel）で有効にする手順**
+
+1. Vercel の heyakarte プロジェクトの Storage から Postgres（Neon など）を作ってプロジェクトにつなぐ（環境変数 `DATABASE_URL` が入る。名前が違うときは `DATABASE_URL` として入れ直す）
+2. Settings → Environment Variables に `AUTH_SECRET`（`openssl rand -base64 48` で作った32文字以上の文字列）を入れる
+3. 再デプロイする（表は最初のアクセスのときに自動で作られる）
+4. 管理者を作る：手元で `DATABASE_URL=<本番の接続先> node scripts/create-admin.mjs <ユーザー名>` を実行し、パスワードを入力する（すでに画面から登録したユーザーを管理者にするだけなら、パスワードは空のまま Enter）
+
+**手元で動かす**
+
+```bash
+docker run -d --name heyakarte-db -e POSTGRES_USER=heyakarte -e POSTGRES_PASSWORD=heyakarte-local -e POSTGRES_DB=heyakarte -p 127.0.0.1:5439:5432 postgres:17-alpine
+```
+
+`.env.example` を `.env.local` にコピーして `AUTH_SECRET` を入れ、`npm run dev` で起動します。
+
 ### Docker を使わない場合
 
 ```bash
@@ -262,7 +295,12 @@ python3 scripts/build_area.py
 
 ## ファイル
 
-- `index.html` … アプリ本体（1ファイル）
+- `index.html` … アプリ本体（1ファイル。Next.js 版もこれを分けて配る）
+- `app/` … Next.js（`page.tsx` が画面、`admin/page.tsx` が物件の管理画面、`api/` が API）
+- `lib/` … データベース（`db.ts`）・ログイン（`auth.ts`）・API の共通部分
+- `scripts/build-next.mjs` … ビルドの前に `index.html` を CSS・HTML・JavaScript に分ける
+- `scripts/create-admin.mjs` … 管理者を作る
+- `.env.example` … 環境変数の見本
 - `data/area.json` … 物件（22件）と周辺情報、地図用の道路データ、浸水想定のマス
 - `scripts/build_area.py` … `data/area.json` を作るスクリプト
 - `scripts/acoustics_building.py` … python-acoustics から取り込んだ遮音の計算（BSD-3）

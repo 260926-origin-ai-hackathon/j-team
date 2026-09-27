@@ -28,8 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <Script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" strategy="beforeInteractive" />
-        {/* Next.js 版では、親への相談文の AI をサーバーの /api/letter で動かす */}
-        <Script id="heyakarte-server-ai" strategy="beforeInteractive">{`window.__HEYAKARTE_SERVER_AI__ = true;`}</Script>
+        {/* Next.js 版では、親への相談文の AI（/api/letter）と、ログイン・物件の掲載情報（/api/me・/api/listings）をサーバーで動かす */}
+        <Script id="heyakarte-server" strategy="beforeInteractive">{`window.__HEYAKARTE_SERVER_AI__ = true; window.__HEYAKARTE_SERVER__ = true;`}</Script>
       </body>
     </html>
   );

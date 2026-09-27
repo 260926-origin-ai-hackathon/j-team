@@ -88,6 +88,14 @@
   .fav-chip b { color: #B97F0A; }
   .fav-chip svg path { fill: #F5B82E; stroke: #C98A0B; }
   .chip-btn[hidden] { display: none; }
+  /* ログイン（Next.js 版でデータベースがあるときだけ出る） */
+  .acct-pop { width: 300px; display: grid; gap: 10px; }
+  .acct-pop form { display: grid; gap: 8px; }
+  .acct-pop label { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
+  .acct-pop input[type=text], .acct-pop input[type=password] { font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--ink); }
+  .acct-pop .err { color: var(--bad); font-size: 12.5px; min-height: 1em; }
+  .acct-pop .row { justify-content: space-between; }
+  .fc-closed { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
   .price-pin .star { color: #E8A317; margin-right: 2px; }
   .price-pin.on .star { color: #FFD66B; }
   .s-favs { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
@@ -476,6 +484,10 @@
         <label for="inJob">バイト<input id="inJob" class="num" type="number" step="1000" min="0" value="40000"><span>円</span></label>
         <p class="note" style="margin-top:10px">家賃＋管理費の目安は収入の3分の1。超える部屋は地図で薄く表示します。</p>
       </div>
+    </div>
+    <div style="position:relative" id="acctWrap" hidden>
+      <button class="chip-btn" id="acctBtn" aria-expanded="false"><span aria-hidden="true">👤</span><span class="lbl" id="acctLabel">ログイン</span></button>
+      <div class="panel pop acct-pop" id="acctPop" hidden></div>
     </div>
     <div style="position:relative">
       <button class="chip-btn" id="dataBtn" aria-expanded="false"><span class="lbl">データについて</span><span class="sm">出典</span></button>
@@ -1923,6 +1935,7 @@
     map.pins.clearLayers();
     map.focus.clearLayers();
     for (const p of state.data.properties) {
+      if (p.closed) continue; // 管理画面で「掲載しない（満室）」にした物件は地図に出さない
       const on = p.id === state.selected, cls = on ? "on" : overBudget(p) ? "over" : "";
       const m = L.marker(ll(p.x, p.y), { icon: L.divIcon({ className: "", html: `<div class="price-pin ${cls}">${isFav(p.id) ? `<span class="star" title="${favLabel(p.id)}">★${favRank(p.id) ? `<small>${favRank(p.id)}</small>` : ""}</span>` : ""}${manShort(p.rent + p.fee)}</div>`, iconSize: [0, 0] }), zIndexOffset: on ? 3000 : overBudget(p) ? 1000 : 2000, title: p.name, keyboard: true });
       m.on("click", (e) => { L.DomEvent.stopPropagation(e); selectPin(p.id); });
@@ -2117,7 +2130,7 @@
     mapGuideForSelection();
     const p = state.selected && byId(state.selected);
     if (!p) {
-      const inBudget = state.data.properties.filter((x) => !overBudget(x)).length;
+      const open = state.data.properties.filter((x) => !x.closed), inBudget = open.filter((x) => !overBudget(x)).length;
       $("sidePanel").innerHTML = `
         <div class="intro">
           <div class="eyebrow">大学進学ではじめての一人暮らし</div>
@@ -2128,7 +2141,7 @@
           <b>2</b><span>気になる場所にある物件（金額の札）をタップ</span>
           <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
         </div>
-        <p class="small">いまの予算（家賃＋管理費 <b class="num">${man(rentCap())}</b> まで）に合う部屋は <b class="num">${inBudget}件</b>／全${state.data.properties.length}件</p>
+        <p class="small">いまの予算（家賃＋管理費 <b class="num">${man(rentCap())}</b> まで）に合う部屋は <b class="num">${inBudget}件</b>／全${open.length}件</p>
         <p class="small muted">周辺の情報は公開データから計算した目安です。出どころは <button class="linkbtn" id="moreSources" style="font-size:inherit;padding:0">データについて</button> から見られます。</p>`;
       return;
     }
@@ -2239,7 +2252,7 @@
       const move = `<select data-favrank="${p.id}" class="${rank === 1 ? "first" : rank ? "on" : ""}" aria-label="${esc(p.name)}の優先順位">${opts}</select>`;
       return `<article class="panel fav-card" data-favcard="${p.id}">
         <div class="fc-head">
-          <div><div class="fc-rank">${move}</div><h3>${esc(p.name)}</h3><div class="small muted num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階</div></div>
+          <div><div class="fc-rank">${move}${p.closed ? `<span class="fc-closed">いまは掲載していません（満室）</span>` : ""}</div><h3>${esc(p.name)}</h3><div class="small muted num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階</div></div>
           <div class="fc-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
         </div>
         <div class="budget-line ${over ? "over" : "ok"} num">${over ? `予算を ${yen(total - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}${total === cheapest ? "・この中でいちばん安い" : ""}</div>
@@ -2753,6 +2766,23 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       if (e.target.id === "openDetail") go("detail", state.selected);
       if (e.target.id === "moreSources") { e.stopPropagation(); $("dataPop").hidden = false; $("dataBtn").setAttribute("aria-expanded", "true"); }
     });
+    $("acctBtn").addEventListener("click", () => {
+      const open = $("acctPop").hidden;
+      $("acctPop").hidden = !open; $("acctBtn").setAttribute("aria-expanded", String(open));
+      if (open) $("acctPop").querySelector("input")?.focus();
+    });
+    $("acctPop").addEventListener("click", async (e) => {
+      const m = e.target.closest("[data-acctmode]");
+      if (m) { renderAcct(m.dataset.acctmode); $("acctPop").querySelector("input")?.focus(); return; }
+      if (e.target.id === "logoutBtn") {
+        await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+        backend.user = null; setAcctNote(""); renderAcct();
+      }
+    });
+    $("acctPop").addEventListener("submit", (e) => { e.preventDefault(); submitAcct(e.target); });
+    document.addEventListener("click", (e) => {
+      if (!$("acctPop").hidden && !e.target.closest("#acctPop, #acctBtn")) { $("acctPop").hidden = true; $("acctBtn").setAttribute("aria-expanded", "false"); }
+    });
     $("dataBtn").addEventListener("click", () => {
       const open = $("dataPop").hidden;
       $("dataPop").hidden = !open; $("dataBtn").setAttribute("aria-expanded", String(open));
@@ -2810,6 +2840,115 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
   }
 
   // ---------- 起動 ----------
+  // ---------- バックエンド（Next.js 版のみ） ----------
+  // ログインすると、この端末の「heyakarte.」で始まる保存内容（お気に入り・優先順位・重み・置いた家具）をサーバーと同じにする。
+  // Claude Artifact 版やデータベースのない環境では、何もしない（今までどおりこの端末だけに保存）
+  const backend = { ready: false, user: null, timer: null, applying: false };
+  const localSnapshot = () => {
+    const out = {};
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith("heyakarte.")) out[k] = localStorage.getItem(k); } } catch { /* 読めない環境 */ }
+    return out;
+  };
+  function applyServerState(data) {
+    backend.applying = true;
+    try {
+      for (const k of Object.keys(localSnapshot())) localStorage.removeItem(k);
+      for (const [k, v] of Object.entries(data)) localStorage.setItem(k, v);
+    } catch { /* 保存できない環境 */ }
+    backend.applying = false;
+    state.weights = loadWeights(); state.favs = loadFavs(); state.ranks = loadRanks(); compactRanks(); updateFavCount();
+    heatCache = null;
+    if (state.screen === "map") { renderBigMap(); renderSide(); } else if (state.screen === "favs") renderFavs(); else if (state.screen === "detail") renderDetail();
+  }
+  function scheduleSync() {
+    if (!backend.user || backend.applying) return;
+    clearTimeout(backend.timer);
+    backend.timer = setTimeout(async () => {
+      try {
+        const r = await fetch("/api/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: localSnapshot() }) });
+        setAcctNote(r.ok ? "この端末の内容をサーバーに保存しました" : "サーバーに保存できませんでした");
+      } catch { setAcctNote("サーバーに保存できませんでした（通信を確かめてください）"); }
+    }, 800);
+  }
+  // 保存のたびに同期する（localStorage に書く場所はいくつもあるので、書き込みそのものを見張る）
+  function watchStorage() {
+    try {
+      const proto = Object.getPrototypeOf(localStorage), set = proto.setItem, remove = proto.removeItem;
+      proto.setItem = function (k, v) { set.call(this, k, v); if (this === localStorage && String(k).startsWith("heyakarte.")) scheduleSync(); };
+      proto.removeItem = function (k) { remove.call(this, k); if (this === localStorage && String(k).startsWith("heyakarte.")) scheduleSync(); };
+    } catch { /* 見張れない環境では同期しない */ }
+  }
+  let acctNote = "";
+  const setAcctNote = (t) => { acctNote = t; const el = $("acctNoteText"); if (el) el.textContent = t; };
+  function renderAcct(mode = "login", error = "") {
+    const u = backend.user;
+    $("acctLabel").textContent = u ? u.username : "ログイン";
+    if (u) {
+      $("acctPop").innerHTML = `<div class="eyebrow">ログイン中</div><div><b>${esc(u.username)}</b>${u.role === "admin" ? ` <span class="kind">管理者</span>` : ""}</div>
+        <p class="small muted" style="margin:0">お気に入り・優先順位・重み・置いた家具は、ほかの端末でログインしても同じになります。</p>
+        <p class="small muted" id="acctNoteText" style="margin:0">${esc(acctNote)}</p>
+        <div class="row">${u.role === "admin" ? `<a class="linkbtn" href="/admin" style="padding:0">物件の管理画面へ →</a>` : "<span></span>"}<button class="btn ghost" id="logoutBtn" style="padding:6px 14px">ログアウト</button></div>`;
+      return;
+    }
+    const reg = mode === "register";
+    $("acctPop").innerHTML = `<span class="seg" role="group" aria-label="ログインか新規登録"><button data-acctmode="login" aria-pressed="${!reg}">ログイン</button><button data-acctmode="register" aria-pressed="${reg}">新規登録</button></span>
+      <form id="acctForm" data-mode="${mode}">
+        <label>ユーザー名<input type="text" name="username" autocomplete="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_\-]+" placeholder="半角英数字 3〜24文字"></label>
+        <label>パスワード<input type="password" name="password" autocomplete="${reg ? "new-password" : "current-password"}" required minlength="8" maxlength="128" placeholder="8文字以上"></label>
+        <div class="err" role="alert">${esc(error)}</div>
+        <button class="btn" type="submit">${reg ? "登録してログイン" : "ログイン"}</button>
+      </form>
+      <p class="note" style="margin:0">ログインすると、お気に入りや置いた家具をスマホとパソコンで同じにできます。${reg ? "登録すると、いまこの端末にあるお気に入りなどがそのまま引き継がれます。" : ""}</p>`;
+  }
+  const ACCT_ERRORS = { bad_username: "ユーザー名は半角英数字と _ - の3〜24文字にしてください", bad_password: "パスワードは8文字以上にしてください", username_taken: "そのユーザー名はもう使われています", wrong_credentials: "ユーザー名かパスワードが違います" };
+  async function submitAcct(form) {
+    const mode = form.dataset.mode, fd = new FormData(form);
+    const body = JSON.stringify({ username: fd.get("username"), password: fd.get("password") });
+    let r, data;
+    try {
+      r = await fetch(`/api/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body });
+      data = await r.json();
+    } catch { renderAcct(mode, "サーバーにつながりませんでした"); return; }
+    if (!r.ok) { renderAcct(mode, ACCT_ERRORS[data?.error] || "うまくいきませんでした。もう一度お試しください"); return; }
+    backend.user = data.user;
+    // ログイン：サーバーに保存があればそれを使う。なければ（登録した直後も）この端末の内容を保存する
+    const me = await fetch("/api/me", { cache: "no-store" }).then((x) => x.json()).catch(() => null);
+    if (me?.state && Object.keys(me.state).length) { applyServerState(me.state); setAcctNote("サーバーに保存してあった内容を読み込みました"); }
+    else { setAcctNote(""); scheduleSync(); }
+    renderAcct();
+  }
+  async function initBackend() {
+    if (!window.__HEYAKARTE_SERVER__) return;
+    try {
+      const [me, lst] = await Promise.all([
+        fetch("/api/me", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/listings", { cache: "no-store" }).then((r) => r.json()),
+      ]);
+      if (!me.backend) return;
+      backend.ready = true;
+      // 管理画面で変えた掲載情報（名前・家賃・管理費・敷金・礼金・掲載するか）を重ねる
+      for (const p of state.data.properties) {
+        const o = lst.listings?.[p.id];
+        if (!o) continue;
+        if (o.name) p.name = o.name;
+        if (o.rent !== null) p.rent = o.rent;
+        if (o.fee !== null) p.fee = o.fee;
+        if (o.deposit !== null) p.deposit = o.deposit;
+        if (o.key !== null) p.key = o.key;
+        p.closed = o.published === false;
+      }
+      backend.user = me.user;
+      if (me.user && me.state) {
+        backend.applying = true;
+        try { for (const k of Object.keys(localSnapshot())) localStorage.removeItem(k); for (const [k, v] of Object.entries(me.state)) localStorage.setItem(k, v); } catch { /* 保存できない環境 */ }
+        backend.applying = false;
+      }
+      watchStorage();
+      $("acctWrap").hidden = false;
+      renderAcct();
+    } catch { /* バックエンドにつながらないときは、この端末だけで動く */ }
+  }
+
   async function start() {
     bind();
     try {
@@ -2819,6 +2958,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       return;
     }
     $("budgetChip").textContent = man(rentCap());
+    await initBackend();
     state.weights = loadWeights();
     state.favs = loadFavs();
     state.ranks = loadRanks();
