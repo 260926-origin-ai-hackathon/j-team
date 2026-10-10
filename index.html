@@ -269,6 +269,7 @@
   .sheet i.dot { width: 13px; height: 13px; border-radius: 50%; }
 
   .side { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+  .sheet-handle { display: none; }
   .side .panel { display: grid; align-content: start; gap: 9px; overflow: auto; }
   .intro h2 { font-size: 21px; }
   .intro ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; }
@@ -462,6 +463,35 @@
     .fc-actions .btn { padding: 7px 12px; }
     .fav-btn { padding: 6px 12px; }
     .r3d-msg { white-space: normal; left: 100px; right: 10px; transform: none; text-align: center; border-radius: 12px; }
+
+    /* 地図の画面：地図を画面いっぱいに出し、物件の情報は下から引き出すパネル（ボトムシート）にする */
+    .s-map { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); --sheet: 30%; }
+    .s-map[data-sheet="selected"] { --sheet: 47%; }
+    .s-map.sheet-expanded { --sheet: 86%; }
+    .s-map .mapwrap { border-radius: 14px; }
+    .side { position: absolute; left: 0; right: 0; bottom: 0; z-index: 800; display: flex; flex-direction: column; height: var(--sheet); transition: height .25s ease; }
+    .sheet-handle { display: block; flex: none; height: 24px; border: 1px solid var(--line); border-bottom: none; border-radius: 18px 18px 0 0; background: var(--surface); box-shadow: 0 -6px 16px rgba(0,0,0,.12); cursor: pointer; touch-action: none; }
+    .sheet-handle span { display: block; width: 44px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 45%, transparent); margin: 9px auto 0; }
+    .side .panel { flex: 1 1 auto; min-height: 0; max-height: none; border-radius: 0; border-top: none; border-bottom: none; padding: 2px 14px 14px; overflow-y: auto; overscroll-behavior: contain; }
+    #openDetail { position: sticky; bottom: 0; box-shadow: 0 -10px 14px var(--surface); }
+    .mapwrap.sheet-open + .side { display: none; }
+    /* 地図の上の部品：切り替えのバーは上に、凡例の帯はその下に。拡大縮小は指でできるのでボタンは出さない */
+    .s-map .leaflet-control-zoom { display: none; }
+    .s-map .leaflet-bottom { bottom: var(--sheet); transition: bottom .25s ease; }
+    .taskbar { top: 8px; bottom: auto; }
+    .heat-strip { top: 66px; left: 8px; }
+    .layer-strip { top: 66px; left: 8px; right: 8px; }
+    .layer-strip.below-heat { top: 102px; }
+    .readout { top: auto; bottom: calc(var(--sheet) + 26px); right: 8px; }
+    .sheet { top: 62px; bottom: auto; max-height: calc(100% - 72px); z-index: 1100; }
+    .mapwrap.sheet-open .leaflet-bottom { bottom: 0; }
+    /* 指で押しやすい大きさに */
+    .seg button { padding: 6px 12px; font-size: 13px; }
+    .subtab { padding: 6px 12px; }
+    .fav-btn { padding: 7px 12px; }
+    /* 住宅詳細の見出しのヘヤまるを小さく */
+    .d-guide .mascot { width: 40px; height: 40px; }
+    .d-bubble { font-size: 12.5px; min-height: 40px; padding: 6px 12px; }
   }
 </style>
 
@@ -520,7 +550,7 @@
         <div class="map-guide" id="mapGuide" aria-live="polite"></div>
         <div class="readout" id="readout" hidden></div>
       </div>
-      <aside class="side"><div class="panel" id="sidePanel"></div></aside>
+      <aside class="side"><button class="sheet-handle" id="sheetHandle" type="button" aria-label="物件の情報を広げる" aria-expanded="false"><span></span></button><div class="panel" id="sidePanel"></div></aside>
     </section>
 
     <!-- お気に入りの一覧 -->
@@ -1962,13 +1992,23 @@
     el.hidden = false;
   }
 
+  const isPhone = () => matchMedia("(max-width: 640px)").matches;
+  function setSheetExpanded(on) {
+    document.querySelector(".s-map").classList.toggle("sheet-expanded", on);
+    $("sheetHandle").setAttribute("aria-expanded", String(on));
+    $("sheetHandle").setAttribute("aria-label", on ? "物件の情報をたたむ" : "物件の情報を広げる");
+  }
   function selectPin(id) {
     if (state.selected === id) { go("detail", id); return; }
     state.selected = id;
     drawPins();
     renderSide();
-    const p = byId(id);
-    maps.big.panTo(ll(p.x, p.y), { animate: true });
+    const p = byId(id), map = maps.big;
+    // スマホでは下のパネルに隠れないよう、パネルの上の見えている部分の真ん中に札を持ってくる
+    if (isPhone()) {
+      const h = document.querySelector(".side").getBoundingClientRect().height, z = map.getZoom();
+      map.panTo(map.unproject(map.project(ll(p.x, p.y), z).add([0, h / 2]), z), { animate: true });
+    } else map.panTo(ll(p.x, p.y), { animate: true });
   }
 
   // ---------- 地図のタスクバー ----------
@@ -2129,6 +2169,9 @@
   function renderSide() {
     mapGuideForSelection();
     const p = state.selected && byId(state.selected);
+    // スマホのボトムシートの高さ：物件を選んでいないときは低く、選んだら少し高く（広げた状態は物件を変えると戻す）
+    const sm = document.querySelector(".s-map");
+    if (sm.dataset.sheet !== (p ? "selected" : "intro")) { sm.dataset.sheet = p ? "selected" : "intro"; setSheetExpanded(false); }
     if (!p) {
       const open = state.data.properties.filter((x) => !x.closed), inBudget = open.filter((x) => !overBudget(x)).length;
       $("sidePanel").innerHTML = `
@@ -2137,7 +2180,7 @@
           <h2>気になる場所をタップして、部屋を選ぶ</h2>
         </div>
         <div class="howto">
-          <b>1</b><span>地図の下のタスクバーで、ヒートマップのテーマや、スーパー・病院・交通量・浸水想定・防犯などを切り替える</span>
+          <b>1</b><span>地図のタスクバー（地図に重ねる・ヒートマップ・凡例）で、ヒートマップのテーマや、スーパー・病院・交通量・浸水想定・防犯などを切り替える</span>
           <b>2</b><span>気になる場所にある物件（金額の札）をタップ</span>
           <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
         </div>
@@ -2344,7 +2387,7 @@
       if (state.roomPane === "furn") api.setMode("dollhouse"); // 家具を置くときは上から見るほうが分かりやすい
       renderFurnList(loadFurniture(p.id), api.checks(), null);
       if ($("r3dSun")) $("r3dSun").textContent = api.sunLabel;
-      $("r3dMsg").textContent = state.roomPane === "furn" ? "家具はドラッグで動かせます／それ以外のドラッグで見まわす" : "ドラッグで見まわす／床をクリックで歩く";
+      $("r3dMsg").textContent = state.roomPane === "furn" ? "家具はドラッグで動かせます／それ以外のドラッグで見まわす" : `ドラッグで見まわす／床を${isPhone() ? "タップ" : "クリック"}で歩く`;
       setTimeout(() => { if (token === room3d.token) $("r3dMsg").hidden = true; }, 4000);
     } catch (e) {
       if (token !== room3d.token) return;
@@ -2765,6 +2808,18 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     $("sidePanel").addEventListener("click", (e) => {
       if (e.target.id === "openDetail") go("detail", state.selected);
       if (e.target.id === "moreSources") { e.stopPropagation(); $("dataPop").hidden = false; $("dataBtn").setAttribute("aria-expanded", "true"); }
+    });
+    // つまみはタップで広げる・たたむ。上下にスワイプしても同じ（スワイプのあとのクリックは無視する）
+    let swipeY = null, swiped = false;
+    $("sheetHandle").addEventListener("pointerdown", (e) => { swipeY = e.clientY; swiped = false; });
+    window.addEventListener("pointerup", (e) => {
+      if (swipeY === null) return;
+      const dy = e.clientY - swipeY; swipeY = null;
+      if (Math.abs(dy) > 30) { swiped = true; setSheetExpanded(dy < 0); }
+    });
+    $("sheetHandle").addEventListener("click", () => {
+      if (swiped) { swiped = false; return; }
+      setSheetExpanded(!document.querySelector(".s-map").classList.contains("sheet-expanded"));
     });
     $("acctBtn").addEventListener("click", () => {
       const open = $("acctPop").hidden;
