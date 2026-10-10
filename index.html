@@ -270,6 +270,30 @@
 
   .side { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
   .sheet-handle { display: none; }
+  /* ヒートマップの解説キャラ（テーマごとに1体。選ぶと飛び出してきて、何回かに分けて説明する） */
+  .guide-card { position: absolute; left: 12px; bottom: 76px; z-index: 760; width: min(460px, calc(100% - 24px)); display: flex; gap: 8px; align-items: flex-end; }
+  .guide-card[hidden] { display: none; }
+  .gc-char { flex: none; filter: drop-shadow(0 3px 5px rgba(0,0,0,.18)); }
+  .gc-bubble { position: relative; flex: 1; min-width: 0; min-height: 96px; background: var(--surface); color: var(--ink); border: 3px solid var(--gc, var(--accent)); border-radius: 18px; padding: 16px 14px 26px; font-size: 14px; line-height: 1.65; box-shadow: 0 6px 18px rgba(0,0,0,.16); cursor: pointer; }
+  .gc-name { position: absolute; top: -13px; left: 12px; padding: 2px 12px; border-radius: 999px; background: var(--gc, var(--accent)); color: #fff; font-family: var(--display); font-weight: 900; font-size: 12.5px; letter-spacing: .04em; }
+  .gc-close { position: absolute; top: -13px; right: 10px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--gc, var(--accent)); background: var(--surface); color: var(--gc, var(--accent)); font-weight: 900; line-height: 1; cursor: pointer; }
+  .gc-foot { position: absolute; left: 14px; right: 12px; bottom: 5px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--gc, var(--accent)); }
+  .gc-foot i { width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--gc, var(--accent)) 30%, transparent); }
+  .gc-foot i.on { background: var(--gc, var(--accent)); }
+  .gc-foot span { margin-left: auto; }
+  .gc-text { min-height: 3.2em; }
+  .guide-fab { position: absolute; left: 12px; bottom: 76px; z-index: 740; width: 58px; height: 58px; padding: 0; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); box-shadow: 0 3px 10px rgba(0,0,0,.15); cursor: pointer; display: grid; place-items: center; overflow: hidden; }
+  .guide-fab[hidden], .mapwrap.guide-open .guide-fab, .mapwrap.sheet-open .guide-fab, .mapwrap.sheet-open .guide-card { display: none; }
+  .guide-fab::after { content: "解説"; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-size: 9.5px; font-weight: 900; color: var(--accent); background: var(--surface); padding: 0 4px; border-radius: 4px; }
+  .mapwrap.guide-open .map-guide { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .gc-char { animation: gcIn .5s cubic-bezier(.3, 1.6, .5, 1) both; }
+    .gc-char svg { animation: gcHop 2.4s ease-in-out .6s infinite; }
+    .gc-foot span { animation: gcBlink 1s steps(2) infinite; }
+    @keyframes gcIn { from { transform: translateY(40px) scale(.4) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes gcHop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    @keyframes gcBlink { 50% { opacity: .2; } }
+  }
   .side .panel { display: grid; align-content: start; gap: 9px; overflow: auto; }
   .intro h2 { font-size: 21px; }
   .intro ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px; }
@@ -484,6 +508,11 @@
     .layer-strip.below-heat { top: 102px; }
     .readout { top: auto; bottom: calc(var(--sheet) + 26px); right: 8px; }
     .sheet { top: 62px; bottom: auto; max-height: calc(100% - 72px); z-index: 1100; }
+    .guide-card { left: 8px; width: calc(100% - 16px); bottom: calc(var(--sheet) + 30px); z-index: 820; }
+    .gc-char svg { width: 64px; height: 64px; }
+    .gc-bubble { font-size: 13.5px; }
+    .guide-fab { left: auto; right: 8px; top: 64px; bottom: auto; width: 50px; height: 50px; }
+    .layer-strip.below-heat { right: 66px; }
     .mapwrap.sheet-open .leaflet-bottom { bottom: 0; }
     /* 指で押しやすい大きさに */
     .seg button { padding: 6px 12px; font-size: 13px; }
@@ -548,6 +577,8 @@
         <div class="panel sheet" id="sheet" hidden></div>
         <nav class="taskbar" id="taskbar" aria-label="地図の表示の切り替え"></nav>
         <div class="map-guide" id="mapGuide" aria-live="polite"></div>
+        <button class="guide-fab" id="guideFab" type="button" hidden></button>
+        <div class="guide-card" id="guideCard" role="dialog" aria-live="polite" hidden></div>
         <div class="readout" id="readout" hidden></div>
       </div>
       <aside class="side"><button class="sheet-handle" id="sheetHandle" type="button" aria-label="物件の情報を広げる" aria-expanded="false"><span></span></button><div class="panel" id="sidePanel"></div></aside>
@@ -1672,6 +1703,126 @@
     </svg>`;
   }
 
+  // ---------- ヒートマップの解説キャラ ----------
+  // テーマごとに1体。顔は共通の作りで、体の形と色でテーマが分かるようにする
+  function gcFace(cy, { eye = "#24313a", cheek = "#F7A8B8", mouth = "smile" } = {}) {
+    const m = mouth === "o" ? `<ellipse cx="60" cy="${cy + 13}" rx="4" ry="5" fill="${eye}"/>` : `<path d="M52 ${cy + 10}q8 8 16 0" fill="none" stroke="${eye}" stroke-width="3.5" stroke-linecap="round"/>`;
+    return `<ellipse cx="47" cy="${cy}" rx="5" ry="6.5" fill="${eye}"/><ellipse cx="73" cy="${cy}" rx="5" ry="6.5" fill="${eye}"/><circle cx="49" cy="${cy - 2.5}" r="1.8" fill="#fff"/><circle cx="75" cy="${cy - 2.5}" r="1.8" fill="#fff"/>
+      <ellipse cx="38" cy="${cy + 9}" rx="6" ry="3.8" fill="${cheek}" opacity=".8"/><ellipse cx="82" cy="${cy + 9}" rx="6" ry="3.8" fill="${cheek}" opacity=".8"/>${m}`;
+  }
+  const GC_BODY = {
+    shop: () => `<path d="M38 50q22-40 44 0" fill="none" stroke="#A8601A" stroke-width="6" stroke-linecap="round"/>
+      <path d="M18 50h84l-9 52q-1.5 8-9.5 8h-46q-8 0-9.5-8z" fill="#F4A340" stroke="#A8601A" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M27 92h66M31 102h58" stroke="#FCD28F" stroke-width="4" stroke-linecap="round"/>${gcFace(70)}`,
+    med: () => `<rect x="44" y="20" width="32" height="16" rx="6" fill="none" stroke="#C94B4B" stroke-width="5"/>
+      <rect x="16" y="32" width="88" height="76" rx="16" fill="#fff" stroke="#C94B4B" stroke-width="4"/>
+      <rect x="54" y="38" width="12" height="28" rx="2" fill="#E2534F"/><rect x="46" y="46" width="28" height="12" rx="2" fill="#E2534F"/>${gcFace(80)}`,
+    quiet: () => `<path d="M28 34l6-20 14 14zM92 34l-6-20-14 14z" fill="#6E5CB8" stroke="#463488" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="60" cy="66" rx="42" ry="44" fill="#8D7BC7" stroke="#463488" stroke-width="4"/><ellipse cx="60" cy="82" rx="24" ry="22" fill="#D9D1F2"/>
+      <circle cx="44" cy="56" r="14" fill="#fff"/><circle cx="76" cy="56" r="14" fill="#fff"/>
+      <path d="M36 57q8 6 16 0M68 57q8 6 16 0" fill="none" stroke="#2c2350" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M55 66l5 8 5-8z" fill="#F2A33A"/><text x="92" y="28" font-size="14" font-weight="900" fill="#6E5CB8">z</text>`,
+    commute: () => `<rect x="22" y="20" width="78" height="90" rx="8" fill="#4C8BD6" stroke="#285A99" stroke-width="4"/>
+      <rect x="22" y="20" width="14" height="90" rx="6" fill="#3A74BD"/><rect x="92" y="26" width="6" height="78" fill="#fff"/>
+      <rect x="42" y="38" width="46" height="46" rx="12" fill="#EAF3FF"/><path d="M48 30l17-8 17 8-17 8z" fill="#24313a"/>${gcFace(56)}`,
+    safety: () => `<path d="M60 12C60 12 24 56 24 78a36 36 0 0 0 72 0C96 56 60 12 60 12z" fill="#5CC4D6" stroke="#2A8597" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M42 62q-6 10-4 20" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".7"/>${gcFace(80)}`,
+    crime: () => `<path d="M60 12l40 14v32q0 36-40 52-40-16-40-52V26z" fill="#5566C2" stroke="#2F3C86" stroke-width="4" stroke-linejoin="round"/>
+      <circle cx="60" cy="70" r="27" fill="#E9ECFF"/><path d="M60 22l3.5 7 7.7 1-5.6 5.4 1.4 7.6L60 39.4 53 43l1.4-7.6L48.8 30l7.7-1z" fill="#F5C242"/>${gcFace(66)}`,
+    food: () => `<path d="M60 14q7 0 11 8l34 64q5 18-13 20H28q-18-2-13-20l34-64q4-8 11-8z" fill="#fff" stroke="#7a7a7a" stroke-width="4" stroke-linejoin="round"/>
+      <rect x="40" y="82" width="40" height="26" rx="3" fill="#2E3B34"/><circle cx="60" cy="30" r="3" fill="#E2534F"/>${gcFace(62)}`,
+    conv: () => `<rect x="16" y="42" width="88" height="66" rx="8" fill="#fff" stroke="#2E8B57" stroke-width="4"/>
+      <path d="M12 30h96v18q-6 8-12 0-6 8-12 0-6 8-12 0-6 8-12 0-6 8-12 0-6 8-12 0-6 8-12 0-6 8-12 0z" fill="#3BAA6E" stroke="#2E8B57" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="50" y="88" width="20" height="20" rx="3" fill="#BFE6F7" stroke="#2E8B57" stroke-width="3"/>${gcFace(66)}`,
+    bus: () => `<rect x="12" y="24" width="96" height="74" rx="16" fill="#F2C230" stroke="#A07F10" stroke-width="4"/>
+      <rect x="20" y="32" width="80" height="24" rx="6" fill="#BFE6F7" stroke="#A07F10" stroke-width="3"/>
+      <circle cx="34" cy="100" r="10" fill="#33393d"/><circle cx="86" cy="100" r="10" fill="#33393d"/>
+      <circle cx="24" cy="86" r="5" fill="#fff"/><circle cx="96" cy="86" r="5" fill="#fff"/>${gcFace(70)}`,
+    young: () => `<circle cx="60" cy="70" r="40" fill="#FFD9B8" stroke="#B07848" stroke-width="4"/>
+      <path d="M24 46q36-24 72 0v6H24z" fill="#24313a"/><rect x="30" y="50" width="60" height="7" rx="3" fill="#24313a"/><circle cx="60" cy="34" r="4" fill="#F5C242"/>
+      <path d="M30 100q30 12 60 0" fill="none" stroke="#E2534F" stroke-width="9" stroke-linecap="round"/>${gcFace(72)}`,
+  };
+  const GUIDES = {
+    all: { green: "9つのテーマの平均がエリアの中で高い", red: "平均が低い", name: "ヘヤまる", color: "#2A7AB8", me: "ぼく", tip: "「あなた向けの総合」で、大事なテーマを「大事」にすると、その分だけ重く平均するよ。" ,
+      how: "買い物・病院・静かさ・通学・浸水しにくさ・防犯・飲食店・コンビニ・バス停の9つを平均して、エリアの中で比べているよ。" },
+    shop: { green: "スーパーまで歩いて200m以内の", red: "スーパーまで1.1km以上ある", name: "カゴロー", color: "#D9822F", me: "オイラ", how: "いちばん近いスーパーまでの道のり（8割）とコンビニまでの道のり（2割）で点をつけてるぜ。まっすぐの距離じゃなくて、実際に歩く道のりなんだ。", tip: "スーパーまで歩いて5分（約400m）以内だと、毎日の自炊がぐっと楽になるぜ！" },
+    med: { green: "診療所まで歩いて200m以内の", red: "診療所まで1km以上ある", name: "キュアリ", color: "#C94B4B", me: "わたし", how: "近くの診療所（6割）と、入院できる病院（4割）までの道のりで点をつけているの。歯医者や整骨院は数えていないわ。", tip: "一人暮らしで熱を出したとき、歩いて行ける内科があると本当に安心よ。" },
+    quiet: { green: "外の音が50dB以下（静かな住宅地くらい）の", red: "外の音が68dB以上（幹線道路沿いくらい）の", name: "ホーホ", color: "#6E5CB8", me: "わたし", how: "道路の種類ごとの車の音と線路の音を、距離で弱めながら足し合わせた、昼間の外の音の目安だよ。実際に測った値ではないの。", tip: "夜型の大学生活なら、大きな道路から1本入ったところが静かでおすすめ。" },
+    commute: { green: "キャンパスの出入口まで400m以内の", red: "キャンパスまで3km以上ある", name: "ガクちゃん", color: "#3A74BD", me: "ぼく", how: "キャンパスの出入口までの、実際に歩く道のりで点をつけているよ。400m以内なら満点、3km以上で0点。", tip: "1限に間に合うかは道のり次第！自転車なら徒歩の約3倍の速さで行けるよ。" },
+    safety: { green: "浸水の想定がない", red: "3m以上浸水する想定の", name: "ドロップ", color: "#2A8597", me: "ぼく", how: "国土地理院の洪水の浸水想定（1000年に1度くらいの大雨）の深さで点をつけているよ。浸水しない場所が満点。", tip: "色がついている場所でも、2階以上の部屋なら浸水の心配は小さくなるよ。" },
+    crime: { green: "まわりの犯罪がエリアの中で少ない", red: "犯罪が多い", name: "マモル", color: "#3F4FA8", me: "ぼく", how: "大阪府警察の犯罪オープンデータで、まわり500m以内の1年間の街頭犯罪の件数を数えて、エリアの中で比べているよ。ほとんどは自転車盗なんだ。", tip: "犯罪が多めの場所なら、鍵を2つ付けて、屋根とカメラのある駐輪場か確かめよう！" },
+    food: { green: "飲食店が150m以内にあって、まわりに20軒以上ある", red: "飲食店まで800m以上あって、まわりにほとんどない", name: "オニギリン", color: "#556b2f", me: "ぼく", how: "いちばん近い飲食店までの道のりと、400m以内の飲食店の数（20軒で満点）を半分ずつ使っているよ。", tip: "飲食店が多い場所は、バイト先も見つけやすいんだ。" },
+    conv: { green: "コンビニまで歩いて100m以内の", red: "コンビニまで600m以上ある", name: "コンビーノ", color: "#2E8B57", me: "ぼく", how: "いちばん近いコンビニまでの、実際に歩く道のりで点をつけているよ。100m以内なら満点、600m以上で0点。", tip: "深夜でも開いているコンビニが近いと、急な買い物や支払いに助かるよ。" },
+    bus: { green: "バス停まで歩いて150m以内の", red: "バス停まで800m以上ある", name: "バスタロウ", color: "#A07F10", me: "ぼく", how: "いちばん近いバス停までの道のりで点をつけているよ。150m以内なら満点、800m以上で0点。", tip: "雨の日や荷物が多い日は、バス停が近いとすごく助かるんだ！" },
+    young: { green: "20代の一人暮らしがエリアの中で多い", red: "20代の一人暮らしが少ない", name: "センパイ", color: "#B07848", me: "わたし", how: "国勢調査（2020年）の500m四方ごとの「20代の一人暮らし世帯」の数で比べているよ。大学生だけじゃなく若い社会人も入っているし、個人や建物は分からない大まかな数だよ。", tip: "先輩が多いエリアは、お店も学生向けで、困ったときに聞ける人も見つけやすいよ。" },
+  };
+  function themeCharSVG(k, size) {
+    if (k === "all" || !GC_BODY[k]) return mascotSVG(size, "", "happy");
+    return `<svg width="${size}" height="${size}" viewBox="0 0 120 120" role="img" aria-label="${esc(GUIDES[k].name)}">${GC_BODY[k]()}</svg>`;
+  }
+  function guideLines(k) {
+    const g = GUIDES[k], scale = HEAT_SCALE[k], share = levelShares(k), label = themeLabel(k);
+    const good = share[0] + share[1];
+    const color = k === "young"
+      ? `緑（とても多い）のところは${g.green}場所、赤（とても少ない）のところは${g.red}場所だよ。`
+      : `緑（◎）のところは${g.green}場所、赤（×）のところは${g.red}場所だよ。`;
+    return [
+      `やあ！${g.me}は「${g.name}」。「${label}」のヒートマップを案内するよ！`,
+      color,
+      g.how,
+      `このエリアでは、${k === "young" ? "「とても多い」と「多い」" : "◎と○"}が合わせて${good}%。${g.tip}`,
+      `データの出どころは「${scale[2]}」。くわしくは右上の「データについて」を見てね。地図をタップすると、その場所の評価も出るよ。`,
+    ];
+  }
+  const guide = { k: null, i: 0, lines: [], timer: null, typing: false };
+  function showThemeGuide(k) {
+    clearInterval(guide.timer);
+    Object.assign(guide, { k, i: 0, lines: guideLines(k) });
+    const g = GUIDES[k], card = $("guideCard");
+    card.style.setProperty("--gc", g.color);
+    card.innerHTML = `<div class="gc-char">${themeCharSVG(k, 84)}</div>
+      <div class="gc-bubble" id="gcBubble" tabindex="0" aria-label="${esc(g.name)}の解説。タップで次へ">
+        <span class="gc-name">${esc(g.name)}</span><button class="gc-close" id="gcClose" type="button" aria-label="解説を閉じる">×</button>
+        <div class="gc-text" id="gcText"></div><div class="gc-foot" id="gcFoot"></div>
+      </div>`;
+    card.hidden = false;
+    $("guideCard").closest(".mapwrap").classList.add("guide-open");
+    typeGuideLine();
+  }
+  function typeGuideLine() {
+    const text = guide.lines[guide.i], el = $("gcText");
+    const last = guide.i === guide.lines.length - 1;
+    $("gcFoot").innerHTML = guide.lines.map((_, n) => `<i class="${n <= guide.i ? "on" : ""}"></i>`).join("") + `<span>${last ? "タップで閉じる" : "タップで次へ ▼"}</span>`;
+    clearInterval(guide.timer);
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = text; guide.typing = false; return; }
+    let n = 0; guide.typing = true; el.textContent = "";
+    guide.timer = setInterval(() => {
+      n += 2; el.textContent = text.slice(0, n);
+      if (n >= text.length) { clearInterval(guide.timer); guide.typing = false; }
+    }, 28);
+  }
+  function advanceGuide() {
+    if (guide.typing) { clearInterval(guide.timer); guide.typing = false; $("gcText").textContent = guide.lines[guide.i]; return; }
+    if (guide.i >= guide.lines.length - 1) { hideThemeGuide(); return; }
+    guide.i++; typeGuideLine();
+  }
+  function hideThemeGuide() {
+    clearInterval(guide.timer);
+    $("guideCard").hidden = true;
+    $("guideCard").closest(".mapwrap").classList.remove("guide-open");
+  }
+  function updateGuideFab(heatOn) {
+    const fab = $("guideFab");
+    fab.hidden = !heatOn;
+    if (!heatOn) { hideThemeGuide(); return; }
+    if (fab.dataset.k !== state.heatTheme) {
+      fab.dataset.k = state.heatTheme;
+      fab.innerHTML = themeCharSVG(state.heatTheme, 44);
+      fab.setAttribute("aria-label", `「${themeLabel(state.heatTheme)}」のヒートマップの解説を${GUIDES[state.heatTheme].name}に聞く`);
+      fab.title = `${GUIDES[state.heatTheme].name}の解説`;
+    }
+  }
+
   // ---------- 地図の共通部品 ----------
   function newMap(el) {
     const map = L.map(el, { crs: L.CRS.Simple, minZoom: -3.5, maxZoom: 1.5, zoomSnap: 0.25, zoomDelta: 0.5 });
@@ -2083,6 +2234,7 @@
 
     // ヒートマップの5段階だけは、いつも地図の上に小さく出す
     $("heatStrip").hidden = !heatOn;
+    updateGuideFab(heatOn);
     const activeOverlays = overlays.filter((ly) => state.layers.has(ly.k));
     const strip = $("layerStrip");
     strip.hidden = activeOverlays.length === 0;
@@ -2772,9 +2924,9 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       }
       const t = e.target.closest(".theme"), b = e.target.closest(".opt-row");
       if (t) {
-        state.heatTheme = t.dataset.t; state.layers.add("heat"); renderBigMap();
-        const hint = { all: "あなたの大事なことをまとめて", shop: "スーパーが近いところほど緑", med: "診療所が近いところほど緑", quiet: "静かなところほど緑", commute: "大学が近いところほど緑", safety: "浸水しにくいところほど緑", crime: "犯罪が少ないところほど緑", food: "飲食店が多いところほど緑", conv: "コンビニが近いところほど緑", bus: "バス停が近いところほど緑", young: "20代の一人暮らしが多いところほど緑。先輩が住んでいそうな大まかな目安だよ" }[t.dataset.t];
-        setMapGuide("surprised", `「${themeLabel(t.dataset.t)}」で塗り直したよ。${hint}`, { temporary: true });
+        // テーマを選んだら、シートを閉じて地図を見せ、そのテーマの解説キャラが説明する
+        state.heatTheme = t.dataset.t; state.layers.add("heat"); state.sheet = null; renderBigMap();
+        showThemeGuide(t.dataset.t);
         return;
       }
       if (!b) return;
@@ -2811,6 +2963,13 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     });
     // つまみはタップで広げる・たたむ。上下にスワイプしても同じ（スワイプのあとのクリックは無視する）
     let swipeY = null, swiped = false;
+    $("guideFab").addEventListener("click", () => showThemeGuide(state.heatTheme));
+    $("guideCard").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (e.target.closest("#gcClose")) { hideThemeGuide(); return; }
+      if (e.target.closest("#gcBubble")) advanceGuide();
+    });
+    $("guideCard").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); advanceGuide(); } else if (e.key === "Escape") hideThemeGuide(); });
     $("sheetHandle").addEventListener("pointerdown", (e) => { swipeY = e.clientY; swiped = false; });
     window.addEventListener("pointerup", (e) => {
       if (swipeY === null) return;
