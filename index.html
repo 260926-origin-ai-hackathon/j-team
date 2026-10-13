@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 /* Leaflet 1.9.4 — BSD-2-Clause, (c) 2010-2023 Volodymyr Agafonkin, (c) 2010-2011 CloudMade. https://github.com/Leaflet/Leaflet */
 .leaflet-image-layer,.leaflet-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane,.leaflet-pane>canvas,.leaflet-pane>svg,.leaflet-tile,.leaflet-tile-container,.leaflet-zoom-box{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden}.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile::selection{background:0 0}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}.leaflet-marker-icon,.leaflet-marker-shadow{display:block}.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer{max-width:none!important;max-height:none!important;width:auto;padding:0}.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}.leaflet-container{-webkit-tap-highlight-color:transparent}.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,.4)}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-overlay-pane svg{-moz-user-select:none}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}.leaflet-vml-shape{width:1px;height:1px}.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-bottom,.leaflet-top{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity .2s linear;-moz-transition:opacity .2s linear;transition:opacity .2s linear}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0}svg.leaflet-zoom-animated{will-change:transform}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);-moz-transition:-moz-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}.leaflet-pan-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}.leaflet-control,.leaflet-popup-pane{cursor:auto}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing}.leaflet-image-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}.leaflet-image-layer.leaflet-interactive,.leaflet-marker-icon.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto}.leaflet-container{background:#ddd;outline-offset:1px}.leaflet-container a{color:#0078a8}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}.leaflet-container{font-family:"Helvetica Neue",Arial,Helvetica,sans-serif;font-size:12px;font-size:.75rem;line-height:1.5}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block}.leaflet-bar a:focus,.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px}.leaflet-touch .leaflet-bar a:first-child{border-top-left-radius:2px;border-top-right-radius:2px}.leaflet-touch .leaflet-bar a:last-child{border-bottom-left-radius:2px;border-bottom-right-radius:2px}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px}.leaflet-control-layers{box-shadow:0 1px 5px rgba(0,0,0,.4);background:#fff;border-radius:5px}.leaflet-control-layers-toggle{background-image:url(images/layers.png);width:36px;height:36px}.leaflet-retina .leaflet-control-layers-toggle{background-image:url(images/layers-2x.png);background-size:26px 26px}.leaflet-touch .leaflet-control-layers-toggle{width:44px;height:44px}.leaflet-control-layers .leaflet-control-layers-list,.leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none}.leaflet-control-layers-expanded .leaflet-control-layers-list{display:block;position:relative}.leaflet-control-layers-expanded{padding:6px 10px 6px 6px;color:#333;background:#fff}.leaflet-control-layers-scrollbar{overflow-y:scroll;overflow-x:hidden;padding-right:5px}.leaflet-control-layers-selector{margin-top:2px;position:relative;top:1px}.leaflet-control-layers label{display:block;font-size:13px;font-size:1.08333em}.leaflet-control-layers-separator{height:0;border-top:1px solid #ddd;margin:5px -10px 5px -6px}.leaflet-default-icon-path{background-image:url(images/marker-icon.png)}.leaflet-container .leaflet-control-attribution{background:#fff;background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution,.leaflet-control-scale-line{padding:0 5px;color:#333;line-height:1.4}.leaflet-control-attribution a{text-decoration:none}.leaflet-control-attribution a:focus,.leaflet-control-attribution a:hover{text-decoration:underline}.leaflet-attribution-flag{display:inline!important;vertical-align:baseline!important;width:1em;height:.6669em}.leaflet-left .leaflet-control-scale{margin-left:5px}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:border-box;box-sizing:border-box;background:rgba(255,255,255,.8);text-shadow:1px 1px #fff}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-attribution,.leaflet-touch .leaflet-control-layers{box-shadow:none}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-layers{border:2px solid rgba(0,0,0,.2);background-clip:padding-box}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.3;font-size:13px;font-size:1.08333em;min-height:1px}.leaflet-popup-content p{margin:17px 0;margin:1.3em 0}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:#333;box-shadow:0 3px 14px rgba(0,0,0,.4)}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:0 0}.leaflet-container a.leaflet-popup-close-button:focus,.leaflet-container a.leaflet-popup-close-button:hover{color:#585858}.leaflet-popup-scrolled{overflow:auto}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto}.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999}.leaflet-div-icon{background:#fff;border:1px solid #666}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}.leaflet-tooltip.leaflet-interactive{cursor:pointer;pointer-events:auto}.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before,.leaflet-tooltip-top:before{position:absolute;pointer-events:none;border:6px solid transparent;background:0 0;content:""}.leaflet-tooltip-bottom{margin-top:6px}.leaflet-tooltip-top{margin-top:-6px}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;margin-left:-6px;border-bottom-color:#fff}.leaflet-tooltip-left{margin-left:-6px}.leaflet-tooltip-right{margin-left:6px}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff}@media print{.leaflet-control{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -616,7 +616,8 @@
  */
 (() => {
   "use strict";
-  const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js";
+  // Next.js 版は自分のサイトに置いた three.js を使う（外部の配信元が改ざんされても影響を受けないように）。Artifact 版は jsDelivr の固定版
+  const THREE_URL = window.__HEYAKARTE_THREE_URL__ || "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.min.js";
 
   /* ---------------- 間取り（kurashi-ai の layouts.ts から） ---------------- */
   const door = (from, to) => ({ from, to, kind: "door" });
@@ -1475,7 +1476,11 @@
   const DEFAULT_WEIGHTS = { shop: 1, med: 1, quiet: 1, commute: 1, safety: 1, crime: 1, food: 1, conv: 1, bus: 1 };
   const PERSONA_WEIGHTS = { shop: 3, med: 1, quiet: 1, commute: 1, safety: 3, crime: 3, food: 1, conv: 1, bus: 1 };
   function loadWeights() {
-    try { const w = JSON.parse(localStorage.getItem("heyakarte.weights") || "null"); if (w) return { ...DEFAULT_WEIGHTS, ...w }; } catch { /* 保存できない環境では毎回ふつうに戻る */ }
+    try {
+      const w = JSON.parse(localStorage.getItem("heyakarte.weights") || "null");
+      // 決まったテーマ・決まった値（0・1・3）だけを使う
+      if (w && typeof w === "object") return { ...DEFAULT_WEIGHTS, ...Object.fromEntries(Object.entries(w).filter(([k, v]) => k in DEFAULT_WEIGHTS && [0, 1, 3].includes(v))) };
+    } catch { /* 保存できない環境では毎回ふつうに戻る */ }
     return { ...DEFAULT_WEIGHTS };
   }
   function saveWeights() { try { localStorage.setItem("heyakarte.weights", JSON.stringify(state.weights)); } catch { /* 同上 */ } }
@@ -2379,7 +2384,10 @@
     try { localStorage.setItem("heyakarte.favs", JSON.stringify(state.favs)); localStorage.setItem("heyakarte.favRanks", JSON.stringify(state.ranks)); } catch { /* 保存できない環境では開いている間だけ */ }
   }
   function loadRanks() {
-    try { const v = JSON.parse(localStorage.getItem("heyakarte.favRanks") || "{}"); return v && typeof v === "object" ? v : {}; } catch { return {}; }
+    try {
+      const v = JSON.parse(localStorage.getItem("heyakarte.favRanks") || "{}");
+      return v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).filter(([k, n]) => byId(k) && Number.isInteger(n) && n >= 1 && n <= 100)) : {};
+    } catch { return {}; }
   }
   const isFav = (id) => state.favs.includes(id);
   // 優先順位（第1希望・第2希望…）は、お気に入りの一覧でユーザーが付けたいものだけに付ける。付けなくてもよい
@@ -2602,8 +2610,21 @@
     { kind: "chest", name: "衣装ケース", w: 40, d: 70, h: 70 },
   ];
   const furnKey = (pid) => "heyakarte.furniture." + pid;
+  // 保存してある家具は、形・範囲・件数を確かめてから使う（壊れた値や書き換えられた値で画面が崩れないように）
+  const FURN_KINDS = ["bed", "desk", "table", "lowtable", "sofa", "counter", "tub", "washer", "closet", "fridge", "tvstand", "shelf", "chest", "box"];
+  const FURN_ID_RE = /^f[a-z0-9]{4,24}$/;
+  const num = (v, lo, hi) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
+  function validFurniture(it) {
+    return it && typeof it === "object" && typeof it.id === "string" && FURN_ID_RE.test(it.id) && FURN_KINDS.includes(it.kind)
+      && typeof it.name === "string" && it.name.length <= 60 && num(it.w, 0.05, 4.5) && num(it.d, 0.05, 4.5)
+      && (it.h === undefined || it.h === null || num(it.h, 0.05, 3)) && num(it.x, -5, 30) && num(it.z, -5, 30)
+      && Number.isInteger(it.rot ?? 0) && (it.rot ?? 0) >= 0 && (it.rot ?? 0) <= 3;
+  }
   function loadFurniture(pid) {
-    try { const v = JSON.parse(localStorage.getItem(furnKey(pid)) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+    try {
+      const v = JSON.parse(localStorage.getItem(furnKey(pid)) || "[]");
+      return Array.isArray(v) ? v.filter(validFurniture).slice(0, 60).map(({ id, kind, name, w, d, h, x, z, rot }) => ({ id, kind, name, w, d, h: h ?? undefined, x, z, rot: rot ?? 0 })) : [];
+    } catch { return []; }
   }
   function saveFurniture(pid, items) {
     try { items.length ? localStorage.setItem(furnKey(pid), JSON.stringify(items)) : localStorage.removeItem(furnKey(pid)); } catch {}
@@ -2623,7 +2644,7 @@
     el.innerHTML = items.map((it) => {
       const w = warn[it.id] || [], odd = (it.rot || 0) % 2 === 1;
       const size = `${Math.round((odd ? it.d : it.w) * 100)}×${Math.round((odd ? it.w : it.d) * 100)}cm`;
-      return `<div class="furn-item" data-furnsel="${it.id}" aria-current="${it.id === selectedId}"><span>${esc(it.name)} <span class="small muted">${size}</span><br>${w.length ? `<span class="w">⚠ ${esc(w.join("・"))}</span>` : `<span class="ok">✓ 置けそう</span>`}</span><button data-furnrot="${it.id}">回す</button><button data-furndel="${it.id}">消す</button></div>`;
+      return `<div class="furn-item" data-furnsel="${esc(it.id)}" aria-current="${it.id === selectedId}"><span>${esc(it.name)} <span class="small muted">${size}</span><br>${w.length ? `<span class="w">⚠ ${esc(w.join("・"))}</span>` : `<span class="ok">✓ 置けそう</span>`}</span><button data-furnrot="${esc(it.id)}">回す</button><button data-furndel="${esc(it.id)}">消す</button></div>`;
     }).join("");
     const cur = el.querySelector('[aria-current="true"]');
     cur?.scrollIntoView({ block: "nearest" });
@@ -2761,7 +2782,7 @@
         <button class="btn ghost" id="stopBtn" hidden>止める</button>
         <span class="status" id="letterStatus"></span>
       </div>
-      <p class="note" id="aiNote">${state.sample ? "「AIで文章を整える」を押すと、上の事実だけを使って Claude が文章を書き直します。" : "いまはひな形の文章です。気になるところは自由に直してから送ってください。"}</p>`;
+      <p class="note" id="aiNote">${state.sample ? "「AIで文章を整える」を押すと、上の事実（家賃・収入・初期費用・まわりの情報）を Anthropic の Claude に送って文章を書き直します。ヘヤカルテのサーバーには保存しません。" : "いまはひな形の文章です。気になるところは自由に直してから送ってください。"}</p>`;
   }
 
   function checklist(p) {
@@ -2989,8 +3010,14 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       const m = e.target.closest("[data-acctmode]");
       if (m) { renderAcct(m.dataset.acctmode); $("acctPop").querySelector("input")?.focus(); return; }
       if (e.target.id === "logoutBtn") {
-        await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
-        backend.user = null; setAcctNote(""); renderAcct();
+        // ログアウトが成功したときだけ、この端末に残っているアカウントの内容（お気に入りなど）を消す。共用の端末で次の人に残らないように
+        let ok = false;
+        try { ok = (await fetch("/api/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })).ok; } catch { ok = false; }
+        if (!ok) { setAcctNote("ログアウトできませんでした。通信を確かめて、もう一度お試しください"); return; }
+        clearTimeout(backend.timer);
+        backend.user = null;
+        applyServerState({});
+        setAcctNote(""); renderAcct("login", "", "ログアウトしました。この端末に残っていたお気に入りなどは消しました（アカウントには保存されています）");
       }
     });
     $("acctPop").addEventListener("submit", (e) => { e.preventDefault(); submitAcct(e.target); });
@@ -3058,18 +3085,24 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
   // ログインすると、この端末の「heyakarte.」で始まる保存内容（お気に入り・優先順位・重み・置いた家具）をサーバーと同じにする。
   // Claude Artifact 版やデータベースのない環境では、何もしない（今までどおりこの端末だけに保存）
   const backend = { ready: false, user: null, timer: null, applying: false };
+  // サーバーと同期するのは、この決まった項目だけ（サーバー側でも同じ形かを確かめる）
+  const SYNC_KEY_RE = /^heyakarte\.(favs|favRanks|weights|furniture\.[a-z0-9]{1,20})$/;
   const localSnapshot = () => {
     const out = {};
-    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith("heyakarte.")) out[k] = localStorage.getItem(k); } } catch { /* 読めない環境 */ }
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && SYNC_KEY_RE.test(k)) out[k] = localStorage.getItem(k); } } catch { /* 読めない環境 */ }
     return out;
   };
-  function applyServerState(data) {
+  function writeLocalState(data) {
     backend.applying = true;
     try {
       for (const k of Object.keys(localSnapshot())) localStorage.removeItem(k);
-      for (const [k, v] of Object.entries(data)) localStorage.setItem(k, v);
+      for (const [k, v] of Object.entries(data || {})) if (SYNC_KEY_RE.test(k) && typeof v === "string") localStorage.setItem(k, v);
     } catch { /* 保存できない環境 */ }
     backend.applying = false;
+  }
+  // 保存内容を入れ替えて、画面の状態も読み込み直す（{} を渡すと、この端末の内容を消す）
+  function applyServerState(data) {
+    writeLocalState(data);
     state.weights = loadWeights(); state.favs = loadFavs(); state.ranks = loadRanks(); compactRanks(); updateFavCount();
     heatCache = null;
     if (state.screen === "map") { renderBigMap(); renderSide(); } else if (state.screen === "favs") renderFavs(); else if (state.screen === "detail") renderDetail();
@@ -3088,13 +3121,13 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
   function watchStorage() {
     try {
       const proto = Object.getPrototypeOf(localStorage), set = proto.setItem, remove = proto.removeItem;
-      proto.setItem = function (k, v) { set.call(this, k, v); if (this === localStorage && String(k).startsWith("heyakarte.")) scheduleSync(); };
-      proto.removeItem = function (k) { remove.call(this, k); if (this === localStorage && String(k).startsWith("heyakarte.")) scheduleSync(); };
+      proto.setItem = function (k, v) { set.call(this, k, v); if (this === localStorage && SYNC_KEY_RE.test(String(k))) scheduleSync(); };
+      proto.removeItem = function (k) { remove.call(this, k); if (this === localStorage && SYNC_KEY_RE.test(String(k))) scheduleSync(); };
     } catch { /* 見張れない環境では同期しない */ }
   }
   let acctNote = "";
   const setAcctNote = (t) => { acctNote = t; const el = $("acctNoteText"); if (el) el.textContent = t; };
-  function renderAcct(mode = "login", error = "") {
+  function renderAcct(mode = "login", error = "", info = "") {
     const u = backend.user;
     $("acctLabel").textContent = u ? u.username : "ログイン";
     if (u) {
@@ -3109,7 +3142,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       <form id="acctForm" data-mode="${mode}">
         <label>ユーザー名<input type="text" name="username" autocomplete="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_\-]+" placeholder="半角英数字 3〜24文字"></label>
         <label>パスワード<input type="password" name="password" autocomplete="${reg ? "new-password" : "current-password"}" required minlength="8" maxlength="128" placeholder="8文字以上"></label>
-        <div class="err" role="alert">${esc(error)}</div>
+        <div class="err" role="alert">${esc(error)}</div>${info ? `<p class="small muted" style="margin:0">${esc(info)}</p>` : ""}
         <button class="btn" type="submit">${reg ? "登録してログイン" : "ログイン"}</button>
       </form>
       <p class="note" style="margin:0">ログインすると、お気に入りや置いた家具をスマホとパソコンで同じにできます。${reg ? "登録すると、いまこの端末にあるお気に入りなどがそのまま引き継がれます。" : ""}</p>`;
@@ -3127,8 +3160,16 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     backend.user = data.user;
     // ログイン：サーバーに保存があればそれを使う。なければ（登録した直後も）この端末の内容を保存する
     const me = await fetch("/api/me", { cache: "no-store" }).then((x) => x.json()).catch(() => null);
-    if (me?.state && Object.keys(me.state).length) { applyServerState(me.state); setAcctNote("サーバーに保存してあった内容を読み込みました"); }
-    else { setAcctNote(""); scheduleSync(); }
+    const hasLocal = Object.keys(localSnapshot()).length > 0;
+    if (me?.state && Object.keys(me.state).length) {
+      applyServerState(me.state); setAcctNote("このアカウントに保存してあった内容を読み込みました");
+    } else if (mode === "register" || !hasLocal) {
+      setAcctNote(""); scheduleSync(); // 登録した直後は、この端末の内容でアカウントを始める（登録画面で案内している）
+    } else if (confirm("この端末にあるお気に入り・置いた家具などを、このアカウントに保存しますか？\n「キャンセル」を選ぶと、この端末の内容は消して、空のアカウントで始めます。")) {
+      setAcctNote(""); scheduleSync();
+    } else {
+      applyServerState({}); setAcctNote("この端末の内容を消して、空のアカウントで始めました");
+    }
     renderAcct();
   }
   async function initBackend() {
@@ -3152,11 +3193,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
         p.closed = o.published === false;
       }
       backend.user = me.user;
-      if (me.user && me.state) {
-        backend.applying = true;
-        try { for (const k of Object.keys(localSnapshot())) localStorage.removeItem(k); for (const [k, v] of Object.entries(me.state)) localStorage.setItem(k, v); } catch { /* 保存できない環境 */ }
-        backend.applying = false;
-      }
+      if (me.user && me.state) writeLocalState(me.state);
       watchStorage();
       $("acctWrap").hidden = false;
       renderAcct();
@@ -3186,7 +3223,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     if (state.sample) {
       $("aiState").textContent = "AI 使用可"; $("aiState").classList.add("on");
       if ($("letterBtn")) $("letterBtn").textContent = "AIで文章を整える";
-      if ($("aiNote")) $("aiNote").textContent = "「AIで文章を整える」を押すと、上の事実だけを使って Claude が文章を書き直します。";
+      if ($("aiNote")) $("aiNote").textContent = "「AIで文章を整える」を押すと、上の事実（家賃・収入・初期費用・まわりの情報）を Anthropic の Claude に送って文章を書き直します。ヘヤカルテのサーバーには保存しません。";
     } else disableAI();
   }
   start();

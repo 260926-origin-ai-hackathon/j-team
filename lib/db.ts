@@ -22,8 +22,10 @@ const SCHEMA = `
     username text not null unique,
     password_hash text not null,
     role text not null default 'user',
+    token_version integer not null default 0,
     created_at timestamptz not null default now()
   );
+  alter table users add column if not exists token_version integer not null default 0;
   create table if not exists user_state (
     user_id integer primary key references users(id) on delete cascade,
     data jsonb not null default '{}',
