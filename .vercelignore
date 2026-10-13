@@ -6,6 +6,7 @@ node_modules
 app/_generated
 public/heyakarte
 public/data
+public/vendor
 scripts/*.py
 scripts/.cache
 scripts/__pycache__

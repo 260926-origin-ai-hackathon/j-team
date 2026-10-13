@@ -1,6 +1,6 @@
 import { query } from "../../../../lib/db";
 import { currentUser } from "../../../../lib/auth";
-import { backendReady, json, notReady, readJson } from "../../../../lib/api";
+import { backendReady, json, notReady, readJson, rejectCrossSite } from "../../../../lib/api";
 
 export const runtime = "nodejs";
 
@@ -25,6 +25,8 @@ const monthsOrNull = (v: unknown) => {
 };
 
 export async function PUT(req: Request) {
+  const crossSite = rejectCrossSite(req);
+  if (crossSite) return crossSite;
   const { user, error } = await requireAdmin();
   if (error) return error;
   const b = await readJson(req);
@@ -48,6 +50,8 @@ export async function PUT(req: Request) {
 
 // 掲載情報を消して、data/area.json の値に戻す
 export async function DELETE(req: Request) {
+  const crossSite = rejectCrossSite(req, { needsJson: false });
+  if (crossSite) return crossSite;
   const { error } = await requireAdmin();
   if (error) return error;
   const id = new URL(req.url).searchParams.get("propertyId") || "";

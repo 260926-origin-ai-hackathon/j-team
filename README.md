@@ -213,7 +213,16 @@ Next.js 版では、データベース（PostgreSQL）を設定すると次の�
 | `GET /api/listings` | 物件の掲載情報（管理画面で変えたもの）。画面は `data/area.json` の物件にこれを重ねる |
 | `PUT`・`DELETE /api/admin/listings` | 掲載情報を変える・元に戻す（管理者だけ） |
 
-安全のための作り：パスワードは scrypt でハッシュ化して保存し、元のパスワードは保存しません。ログイン状態は、ユーザーIDと期限に `AUTH_SECRET` で署名した Cookie（HttpOnly・SameSite=Lax、本番は Secure）で持ちます。SQL はすべてプレースホルダで値を渡します。管理者は画面から登録できず、下のスクリプトでだけ作れます。
+安全のための作り：
+
+- パスワードは scrypt でハッシュ化して保存し、元のパスワードは保存しません。ユーザー名があるかどうかを応答時間から分かりにくくしています
+- ログイン状態は、ユーザーID・トークンの世代・期限に `AUTH_SECRET` で署名した Cookie（HttpOnly・SameSite=Lax、本番は Secure と `__Host-`、14日）で持ちます。ログアウトすると世代を進め、ほかの端末のログインもまとめて無効にします
+- 状態を変える API（POST・PUT・DELETE）は、Origin・Sec-Fetch-Site が別のサイトを示すものと、JSON 以外の本文を断ります（CSRF 対策）。ログイン・登録・AI には回数制限があります（インスタンスごとの目安）
+- 保存内容は決まったキー（お気に入り・優先順位・重み・置いた家具）だけを、形と範囲を確かめてから保存します（`lib/validate.ts`）。画面でも読み込むときに同じように確かめます
+- ログアウトが成功したら、その端末に残ったお気に入りなどを消します（共用の端末で次の人に残らないように）。ログイン時に、端末の内容をアカウントに引き継ぐかを確認します
+- SQL はすべてプレースホルダで値を渡します。管理者は画面から登録できず、下のスクリプトでだけ作れます
+- ページには、リクエストごとの nonce を使う Content Security Policy（`proxy.ts`）と、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy（`next.config.ts`）を付けています。Leaflet と three.js は npm の固定版をこのサイトから配ります（Claude Artifact 版は cdnjs の Leaflet に SRI を付け、three.js は jsDelivr の固定版）
+- AI の相談文は、画面が作る依頼文の形のものだけを受け付けます。家賃・収入などの事実を Anthropic の Claude に送りますが、ヘヤカルテのサーバーには保存しません（画面にも書いています）
 
 **本番（Vercel）で有効にする手順**
 

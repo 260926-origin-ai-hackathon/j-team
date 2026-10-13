@@ -35,7 +35,8 @@ const client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: 
 await client.connect();
 await client.query(`create table if not exists users (
   id serial primary key, username text not null unique, password_hash text not null,
-  role text not null default 'user', created_at timestamptz not null default now())`);
+  role text not null default 'user', token_version integer not null default 0, created_at timestamptz not null default now())`);
+await client.query("alter table users add column if not exists token_version integer not null default 0");
 if (password) {
   const salt = randomBytes(16);
   const hash = `scrypt$${salt.toString("base64")}$${(await scrypt(password, salt, 64)).toString("base64")}`;

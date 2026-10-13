@@ -1,9 +1,10 @@
 // index.html（アプリ本体。Claude Artifact 版もこのファイル）を、Next.js で配る形に分ける。
 // `npm run dev` / `npm run build` の前に自動で動く。作ったファイルは git に入れない。
 //   CSS         → public/heyakarte/app.css
-//   画面の HTML → app/_generated/markup.html（app/page.tsx が読み込む）
+//   画面の HTML → app/_generated/markup.ts（app/page.tsx が読み込む）
 //   JavaScript  → public/heyakarte/room3d.js（3D）・app.js（アプリ本体）
 //   周辺データ  → public/data/area.json
+//   ライブラリ  → public/vendor/（Leaflet・three.js を npm の固定版から。外部の配信元に頼らないため）
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
 
 const html = readFileSync("index.html", "utf8");
@@ -19,10 +20,15 @@ const markup = html.slice(bodyStart, html.indexOf("<script>", bodyStart)).trim()
 mkdirSync("app/_generated", { recursive: true });
 mkdirSync("public/heyakarte", { recursive: true });
 mkdirSync("public/data", { recursive: true });
+mkdirSync("public/vendor/leaflet", { recursive: true });
+mkdirSync("public/vendor/three", { recursive: true });
 writeFileSync("public/heyakarte/app.css", styles.join("\n"));
-writeFileSync("app/_generated/markup.html", markup);
+writeFileSync("app/_generated/markup.ts", `// scripts/build-next.mjs が index.html から作る。直接は直さない\nexport default ${JSON.stringify(markup)};\n`);
 writeFileSync("public/heyakarte/room3d.js", scripts[0]);
 writeFileSync("public/heyakarte/app.js", scripts[1]);
 copyFileSync("data/area.json", "public/data/area.json");
+copyFileSync("node_modules/leaflet/dist/leaflet.js", "public/vendor/leaflet/leaflet.js");
+copyFileSync("node_modules/three/build/three.module.min.js", "public/vendor/three/three.module.min.js");
+copyFileSync("node_modules/three/build/three.core.min.js", "public/vendor/three/three.core.min.js");
 
 console.log(`index.html を分けました（CSS ${styles.length}個・script 2個・画面 ${markup.length}文字）`);

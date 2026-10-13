@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -12,7 +13,9 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // proxy.ts がリクエストごとに作る nonce。これが付いたスクリプトだけが動く（CSP）
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html lang="ja">
       <head>
@@ -27,9 +30,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        <Script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" strategy="beforeInteractive" />
+        {/* Leaflet と three.js は npm の固定版をこのサイトから配る（外部の配信元が改ざんされても影響を受けない） */}
+        <Script src="/vendor/leaflet/leaflet.js" strategy="beforeInteractive" nonce={nonce} />
         {/* Next.js 版では、親への相談文の AI（/api/letter）と、ログイン・物件の掲載情報（/api/me・/api/listings）をサーバーで動かす */}
-        <Script id="heyakarte-server" strategy="beforeInteractive">{`window.__HEYAKARTE_SERVER_AI__ = true; window.__HEYAKARTE_SERVER__ = true;`}</Script>
+        <Script id="heyakarte-server" strategy="beforeInteractive" nonce={nonce}>{`window.__HEYAKARTE_SERVER_AI__ = true; window.__HEYAKARTE_SERVER__ = true; window.__HEYAKARTE_THREE_URL__ = "/vendor/three/three.module.min.js";`}</Script>
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { json, rateLimited, rejectCrossSite } from "../../../lib/api";
 
 // 親への相談文を Claude で書く。文章はできた分から少しずつ返す（画面の欄に順に出る）
 // Vercel の環境変数 ANTHROPIC_API_KEY が無いときは、画面はひな形の文章で動く
@@ -11,11 +12,18 @@ export async function GET() {
   return Response.json({ available: Boolean(process.env.ANTHROPIC_API_KEY) });
 }
 
+// 画面の letterPrompt が作る依頼文の書き出し。これ以外の依頼は受け付けない（何にでも使える AI の窓口にしないため）
+const PROMPT_START = "大阪の大学に進学して一人暮らしをする新入生が、実家の親にLINEで送るメッセージを書いてください。";
+
 export async function POST(req: Request) {
-  if (!process.env.ANTHROPIC_API_KEY) return Response.json({ error: "not_configured" }, { status: 503 });
+  if (!process.env.ANTHROPIC_API_KEY) return json({ error: "not_configured" }, 503);
+  // 別のサイトからの呼び出しを断り、同じ接続元からは10分に10回まで
+  const blocked = rejectCrossSite(req) || rateLimited(req, "letter", 10, 600);
+  if (blocked) return blocked;
   const body = await req.json().catch(() => null);
   const prompt = typeof body?.prompt === "string" ? body.prompt : "";
-  if (!prompt || prompt.length > MAX_PROMPT) return Response.json({ error: "bad_request" }, { status: 400 });
+  if (!prompt || prompt.length > MAX_PROMPT || !prompt.startsWith(PROMPT_START)) return json({ error: "bad_request" }, 400);
+  // 依頼文は Anthropic に送るだけで、このサーバーには保存しない（ログにも書かない）
 
   const client = new Anthropic();
   const stream = client.messages.stream(
