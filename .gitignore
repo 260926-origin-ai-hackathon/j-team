@@ -12,3 +12,4 @@ next-env.d.ts
 app/_generated/
 public/heyakarte/
 public/data/
+public/vendor/
