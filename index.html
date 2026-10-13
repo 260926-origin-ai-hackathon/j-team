@@ -2531,6 +2531,10 @@
     $("r3dMsg").textContent = "3Dの部屋を準備しています…";
     $("r3dMsg").hidden = false;
     try {
+      // Next.js 版では 3D の部品（room3d.js）とアプリ本体を並べて読み込むので、まだなら少し待つ
+      for (let i = 0; i < 100 && !window.Room3D; i++) await new Promise((r) => setTimeout(r, 50));
+      if (token !== room3d.token) return;
+      if (!window.Room3D) throw new Error("room3d");
       const api = await window.Room3D.open(box, {
         type: p.layout, area: p.size, floor: p.floor, facing: p.facing, balcony: p.balcony,
         minimap: $("r3dMinimap"),
