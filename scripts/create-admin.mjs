@@ -31,7 +31,7 @@ const password = await askHidden("パスワード（8文字以上。既存ユー
 if (password && password.length < 8) { console.error("パスワードは8文字以上にしてください"); process.exit(1); }
 
 const local = /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL);
-const client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: local ? undefined : { rejectUnauthorized: false } });
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: local ? undefined : { rejectUnauthorized: true } }); // 証明書を必ず確かめる
 await client.connect();
 await client.query(`create table if not exists users (
   id serial primary key, username text not null unique, password_hash text not null,

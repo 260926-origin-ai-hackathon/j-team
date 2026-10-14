@@ -10,7 +10,8 @@ function pool(): Pool {
   if (!globalForPool.heyakartePool) {
     const url = process.env.DATABASE_URL!;
     const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
-    globalForPool.heyakartePool = new Pool({ connectionString: url, max: 5, ssl: local ? undefined : { rejectUnauthorized: false } });
+    // 手元以外は TLS で接続し、サーバーの証明書を必ず確かめる（なりすましたデータベースにつながらないように）
+    globalForPool.heyakartePool = new Pool({ connectionString: url, max: 5, ssl: local ? undefined : { rejectUnauthorized: true } });
   }
   return globalForPool.heyakartePool;
 }
