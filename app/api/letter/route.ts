@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { json, rateLimited, rejectCrossSite } from "../../../lib/api";
+import { json, rateLimited, readJson, rejectCrossSite } from "../../../lib/api";
 
 // 親への相談文を Claude で書く。文章はできた分から少しずつ返す（画面の欄に順に出る）
 // Vercel の環境変数 ANTHROPIC_API_KEY が無いときは、画面はひな形の文章で動く
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   // 別のサイトからの呼び出しを断り、同じ接続元からは10分に10回まで
   const blocked = rejectCrossSite(req) || rateLimited(req, "letter", 10, 600);
   if (blocked) return blocked;
-  const body = await req.json().catch(() => null);
+  const body = await readJson(req);
   const prompt = typeof body?.prompt === "string" ? body.prompt : "";
   if (!prompt || prompt.length > MAX_PROMPT || !prompt.startsWith(PROMPT_START)) return json({ error: "bad_request" }, 400);
   // 依頼文は Anthropic に送るだけで、このサーバーには保存しない（ログにも書かない）

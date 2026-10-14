@@ -221,6 +221,8 @@ Next.js 版では、データベース（PostgreSQL）を設定すると次の�
 - 保存内容は決まったキー（お気に入り・優先順位・重み・置いた家具）だけを、形と範囲を確かめてから保存します（`lib/validate.ts`）。画面でも読み込むときに同じように確かめます
 - ログアウトが成功したら、その端末に残ったお気に入りなどを消します（共用の端末で次の人に残らないように）。ログイン時に、端末の内容をアカウントに引き継ぐかを確認します
 - SQL はすべてプレースホルダで値を渡します。管理者は画面から登録できず、下のスクリプトでだけ作れます
+- データベースへは（手元以外は）TLS で接続し、サーバーの証明書を必ず確かめます。API の本文は 300KB までです
+- Docker 版（nginx）にも、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy と、埋め込み・プラグインを止める CSP を付けています
 - ページには、リクエストごとの nonce を使う Content Security Policy（`proxy.ts`）と、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy（`next.config.ts`）を付けています。Leaflet と three.js は npm の固定版をこのサイトから配ります（Claude Artifact 版は cdnjs の Leaflet に SRI を付け、three.js は jsDelivr の固定版）
 - AI の相談文は、画面が作る依頼文の形のものだけを受け付けます。家賃・収入などの事実を Anthropic の Claude に送りますが、ヘヤカルテのサーバーには保存しません（画面にも書いています）
 

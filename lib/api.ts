@@ -9,8 +9,14 @@ export const json = (data: unknown, status = 200, headers: Record<string, string
 
 export const notReady = () => json({ error: "backend_not_configured" }, 503);
 
+// 本文は 300KB まで（保存内容の上限 200KB に余裕を持たせた大きさ）。大きすぎる本文は読まずに断る
+const MAX_BODY = 300_000;
 export async function readJson(req: Request): Promise<any> {
-  try { return await req.json(); } catch { return null; }
+  if (Number(req.headers.get("content-length") || 0) > MAX_BODY) return null;
+  try {
+    const text = await req.text();
+    return text.length > MAX_BODY ? null : JSON.parse(text);
+  } catch { return null; }
 }
 
 // 状態を変える API（POST・PUT・DELETE）の前に呼ぶ。別のサイトからの送信（CSRF）を断る
@@ -35,7 +41,8 @@ export function rejectCrossSite(req: Request, { needsJson = true } = {}): Respon
 // 何台にも分かれて動く本番では完全ではない。総当たりを遅くするための補助として使う
 const buckets = new Map<string, { n: number; reset: number }>();
 export function rateLimited(req: Request, name: string, limit: number, windowSec: number, extra = ""): Response | null {
-  const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || req.headers.get("x-real-ip") || "local";
+  // Vercel が付け直す x-real-ip を優先する（x-forwarded-for は経路によっては送り手が書ける）
+  const ip = req.headers.get("x-real-ip") || (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "local";
   const key = `${name}:${ip}:${extra}`, now = Date.now();
   const b = buckets.get(key);
   if (!b || b.reset < now) { buckets.set(key, { n: 1, reset: now + windowSec * 1000 }); return null; }
