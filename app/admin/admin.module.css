@@ -1,0 +1,31 @@
+/* 物件の掲載情報の管理画面。色はヘヤカルテの水色に合わせる */
+.wrap { position: fixed; inset: 0; overflow: auto; background: var(--bg, #f6fafc); color: var(--ink, #1b2521); padding: 20px 16px 40px; font-family: var(--body); }
+.box { max-width: 1180px; margin: 0 auto; display: grid; gap: 14px; }
+.header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.back { color: #2A7AB8; font-weight: 700; text-decoration: none; }
+.title { font-size: 22px; font-weight: 900; margin: 0; font-family: var(--display); }
+.who { margin-left: auto; font-size: 13px; color: #5f6f7a; }
+.card { background: var(--surface, #fff); border: 1px solid #d8e3ea; border-radius: 14px; padding: 16px; }
+.note { font-size: 13.5px; color: #5f6f7a; line-height: 1.7; }
+.filterRow { display: flex; gap: 8px; align-items: center; }
+.input { font: inherit; font-size: 13.5px; padding: 5px 8px; border: 1px solid #d8e3ea; border-radius: 8px; width: 100%; background: var(--surface-2, #f4f8fa); color: inherit; }
+.filter { max-width: 280px; }
+.count { font-size: 13px; color: #5f6f7a; }
+.tableCard { padding: 0; overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 980px; }
+.table thead tr { background: #E3F4FC; color: #1E5F8A; text-align: left; }
+.table th { padding: 10px 8px; font-weight: 700; white-space: nowrap; }
+.table tbody tr { border-top: 1px solid #d8e3ea; vertical-align: top; }
+.table td { padding: 8px; }
+.off { opacity: .65; }
+.nameCell { min-width: 190px; }
+.sub { font-size: 12px; color: #5f6f7a; }
+.changed { font-size: 11.5px; color: #2A7AB8; }
+.w110 { width: 110px; } .w100 { width: 100px; } .w80 { width: 80px; }
+.nowrap { white-space: nowrap; }
+.check { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.actions { display: flex; gap: 6px; }
+.btn { font: inherit; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 8px; cursor: pointer; border: 1px solid #2A7AB8; background: transparent; color: #2A7AB8; white-space: nowrap; }
+.primary { background: #2A7AB8; color: #fff; }
+.status { font-size: 12px; margin-top: 4px; }
+.ok { color: #2f9e5b; } .err { color: #c8412f; }

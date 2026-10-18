@@ -189,13 +189,13 @@
 | Next.js 16.4.0 以前の新しい脆弱性（2026-10-14 公表：`use cache` と画像最適化 SVG の遠隔コード実行、Server Actions の DoS） | 緊急（依存） | このアプリは条件（`use cache`・Server Actions を使う、sharp 0.35.5 未満）に当てはまらないが、Next.js 16.4.2・React 19.3.1・pg 8.23.1 に更新 |
 | データベースへの接続で、サーバーの証明書を確かめていなかった | 中 | 証明書を必ず確かめる（#31） |
 | API の本文の大きさに上限がなかった | 低 | 300KB まで（#31） |
+| CSP の `style-src` に `'unsafe-inline'` を残していた（入り込んだ HTML で見た目を書き換えられるおそれ） | 低 | style 属性をやめ、決まった見た目はクラス、色・幅などは `data-` 属性から値の形を確かめて JavaScript で入れる。管理画面は CSS モジュールに。`style-src` は `'self'`・nonce・Google Fonts だけ |
 | 登録フォームのユーザー名の入力チェックが、今のブラウザで効いていなかった | 低 | 正しい正規表現に直した（#29。サーバー側のチェックはもともと効いていた） |
 
 点検して問題がなかったもの：画面の HTML に入れる外部のデータ（OpenStreetMap の店名・駅名・道路名、物件名、地図の吹き出し）はすべてエスケープしている。リポジトリの履歴に本物の秘密の値はない（以前 `.env.local` が入っていたが、中身は期限切れの Vercel のトークンだけで、[#26](https://github.com/260926-origin-ai-hackathon/j-team/pull/26) で管理から外した）。
 
 ### まだ残っていること
 
-- CSP の `style-src` に `'unsafe-inline'` を残している（画面と地図ライブラリが要素の style 属性を使うため。スクリプトは実行できない）
 - 回数制限はサーバーのインスタンスごとの目安で、何台にも分かれて動く本番では完全ではない
 - 本番ではまだデータベースを設定していないので、ログインした状態での確認は手元だけ。ログイン機能を本番で有効にしたら、ログインした状態でもう一度確認する
 
@@ -258,7 +258,7 @@ Next.js 版では、データベース（PostgreSQL）を設定すると次の�
 - SQL はすべてプレースホルダで値を渡します。管理者は画面から登録できず、下のスクリプトでだけ作れます
 - データベースへは（手元以外は）TLS で接続し、サーバーの証明書を必ず確かめます。API の本文は 300KB までです
 - Docker 版（nginx）にも、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy と、埋め込み・プラグインを止める CSP を付けています
-- ページには、リクエストごとの nonce を使う Content Security Policy（`proxy.ts`）と、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy（`next.config.ts`）を付けています。Leaflet と three.js は npm の固定版をこのサイトから配ります（Claude Artifact 版は cdnjs の Leaflet に SRI を付け、three.js は jsDelivr の固定版）
+- ページには、リクエストごとの nonce を使う Content Security Policy（`proxy.ts`。スクリプトも style も、nonce の付いたものとこのサイトのファイルだけ。style 属性は使わない）と、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy（`next.config.ts`）を付けています。Leaflet と three.js は npm の固定版をこのサイトから配ります（Claude Artifact 版は cdnjs の Leaflet に SRI を付け、three.js は jsDelivr の固定版）
 - AI の相談文は、画面が作る依頼文の形のものだけを受け付けます。家賃・収入などの事実を Anthropic の Claude に送りますが、ヘヤカルテのサーバーには保存しません（画面にも書いています）
 
 **本番（Vercel）で有効にする手順**

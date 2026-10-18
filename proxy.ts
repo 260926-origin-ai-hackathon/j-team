@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ページ（HTML）に Content Security Policy を付ける。スクリプトはリクエストごとの nonce が付いたものと、
 // それが読み込んだもの（'strict-dynamic'）だけを動かす。外部への通信・埋め込み・フォーム送信先も絞る
-// - style-src の 'unsafe-inline'：画面と Leaflet が要素の style 属性を使うため（スクリプトは実行できない）
+// - style 属性（style="…"）は許さない。画面の色や幅は data- 属性から JavaScript（CSSOM）で入れる（index.html の applyDataStyles）
 // - 地図のヒートマップは canvas から作った data: の画像
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
     "img-src 'self' data: blob:",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self'",
