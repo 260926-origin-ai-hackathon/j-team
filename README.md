@@ -54,7 +54,7 @@
 
 | 分類 | 使ったもの | どこで使っているか |
 |---|---|---|
-| フレームワーク | [Next.js](https://nextjs.org/) 16（App Router）・React 19・TypeScript | ページの配信とビルド、AI の API（`app/api/letter`）。公開デモは Next.js で動かしている |
+| フレームワーク | [Next.js](https://nextjs.org/) 16.4（App Router）・React 19・TypeScript | ページの配信とビルド、AI の API（`app/api/letter`）。公開デモは Next.js で動かしている |
 | 画面 | HTML・CSS・JavaScript（`index.html` 1ファイル） | すべての画面。Next.js はビルドのときに `index.html` を分けて配る（`scripts/build-next.mjs`）。同じファイルが Claude Artifact 版にもなる。画面の切り替えは URL の `#` で行う |
 | 地図 | [Leaflet](https://leafletjs.com/) 1.9.4 | 地図・物件の札・ヒートマップ・重ねる情報。背景タイルは使わず、OpenStreetMap の道路を線で描く |
 | 3D | [three.js](https://threejs.org/) 0.180.0 | 部屋の中の3D表示と家具の配置（jsDelivr から読み込む） |
@@ -186,6 +186,7 @@
 | ログアウトしても、端末にお気に入りなどが残っていた（共用の端末で次の人に残るおそれ） | 中 | ログアウトが成功したら端末の内容を消す。ログイン時に引き継ぐかを確認する（#29） |
 | ログイン機能（まだ本番では無効）の守り：CSRF・回数制限・ログアウト後の Cookie・保存 API の入力の確認 | 中 | 別サイトからの送信を断る、回数制限、ログアウトでほかの端末のログインも無効、保存内容の確認（#29） |
 | Next.js などの依存に、公開済みの脆弱性があった | 高（依存） | Next.js 16.3.8 などに更新。`npm audit` は0件（#29） |
+| Next.js 16.4.0 以前の新しい脆弱性（2026-10-14 公表：`use cache` と画像最適化 SVG の遠隔コード実行、Server Actions の DoS） | 緊急（依存） | このアプリは条件（`use cache`・Server Actions を使う、sharp 0.35.5 未満）に当てはまらないが、Next.js 16.4.2・React 19.3.1・pg 8.23.1 に更新 |
 | データベースへの接続で、サーバーの証明書を確かめていなかった | 中 | 証明書を必ず確かめる（#31） |
 | API の本文の大きさに上限がなかった | 低 | 300KB まで（#31） |
 | 登録フォームのユーザー名の入力チェックが、今のブラウザで効いていなかった | 低 | 正しい正規表現に直した（#29。サーバー側のチェックはもともと効いていた） |
