@@ -522,33 +522,45 @@
     .d-guide .mascot { width: 40px; height: 40px; }
     .d-bubble { font-size: 12.5px; min-height: 40px; padding: 6px 12px; }
   }
+
+  /* style 属性の代わりに使うクラス（CSP で style 属性を許さないため。色や幅は data- 属性から JavaScript で入れる） */
+  .u-pointer { cursor: pointer; } .u-rel { position: relative; } .u-m0 { margin: 0; } .u-p0 { padding: 0; } .u-p12 { padding: 12px; } .u-p16 { padding: 16px; }
+  .u-mt4 { margin-top: 4px; } .u-mt10 { margin-top: 10px; } .u-mt20 { margin-top: 20px; } .u-mla { margin-left: auto; } .u-fw4 { font-weight: 400; }
+  .u-fs18 { font-size: 18px; } .u-flex1 { flex: 1; } .u-span-all { grid-column: 1 / -1; } .u-va-2 { vertical-align: -2px; } .u-h130 { height: 130px; }
+  .u-hrow8 { display: flex; gap: 8px; align-items: center; } .u-wrap8 { gap: 8px; flex-wrap: wrap; } .u-btn-sm { padding: 6px 14px; }
+  .u-inline-link { font-size: inherit; padding: 0; } .u-verdict-sub { font-size: 16px; margin-left: 10px; }
+  .markup-root { display: contents; }
+  .price-pin.sample { display: inline-block; transform: none; font-size: 11px; padding: 0 6px; }
+  .pin { width: 17px; height: 17px; font-size: 9px; } .pin.big { width: 24px; height: 24px; font-size: 12px; }
+  .flood-sw-1 { background: var(--flood-1); opacity: .7; } .flood-sw-2 { background: var(--flood-2); opacity: .7; } .flood-sw-3 { background: var(--flood-3); opacity: .7; }
+  .crime-sw { opacity: .35; border-radius: 50% !important; width: 12px !important; height: 12px !important; }
 </style>
 
 <div class="app">
   <header class="top">
     <button class="btn ghost" id="backBtn" hidden>← 地図に戻る</button>
-    <div class="logo" id="logo" role="link" tabindex="0" title="最初の画面へ" style="cursor:pointer">
+    <div class="logo u-pointer" id="logo" role="link" tabindex="0" title="最初の画面へ">
       <svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true"><path d="M8 30 32 9l24 21" fill="#3F9FD8" stroke="#1E5F8A" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/><rect x="14" y="25" width="36" height="32" rx="8" fill="#8FD3F4" stroke="#1E5F8A" stroke-width="4.5"/><circle cx="26" cy="38" r="2.6" fill="#1E5F8A"/><circle cx="38" cy="38" r="2.6" fill="#1E5F8A"/><path d="M28 45q4 3.5 8 0" fill="none" stroke="#1E5F8A" stroke-width="2.6" stroke-linecap="round"/></svg>
       ヘヤカルテ
     </div>
     <div class="tagline">内見に行く前に、部屋の「まわり」まで分かる</div>
     <div class="spacer"></div>
     <button class="chip-btn fav-chip" id="favChip" title="お気に入りの一覧へ"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="lbl">お気に入り</span> <b class="num" id="favCount">0</b></button>
-    <div style="position:relative">
+    <div class="u-rel">
       <button class="chip-btn" id="budgetBtn" aria-expanded="false"><span class="lbl">家賃の目安</span> <b class="num" id="budgetChip"></b> ✎</button>
       <div class="panel pop" id="budgetPop" hidden>
         <div class="eyebrow">毎月入ってくるお金</div>
         <label for="inScholar">奨学金<input id="inScholar" class="num" type="number" step="1000" min="0" value="50000"><span>円</span></label>
         <label for="inAllow">仕送り<input id="inAllow" class="num" type="number" step="1000" min="0" value="30000"><span>円</span></label>
         <label for="inJob">バイト<input id="inJob" class="num" type="number" step="1000" min="0" value="40000"><span>円</span></label>
-        <p class="note" style="margin-top:10px">家賃＋管理費の目安は収入の3分の1。超える部屋は地図で薄く表示します。</p>
+        <p class="note u-mt10">家賃＋管理費の目安は収入の3分の1。超える部屋は地図で薄く表示します。</p>
       </div>
     </div>
-    <div style="position:relative" id="acctWrap" hidden>
+    <div class="u-rel" id="acctWrap" hidden>
       <button class="chip-btn" id="acctBtn" aria-expanded="false"><span aria-hidden="true">👤</span><span class="lbl" id="acctLabel">ログイン</span></button>
       <div class="panel pop acct-pop" id="acctPop" hidden></div>
     </div>
-    <div style="position:relative">
+    <div class="u-rel">
       <button class="chip-btn" id="dataBtn" aria-expanded="false"><span class="lbl">データについて</span><span class="sm">出典</span></button>
       <div class="panel pop data-pop" id="dataPop" hidden>
         <div class="eyebrow">この画面の情報の出どころ</div>
@@ -1646,6 +1658,24 @@
     else go("start", null, { push: false });
   }
 
+  // ---------- data- 属性からのスタイル ----------
+  // CSP で style 属性を許さないので、色・幅・透明度など、その場で決める値は data- 属性に入れておき、
+  // 画面に追加されたときに JavaScript（CSSOM）で入れる。決まった項目だけを、値の形を確かめてから入れる
+  const COLOR_RE = /^(#[0-9a-fA-F]{3,8}|rgba?\(\s*[0-9.]+\s*,\s*[0-9.]+\s*,\s*[0-9.]+\s*(,\s*[0-9.]+\s*)?\)|var\(--[a-z0-9-]+\))$/;
+  const DATA_STYLES = [
+    ["bg", (el, v) => { if (COLOR_RE.test(v)) el.style.background = v; }],
+    ["op", (el, v) => { const n = Number(v); if (Number.isFinite(n) && n >= 0 && n <= 1) el.style.opacity = String(n); }],
+    ["w", (el, v) => { const n = Number(v); if (Number.isFinite(n) && n >= 0 && n <= 100) el.style.width = `${n}%`; }],
+    ["cvar", (el, v) => { if (COLOR_RE.test(v)) el.style.setProperty("--c", v); }],
+  ];
+  const DATA_STYLE_SEL = DATA_STYLES.map(([k]) => `[data-${k}]`).join(",");
+  function applyDataStyles(root) {
+    const els = root.matches?.(DATA_STYLE_SEL) ? [root, ...root.querySelectorAll(DATA_STYLE_SEL)] : root.querySelectorAll?.(DATA_STYLE_SEL) || [];
+    for (const el of els) for (const [k, fn] of DATA_STYLES) { const v = el.dataset[k]; if (v !== undefined) fn(el, v); }
+  }
+  new MutationObserver((list) => { for (const m of list) for (const n of m.addedNodes) if (n.nodeType === 1) applyDataStyles(n); })
+    .observe(document.documentElement, { childList: true, subtree: true });
+
   // ---------- キャラクター「ヘヤまる」 ----------
   // 水色の家の形をした案内役。カルテ（クリップボード）を持っている
   // 表情ごとの目・眉・口（と汗）。smile：ふつう／happy：にっこり／think：考え中／worry：困り顔／surprised：びっくり
@@ -1858,7 +1888,7 @@
 
   function poiMarker(q, big = false) {
     const st = POI_STYLE[q.k], sz = big ? 24 : 17;
-    const m = L.marker(ll(q.x, q.y), { icon: L.divIcon({ className: "", html: `<div class="pin" style="width:${sz}px;height:${sz}px;background:${st.c};font-size:${big ? 12 : 9}px">${st.t}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), zIndexOffset: big ? 500 : 0 });
+    const m = L.marker(ll(q.x, q.y), { icon: L.divIcon({ className: "", html: `<div class="pin${big ? " big" : ""}" data-bg="${st.c}">${st.t}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), zIndexOffset: big ? 500 : 0 });
     m.bindTooltip(esc(q.n || st.label) + (q.e ? "（夜間救急）" : ""), { direction: "right", className: "lbl", offset: [8, 0], permanent: big });
     return m;
   }
@@ -2046,7 +2076,7 @@
     for (const v of vals) cnt[LEVELS.indexOf(levelOf(v))]++;
     return cnt.map((c) => Math.round((c / vals.length) * 100));
   }
-  const levelChip = (lv) => `<span class="lv" style="background:${rgb(lv.color)}">${lv.mark}</span>`;
+  const levelChip = (lv) => `<span class="lv" data-bg="${rgb(lv.color)}">${lv.mark}</span>`;
 
   function drawHeat() {
     if (!heatLayer) return;
@@ -2092,7 +2122,7 @@
   }
 
   function renderBigMap() {
-    if (!window.L) { $("bigMap").innerHTML = `<p style="padding:16px" class="muted">地図ライブラリを読み込めませんでした。通信状況を確かめて、ページを開き直してください。</p>`; return; }
+    if (!window.L) { $("bigMap").innerHTML = `<p class="muted u-p16">地図ライブラリを読み込めませんでした。通信状況を確かめて、ページを開き直してください。</p>`; return; }
     if (!maps.big) {
       maps.big = newMap($("bigMap"));
       buildLayers();
@@ -2175,7 +2205,7 @@
     legend: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 5h10M7 10h10M7 15h10"/><circle cx="3.5" cy="5" r="1" fill="currentColor"/><circle cx="3.5" cy="10" r="1" fill="currentColor"/><circle cx="3.5" cy="15" r="1" fill="currentColor"/></svg>`,
   };
   const src = (kind, text) => `<span class="src">${badge(kind)} ${text}</span>`;
-  const dot = (k) => `<span><i class="dot" style="background:${POI_STYLE[k].c}">${POI_STYLE[k].t}</i>${POI_STYLE[k].label}</span>`;
+  const dot = (k) => `<span><i class="dot" data-bg="${POI_STYLE[k].c}">${POI_STYLE[k].t}</i>${POI_STYLE[k].label}</span>`;
 
   // レイヤーごとの凡例（色・記号の意味と出どころ）
   function legendFor(k) {
@@ -2184,9 +2214,9 @@
       med: ["clinic", "hospital"].map(dot).join("") + src("実データ", "OpenStreetMap"),
       food: dot("restaurant") + `<span class="muted">レストラン・カフェ・ファストフード</span>` + src("実データ", "OpenStreetMap"),
       bus: dot("bus_stop") + src("実データ", "OpenStreetMap"),
-      traffic: `<span><i style="background:${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i style="background:${TRAFFIC_COLORS[4]}"></i>多め</span><span><i style="background:${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`,
-      flood: `<span><i style="background:var(--flood-1);opacity:.7"></i>0.5m未満</span><span><i style="background:var(--flood-2);opacity:.7"></i>0.5〜3m</span><span><i style="background:var(--flood-3);opacity:.7"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`,
-      crime: `<span><i style="background:${CRIME_COLOR};opacity:.35;border-radius:50%;width:12px;height:12px"></i>町丁目ごとの犯罪の件数（円が大きいほど多い）</span>${dot("police")}${src("実データ", "大阪府警察 犯罪オープンデータ（2025年）を加工・交番はOpenStreetMap")}`,
+      traffic: `<span><i data-bg="${TRAFFIC_COLORS[5]}"></i>多い（幹線道路）</span><span><i data-bg="${TRAFFIC_COLORS[4]}"></i>多め</span><span><i data-bg="${TRAFFIC_COLORS[3]}"></i>ふつう</span>${src("推定", "道路の種類から。実測ではない")}`,
+      flood: `<span><i class="flood-sw-1"></i>0.5m未満</span><span><i class="flood-sw-2"></i>0.5〜3m</span><span><i class="flood-sw-3"></i>3m以上</span>${src("実データ", "国土地理院 洪水浸水想定区域（想定最大規模）・内水氾濫は含まない")}`,
+      crime: `<span><i class="crime-sw" data-bg="${CRIME_COLOR}"></i>町丁目ごとの犯罪の件数（円が大きいほど多い）</span>${dot("police")}${src("実データ", "大阪府警察 犯罪オープンデータ（2025年）を加工・交番はOpenStreetMap")}`,
       shelter: `${dot("shelter")}<span class="muted">洪水のとき</span>${src("実データ", "国土地理院 指定緊急避難場所")}`,
     }[k] || "";
   }
@@ -2203,8 +2233,8 @@
     crime: "出典：大阪府警察 犯罪オープンデータ（2025年）を加工。交番は OpenStreetMap", shelter: "出典：国土地理院 指定緊急避難場所（洪水）",
   };
   function stripLegend(k) {
-    const d = (kind) => `<i class="dot" style="background:${POI_STYLE[kind].c}">${POI_STYLE[kind].t}</i>`;
-    const sw = (c, o = 1) => `<i class="sw-bar" style="background:${c};opacity:${o}"></i>`;
+    const d = (kind) => `<i class="dot" data-bg="${POI_STYLE[kind].c}">${POI_STYLE[kind].t}</i>`;
+    const sw = (c, o = 1) => `<i class="sw-bar" data-bg="${c}" data-op="${o}"></i>`;
     return {
       shop: `${d("supermarket")}${d("convenience")}${d("chemist")}買い物`,
       med: `${d("clinic")}${d("hospital")}病院`,
@@ -2212,7 +2242,7 @@
       bus: `${d("bus_stop")}バス停`,
       traffic: `${sw(TRAFFIC_COLORS[5])}${sw(TRAFFIC_COLORS[4])}${sw(TRAFFIC_COLORS[3])}交通量（赤ほど多い）`,
       flood: `${sw("var(--flood-1)", .7)}${sw("var(--flood-2)", .7)}${sw("var(--flood-3)", .7)}浸水想定（濃いほど深い）`,
-      crime: `<i class="dot" style="background:${CRIME_COLOR};opacity:.45"></i>${d("police")}防犯（円が大きいほど犯罪が多い）`,
+      crime: `<i class="dot" data-bg="${CRIME_COLOR}" data-op=".45"></i>${d("police")}防犯（円が大きいほど犯罪が多い）`,
       shelter: `${d("shelter")}避難場所`,
     }[k] || "";
   }
@@ -2224,11 +2254,11 @@
 
   function heatLegend() {
     const scale = HEAT_SCALE[state.heatTheme], share = levelShares(state.heatTheme);
-    return `<div class="row">${LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${levelLabel(state.heatTheme, l)}<span class="muted num" style="font-weight:400">（${share[n]}%）</span></span>`).join("")}</div>
+    return `<div class="row">${LEVELS.map((l, n) => `<span class="lv-item">${levelChip(l)}${levelLabel(state.heatTheme, l)}<span class="muted num u-fw4">（${share[n]}%）</span></span>`).join("")}</div>
       <p class="note">（　）は、このエリアのうちその段階にあたる場所の割合。×：${scale[0]}　◎：${scale[1]}</p>
       <div class="row">${src(state.heatTheme === "quiet" ? "推定" : "独自の目安", scale[2])}</div>`;
   }
-  const pinLegend = () => `<div class="row"><span><span class="price-pin" style="display:inline-block;transform:none;font-size:11px;padding:0 6px">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}</div>`;
+  const pinLegend = () => `<div class="row"><span><span class="price-pin sample">4.2万</span> 物件（家賃＋管理費）</span><span class="muted">薄い札は予算オーバー</span>${src("架空", "物件はデモ用")}</div>`;
 
   function renderLayerChips() {
     const overlays = LAYERS.filter((ly) => ly.k !== "heat");
@@ -2255,7 +2285,7 @@
         <div class="sheet-list two-col">${overlays.map((ly) => `
           <button class="opt-row fixed" data-k="${ly.k}" aria-pressed="${state.layers.has(ly.k)}">
             <span class="switch" aria-hidden="true"></span>
-            <span class="opt-text"><b style="--c:${ly.color}">${ly.label}</b><span class="muted small">${LAYER_DESC[ly.k]}</span></span>
+            <span class="opt-text"><b data-cvar="${ly.color}">${ly.label}</b><span class="muted small">${LAYER_DESC[ly.k]}</span></span>
           </button>`).join("")}</div>
         <p class="note">オンにした情報の印の意味と出典は、地図の上部に表示します。</p>`;
     } else if (state.sheet === "heat") {
@@ -2266,7 +2296,7 @@
         <div class="theme-grid">${HEAT_THEMES.map(themeBtn).join("")}</div>
         <div class="weights">
           <div class="sheet-head"><b>あなた向けの総合：何を大事にする？</b>
-            <span class="row" style="margin:0"><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
+            <span class="row u-m0"><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
           ${HEAT_THEMES.filter((t) => t.k in DEFAULT_WEIGHTS).map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
           <p class="note">「大事」は「ふつう」の3倍の重さで平均します。選ぶと「あなた向け」の総合に切り替わります。「おすすめ」は、ペルソナ（親も一緒に決める新入生）に合わせて、買い物・浸水しにくさ・防犯を大事にした設定です。</p>
         </div>
@@ -2342,7 +2372,7 @@
           <b>3</b><span>「詳しく見る」で、住宅の情報・内見で聞くこと・親への相談までまとまる</span>
         </div>
         <p class="small">いまの予算（家賃＋管理費 <b class="num">${man(rentCap())}</b> まで）に合う部屋は <b class="num">${inBudget}件</b>／全${open.length}件</p>
-        <p class="small muted">周辺の情報は公開データから計算した目安です。出どころは <button class="linkbtn" id="moreSources" style="font-size:inherit;padding:0">データについて</button> から見られます。</p>`;
+        <p class="small muted">周辺の情報は公開データから計算した目安です。出どころは <button class="linkbtn u-inline-link" id="moreSources">データについて</button> から見られます。</p>`;
       return;
     }
     const n = p.near, over = overBudget(p);
@@ -2355,7 +2385,7 @@
         </div>
         <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}</div></div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center"><div class="budget-line ${over ? "over" : "ok"} num" style="flex:1">${over ? `予算（${man(rentCap())}）を ${yen(p.rent + p.fee - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}</div>${favBtn(p)}</div>
+      <div class="u-hrow8"><div class="budget-line ${over ? "over" : "ok"} num u-flex1">${over ? `予算（${man(rentCap())}）を ${yen(p.rent + p.fee - rentCap())} 超える` : `予算 ${man(rentCap())} 以内`}</div>${favBtn(p)}</div>
       ${(() => {
         const pc = prosCons(p);
         const li = (x) => `<li><b>${esc(x.short)}</b><span>${esc(x.detail)}</span></li>`;
@@ -2370,8 +2400,8 @@
         <span><small>病院</small>${n.hospital.min}分</span>
         <span><small>交番</small>${n.police.min}分</span>
       </div>
-      <p class="small muted" style="margin:0">建物・災害・防犯などのくわしい評価は「詳しく見る」で確かめられます。</p>
-      <button class="btn" id="openDetail" style="padding:12px" title="同じ札をもう一度タップしても開きます">詳しく見る →</button>`;
+      <p class="small muted u-m0">建物・災害・防犯などのくわしい評価は「詳しく見る」で確かめられます。</p>
+      <button class="btn u-p12" id="openDetail" title="同じ札をもう一度タップしても開きます">詳しく見る →</button>`;
   }
 
   // ---------- お気に入り ----------
@@ -2439,9 +2469,9 @@
       ${list.length > 1 ? `<span class="seg favs-sort" role="group" aria-label="並べかた">${FAV_SORTS.map(([k, l]) => `<button data-favsort="${k}" aria-pressed="${state.favSort === k}">${l}</button>`).join("")}</span>` : ""}
       ${list.length ? `<div class="guide">${mascotSVG(56, "hop", face)}<div class="bubble">${esc(line)}</div></div>` : ""}`;
     if (!list.length) {
-      $("favsGrid").innerHTML = `<div class="favs-empty" style="grid-column:1/-1">
+      $("favsGrid").innerHTML = `<div class="favs-empty u-span-all">
         ${mascotSVG(150, "hop", "think")}
-        <p><b>お気に入りはまだありません</b><br><span class="small muted">地図で物件の札をタップして、${STAR_SVG.replace('width="16" height="16"', 'width="14" height="14" style="vertical-align:-2px"')}「お気に入り」のスターを押すとここに集まります</span></p>
+        <p><b>お気に入りはまだありません</b><br><span class="small muted">地図で物件の札をタップして、${STAR_SVG.replace('width="16" height="16"', 'width="14" height="14" class="u-va-2"')}「お気に入り」のスターを押すとここに集まります</span></p>
         <button class="btn" data-gomap>地図で部屋をさがす</button></div>`;
       return;
     }
@@ -2501,7 +2531,7 @@
         <div class="spec num">${p.layout}・${p.size}㎡・${esc(p.structure)}・築${p.age}年・${p.floor}階／${p.floors}階建て${p.autolock ? "・オートロック" : ""}${p.net ? "・ネット無料" : ""}・${esc(p.station.line)} ${esc(p.station.name)} 徒歩${p.station.min}分</div>
       </div>
       <div class="d-guide" aria-live="polite">${mascotSVG(68, "hop", face)}<div class="bubble d-bubble" title="${esc(line)}"><span>${esc(line)}</span></div></div>
-      <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div><div style="margin-top:4px">${favBtn(p)}</div></div>`;
+      <div class="pv-price num"><strong>${man(p.rent)}</strong><div class="small muted">＋管理費 ${yen(p.fee)}・敷${p.deposit} 礼${p.key}</div><div class="u-mt4">${favBtn(p)}</div></div>`;
     // タブは4つのまとまり。まとまりの中の細かい項目は、本文の上の切り替えで選ぶ
     const grades = { building: buildingGrade(p), life: lifeGrade(p), traffic: trafficGrade(p), hazard: hazardGrade(p), crime: crimeGrade(p), money: moneyGrade(p) };
     const group = TAB_GROUPS.find((g) => g.tabs.some(([k]) => k === state.tab)) || TAB_GROUPS[0];
@@ -2569,7 +2599,7 @@
 
   function drawMiniMap(p) {
     const el = $("miniMap");
-    if (!window.L) { el.innerHTML = `<p style="padding:16px" class="muted">地図を表示できませんでした。</p>`; return; }
+    if (!window.L) { el.innerHTML = `<p class="muted u-p16">地図を表示できませんでした。</p>`; return; }
     const mode = ["hazard", "traffic", "crime"].includes(state.tab) ? state.tab : "life";
     if (maps.mini && maps.mini.pid === p.id && maps.mini.mode === mode) { maps.mini.invalidateSize(); return; }
     if (maps.mini) { maps.mini.remove(); maps.mini = null; }
@@ -2637,7 +2667,7 @@
     return `
       <div class="furn-presets">${FURN_PRESETS.map((f, i) => `<button data-furnadd="${i}" title="${f.w}×${f.d}cm">＋${esc(f.name)}</button>`).join("")}</div>
       <div class="furn-custom">持っている家具：幅<input type="number" id="furnW" value="80" min="10" max="400" step="5">×奥行<input type="number" id="furnD" value="40" min="10" max="400" step="5">cm<button id="furnCustom">置く</button>
-        <label style="margin-left:auto"><input type="checkbox" id="furnSample" ${state.sampleFurn ? "checked" : ""}> 目安の家具も出す</label></div>
+        <label class="u-mla"><input type="checkbox" id="furnSample" ${state.sampleFurn ? "checked" : ""}> 目安の家具も出す</label></div>
       <div class="furn-list" id="furnList"></div>
       <p class="note">ドラッグで動かす・「回す」で90°回転。壁・はみ出し・重なりを知らせます（この端末に物件ごとに保存）。${badge("推定")} 部屋の寸法は間取りタイプと面積からの目安です。契約前に実寸を測ってください。</p>`;
   }
@@ -2664,10 +2694,10 @@
     if (tab === "room") {
       const open = Math.round(p.noise.outdoor - 10);
       return `
-      <div class="big-verdict num" style="font-size:18px">${p.layout}・${p.size}㎡・${p.floor}階／${p.floors}階建て</div>
-      <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg" role="group" aria-label="見かた"><button data-r3dmode="walk" aria-pressed="true">歩いて見る</button><button data-r3dmode="dollhouse" aria-pressed="false">上から見る</button></span>
+      <div class="big-verdict num u-fs18">${p.layout}・${p.size}㎡・${p.floor}階／${p.floors}階建て</div>
+      <div class="row u-wrap8"><span class="seg" role="group" aria-label="見かた"><button data-r3dmode="walk" aria-pressed="true">歩いて見る</button><button data-r3dmode="dollhouse" aria-pressed="false">上から見る</button></span>
         <span class="seg" role="group" aria-label="すること"><button data-roompane="look" aria-pressed="${state.roomPane === "look"}">部屋を見る</button><button data-roompane="furn" aria-pressed="${state.roomPane === "furn"}">家具を置く</button></span></div>
-      <div><div class="small muted">間取り（タップでその部屋へ移動${state.roomPane === "furn" ? "・青が置いた家具" : ""}）</div><canvas id="r3dMinimap" class="r3d-minimap"${state.roomPane === "furn" ? ' style="height:130px"' : ""}></canvas></div>
+      <div><div class="small muted">間取り（タップでその部屋へ移動${state.roomPane === "furn" ? "・青が置いた家具" : ""}）</div><canvas id="r3dMinimap" class="r3d-minimap${state.roomPane === "furn" ? " u-h130" : ""}"></canvas></div>
       ${state.roomPane === "furn" ? furniturePane() : `
       <p class="small" id="r3dSun"></p>
       <dl class="rows num">
@@ -2711,7 +2741,7 @@
     if (tab === "traffic") {
       const [label, desc] = TRAFFIC_TEXT[tr.level];
       return `
-      <div><div class="eyebrow">家のまわりの車の量・騒音</div><div class="big-verdict ${trafficGrade(p)[0]}">${label}<span class="num" style="font-size:16px;margin-left:10px">屋外 約${p.noise.outdoor}dB／部屋の中 約${p.noise.indoor}dB</span></div></div>
+      <div><div class="eyebrow">家のまわりの車の量・騒音</div><div class="big-verdict ${trafficGrade(p)[0]}">${label}<span class="num u-verdict-sub">屋外 約${p.noise.outdoor}dB／部屋の中 約${p.noise.indoor}dB</span></div></div>
       <div class="meter" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= tr.level ? "on" : ""}"></i>`).join("")}</div>
       <p>${desc}</p>
       <dl class="rows num">
@@ -2728,8 +2758,8 @@
       const c = p.crime, g = crimeGrade(p), max = Math.max(1, ...Object.values(c.kinds));
       const bike = c.kinds["自転車盗"] || 0;
       return `
-      <div><div class="eyebrow">まわりの犯罪（500m以内・${state.data.crime.year}年の1年間）</div><div class="big-verdict ${g[0]}">${g[1]}<span class="num" style="font-size:16px;margin-left:10px">年${c.total}件・夜（18〜6時）${c.night}件</span></div></div>
-      <div class="bars">${Object.entries(c.kinds).map(([k, v]) => `<div class="bar-row"><span>${esc(k)}</span><i style="width:${(v / max) * 100}%"></i><b class="num">${v}件</b></div>`).join("") || `<p class="muted">この範囲で発生の記録はありません</p>`}</div>
+      <div><div class="eyebrow">まわりの犯罪（500m以内・${state.data.crime.year}年の1年間）</div><div class="big-verdict ${g[0]}">${g[1]}<span class="num u-verdict-sub">年${c.total}件・夜（18〜6時）${c.night}件</span></div></div>
+      <div class="bars">${Object.entries(c.kinds).map(([k, v]) => `<div class="bar-row"><span>${esc(k)}</span><i data-w="${(v / max) * 100}"></i><b class="num">${v}件</b></div>`).join("") || `<p class="muted">この範囲で発生の記録はありません</p>`}</div>
       <dl class="rows num">
         <dt>いちばん近い交番</dt><dd>徒歩${p.near.police.min}分　${esc(p.near.police.name)}</dd>
         <dt>建物の防犯</dt><dd>${p.autolock ? "オートロックあり" : "オートロックなし"}・${p.floor}階${p.floor === 1 ? "（1階は侵入されやすい）" : ""}</dd>
@@ -2761,8 +2791,8 @@
       const spendT = spend.reduce((a, [, v]) => a + v, 0), left = incT - spendT, scale = Math.max(incT, spendT), ic = initialCost(p);
       return `
       <div><div class="eyebrow">毎月</div><div class="big-verdict ${moneyGrade(p)[0]} num">${left >= 0 ? "残り " + yen(left) : yen(-left) + " 足りない"}</div></div>
-      <div class="money-bar">${spend.map(([k, v, c]) => `<i title="${k} ${yen(v)}" style="width:${(v / scale) * 100}%;background:${c}"></i>`).join("")}</div>
-      <div class="money-legend num">${spend.map(([k, v, c]) => `<span><b style="background:${c}"></b>${k} ${yen(v)}</span>`).join("")}</div>
+      <div class="money-bar">${spend.map(([k, v, c]) => `<i title="${k} ${yen(v)}" data-w="${(v / scale) * 100}" data-bg="${c}"></i>`).join("")}</div>
+      <div class="money-legend num">${spend.map(([k, v, c]) => `<span><b data-bg="${c}"></b>${k} ${yen(v)}</span>`).join("")}</div>
       <p class="note num">入ってくるお金 ${yen(incT)}（奨学金 ${yen(inc.scholar)}・仕送り ${yen(inc.allow)}・バイト ${yen(inc.job)}）。右上の「家賃の目安」から変えられます。</p>
       <div class="two">
         <div><div class="eyebrow">入居前に必要</div><div class="big-verdict num">${yen(Math.round(ic.total / 100) * 100)}</div></div>
@@ -3136,9 +3166,9 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     $("acctLabel").textContent = u ? u.username : "ログイン";
     if (u) {
       $("acctPop").innerHTML = `<div class="eyebrow">ログイン中</div><div><b>${esc(u.username)}</b>${u.role === "admin" ? ` <span class="kind">管理者</span>` : ""}</div>
-        <p class="small muted" style="margin:0">お気に入り・優先順位・重み・置いた家具は、ほかの端末でログインしても同じになります。</p>
-        <p class="small muted" id="acctNoteText" style="margin:0">${esc(acctNote)}</p>
-        <div class="row">${u.role === "admin" ? `<a class="linkbtn" href="/admin" style="padding:0">物件の管理画面へ →</a>` : "<span></span>"}<button class="btn ghost" id="logoutBtn" style="padding:6px 14px">ログアウト</button></div>`;
+        <p class="small muted u-m0">お気に入り・優先順位・重み・置いた家具は、ほかの端末でログインしても同じになります。</p>
+        <p class="small muted u-m0" id="acctNoteText">${esc(acctNote)}</p>
+        <div class="row">${u.role === "admin" ? `<a class="linkbtn u-p0" href="/admin">物件の管理画面へ →</a>` : "<span></span>"}<button class="btn ghost u-btn-sm" id="logoutBtn">ログアウト</button></div>`;
       return;
     }
     const reg = mode === "register";
@@ -3146,10 +3176,10 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       <form id="acctForm" data-mode="${mode}">
         <label>ユーザー名<input type="text" name="username" autocomplete="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_\\-]+" placeholder="半角英数字 3〜24文字"></label>
         <label>パスワード<input type="password" name="password" autocomplete="${reg ? "new-password" : "current-password"}" required minlength="8" maxlength="128" placeholder="8文字以上"></label>
-        <div class="err" role="alert">${esc(error)}</div>${info ? `<p class="small muted" style="margin:0">${esc(info)}</p>` : ""}
+        <div class="err" role="alert">${esc(error)}</div>${info ? `<p class="small muted u-m0">${esc(info)}</p>` : ""}
         <button class="btn" type="submit">${reg ? "登録してログイン" : "ログイン"}</button>
       </form>
-      <p class="note" style="margin:0">ログインすると、お気に入りや置いた家具をスマホとパソコンで同じにできます。${reg ? "登録すると、いまこの端末にあるお気に入りなどがそのまま引き継がれます。" : ""}</p>`;
+      <p class="note u-m0">ログインすると、お気に入りや置いた家具をスマホとパソコンで同じにできます。${reg ? "登録すると、いまこの端末にあるお気に入りなどがそのまま引き継がれます。" : ""}</p>`;
   }
   const ACCT_ERRORS = { bad_username: "ユーザー名は半角英数字と _ - の3〜24文字にしてください", bad_password: "パスワードは8文字以上にしてください", username_taken: "そのユーザー名はもう使われています", wrong_credentials: "ユーザー名かパスワードが違います" };
   async function submitAcct(form) {
@@ -3209,7 +3239,7 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     try {
       state.data = await (await fetch("data/area.json", { cache: "no-cache" })).json();
     } catch {
-      document.querySelector(".stage").innerHTML = `<div class="panel" style="margin-top:20px">周辺データ（data/area.json）を読み込めませんでした。ファイルを直接開いている場合は、ローカルサーバー経由で開いてください。</div>`;
+      document.querySelector(".stage").innerHTML = `<div class="panel u-mt20">周辺データ（data/area.json）を読み込めませんでした。ファイルを直接開いている場合は、ローカルサーバー経由で開いてください。</div>`;
       return;
     }
     $("budgetChip").textContent = man(rentCap());

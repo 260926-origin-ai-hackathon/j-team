@@ -8,7 +8,7 @@ export default async function Page() {
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <>
-      <div style={{ display: "contents" }} dangerouslySetInnerHTML={{ __html: markup }} />
+      <div className="markup-root" dangerouslySetInnerHTML={{ __html: markup }} />
       {/* 3D（window.Room3D）とアプリ本体。アプリ本体は 3D を部屋のタブを開いたときにだけ使うので、読み込む順番には依存しない。
           lazyOnload だと、タブが裏にあるときなどに読み込みが止まることがあるので、どちらもすぐに読み込む */}
       <Script src="/heyakarte/room3d.js" strategy="afterInteractive" nonce={nonce} />
