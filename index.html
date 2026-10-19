@@ -3176,7 +3176,9 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     const big = Object.keys(w).filter((k) => w[k] === 3).map(label), off = Object.keys(w).filter((k) => w[k] === 0).map(label);
     const why = [answers.meal === "cook" && "自炊が多い", answers.meal === "out" && "外食が多め", answers.commute === "walk" && "歩いて通う", answers.commute === "bike" && "自転車で通う",
       answers.night === "quiet" && "静かな夜がいい", answers.worry === "crime" && "家族が防犯を心配", answers.worry === "disaster" && "家族が災害を心配", answers.health === "often" && "病院によく行く"].filter(Boolean);
-    return `${why.length ? why.slice(0, 3).join("・") + "から、" : ""}${big.length ? `${big.join("・")}を大事に` : "どれも同じくらいに"}${off.length ? `、${off.join("・")}は気にしない設定` : ""}にしたよ！`;
+    const head = why.length ? why.slice(0, 3).join("・") + "から、" : "";
+    const main = big.length ? `${big.join("・")}を大事に` : "どれも同じくらいの重さに";
+    return off.length ? `${head}${main}、${off.join("・")}は気にしない設定にしたよ！` : `${head}${main}したよ！`;
   }
   const hearingState = () => { try { return JSON.parse(localStorage.getItem("heyakarte.hearing") || "null"); } catch { return null; } };
   const hearingDone = () => hearingState()?.done === true;
