@@ -42,7 +42,13 @@
 3. 各カードの「優先順位」で、第1希望・第2希望…を付けられます（付けなくてもかまいません）。並べかたは「優先順位」「家賃が安い順」「大学に近い順」から選べます。
 4. カードの「詳しく見る」「地図で見る」から、その物件に戻れます。
 
-### 5. 親に相談する
+### 5. アカウントとヘヤまるのヒアリング（Next.js 版でデータベースを設定したとき）
+1. 右上の「ログイン」から、ユーザー名とパスワードで登録・ログインします。お気に入り・優先順位・重み・置いた家具・ヒアリングの結果が、ほかの端末でも同じになります。
+2. はじめてログインすると、ヘヤまるが暮らし方を5つ質問します（ごはん・通学・夜の過ごし方・家族の心配・病院）。最後に、ほかに大事にしたいことを自由に書けます。
+3. 答えから、ヒートマップの「あなた向け」の重み（大事・ふつう・気にしない）が自動で決まり、地図があなた向けに塗り直されます。Gemini の API キーを設定していると、自由に書いた文も Gemini が読んで重みとひとことを決めます。設定していないとき（ログインしていないときも）は、選んだ答えから決まりに沿って決めます。
+4. ヒアリングは、アカウントのメニューかヒートマップの「ヘヤまるに聞いて決める」から、いつでもやり直せます。アカウントのメニューでは、パスワードの変更とアカウントの削除もできます。
+
+### 6. 親に相談する
 住宅詳細の「お金と相談」タブの「親に相談」で、家賃・初期費用・防犯・災害などをまとめた相談文を作れます。内容を直してから「コピー」を押し、LINE などに貼り付けて送ります。
 
 ### 知っておいてほしいこと
@@ -59,6 +65,7 @@
 | 地図 | [Leaflet](https://leafletjs.com/) 1.9.4 | 地図・物件の札・ヒートマップ・重ねる情報。背景タイルは使わず、OpenStreetMap の道路を線で描く |
 | 3D | [three.js](https://threejs.org/) 0.180.0 | 部屋の中の3D表示と家具の配置（jsDelivr から読み込む） |
 | バックエンド | Next.js の Route Handlers・[PostgreSQL](https://www.postgresql.org/)（[node-postgres](https://github.com/brianc/node-postgres)）・Node.js の crypto（scrypt・HMAC） | ログインと端末間の保存、物件の掲載情報の API と管理画面（`app/api/*`・`app/admin`・`lib/*`）。本番は Vercel から作れる Neon などの Postgres を想定 |
+| AI（ヒアリング） | [Gemini API](https://ai.google.dev/gemini-api/docs)（`generateContent`、JSON の形を指定。初期値のモデルは gemini-3.5-flash-lite） | ヘヤまるのヒアリングの答えと自由に書いた文から、ヒートマップの重みとひとことを決める（`lib/gemini.ts`・`app/api/hearing`）。環境変数 `GEMINI_API_KEY` を入れると動く |
 | AI | Claude（Next.js 版はサーバーから Claude API・[Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript)、Artifact 版は `sample` 機能） | 親への相談文を整える。Next.js 版は Vercel の環境変数 `ANTHROPIC_API_KEY` を入れると動く（無いときはひな形） |
 | 周辺データの作成 | Python 3・Pillow・NumPy | `scripts/build_area.py`。道のり（道路網の最短経路）、騒音、ハザード、犯罪件数を計算して `data/area.json` を作る |
 | 遮音の計算 | [python-acoustics](https://github.com/python-acoustics/python-acoustics)（BSD-3、必要な関数だけ取り込み） | 壁の材質から遮音性能（Rw）を計算 |
@@ -245,6 +252,8 @@ Next.js 版では、データベース（PostgreSQL）を設定すると次の�
 | `GET /api/me` | バックエンドが使えるか、ログイン中のユーザー、保存してある内容 |
 | `POST /api/auth/register`・`/api/auth/login`・`/api/auth/logout` | 登録・ログイン・ログアウト |
 | `PUT /api/state` | ログイン中のユーザーの保存内容を置き換える（「heyakarte.」で始まる項目だけ、200KBまで） |
+| `GET`・`POST /api/hearing` | Gemini が使えるか／ヒアリングの答えから重みとひとことを決める（ログインした人だけ） |
+| `POST /api/account/password`・`/api/account/delete` | パスワードを変える（ほかの端末はログインし直し）・アカウントと保存内容を消す（どちらもパスワードを確かめる） |
 | `GET /api/listings` | 物件の掲載情報（管理画面で変えたもの）。画面は `data/area.json` の物件にこれを重ねる |
 | `PUT`・`DELETE /api/admin/listings` | 掲載情報を変える・元に戻す（管理者だけ） |
 
@@ -259,14 +268,16 @@ Next.js 版では、データベース（PostgreSQL）を設定すると次の�
 - データベースへは（手元以外は）TLS で接続し、サーバーの証明書を必ず確かめます。API の本文は 300KB までです
 - Docker 版（nginx）にも、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy と、埋め込み・プラグインを止める CSP を付けています
 - ページには、リクエストごとの nonce を使う Content Security Policy（`proxy.ts`。スクリプトも style も、nonce の付いたものとこのサイトのファイルだけ。style 属性は使わない）と、フレーム埋め込みの禁止・nosniff・Referrer-Policy・Permissions-Policy（`next.config.ts`）を付けています。Leaflet と three.js は npm の固定版をこのサイトから配ります（Claude Artifact 版は cdnjs の Leaflet に SRI を付け、three.js は jsDelivr の固定版）
+- ヒアリングの Gemini：鍵はサーバーだけが持ちます。答えは決まった選択肢か、自由に書いた文は300文字までかを確かめてから送り、返ってきた重みは 0・1・3 か、ひとことは短い文字列かを確かめてから使います（合わなければ決まりに沿った重みのまま）。自由に書いた文は保存しません（画面にも書いています）
 - AI の相談文は、画面が作る依頼文の形のものだけを受け付けます。家賃・収入などの事実を Anthropic の Claude に送りますが、ヘヤカルテのサーバーには保存しません（画面にも書いています）
 
 **本番（Vercel）で有効にする手順**
 
 1. Vercel の heyakarte プロジェクトの Storage から Postgres（Neon など）を作ってプロジェクトにつなぐ（環境変数 `DATABASE_URL` が入る。名前が違うときは `DATABASE_URL` として入れ直す）
 2. Settings → Environment Variables に `AUTH_SECRET`（`openssl rand -base64 48` で作った32文字以上の文字列）を入れる
-3. 再デプロイする（表は最初のアクセスのときに自動で作られる）
-4. 管理者を作る：手元で `DATABASE_URL=<本番の接続先> node scripts/create-admin.mjs <ユーザー名>` を実行し、パスワードを入力する（すでに画面から登録したユーザーを管理者にするだけなら、パスワードは空のまま Enter）
+3. ヒアリングで Gemini を使うなら、`GEMINI_API_KEY`（Google AI Studio で作る）も入れる
+4. 再デプロイする（表は最初のアクセスのときに自動で作られる）
+5. 管理者を作る：手元で `DATABASE_URL=<本番の接続先> node scripts/create-admin.mjs <ユーザー名>` を実行し、パスワードを入力する（すでに画面から登録したユーザーを管理者にするだけなら、パスワードは空のまま Enter）
 
 **手元で動かす**
 

@@ -530,6 +530,30 @@
   .u-hrow8 { display: flex; gap: 8px; align-items: center; } .u-wrap8 { gap: 8px; flex-wrap: wrap; } .u-btn-sm { padding: 6px 14px; }
   .u-inline-link { font-size: inherit; padding: 0; } .u-verdict-sub { font-size: 16px; margin-left: 10px; }
   .markup-root { display: contents; }
+  /* ヘヤまるのヒアリング */
+  .hearing { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; background: rgba(15, 35, 50, .45); }
+  .hearing[hidden] { display: none; }
+  .hearing-card { width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--surface); color: var(--ink); border-radius: 22px; padding: 20px; box-shadow: 0 18px 50px rgba(0,0,0,.3); display: grid; gap: 14px; }
+  .hearing-top { display: flex; gap: 12px; align-items: flex-end; }
+  .hearing-top .mascot { flex: none; }
+  .hearing-top .bubble { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; line-height: 1.6; }
+  .hearing-progress { display: flex; gap: 5px; }
+  .hearing-progress i { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
+  .hearing-progress i.on { background: var(--accent); }
+  .hearing-options { display: grid; gap: 8px; }
+  .hearing-options button { text-align: left; font: inherit; font-size: 15px; font-weight: 700; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+  .hearing-options button:hover, .hearing-options button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .hearing-foot { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .hearing textarea { width: 100%; min-height: 90px; font: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); color: var(--ink); resize: vertical; }
+  .hearing-result { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .hearing-result span { display: flex; justify-content: space-between; gap: 6px; font-size: 12.5px; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); }
+  .hearing-result b { font-size: 11.5px; padding: 0 8px; border-radius: 999px; color: #fff; background: var(--muted); white-space: nowrap; }
+  .hearing-result b.w3 { background: var(--accent); } .hearing-result b.w0 { background: color-mix(in srgb, var(--muted) 55%, transparent); }
+  @media (max-width: 640px) { .hearing-result { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hearing-card { padding: 16px; } }
+  .acct-menu { display: grid; gap: 6px; }
+  .acct-menu button { text-align: left; font: inherit; font-size: 13.5px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+  .acct-menu button.danger { color: var(--bad); }
+  .btn.danger-btn { background: var(--bad); border-color: var(--bad); }
   .price-pin.sample { display: inline-block; transform: none; font-size: 11px; padding: 0 6px; }
   .pin { width: 17px; height: 17px; font-size: 9px; } .pin.big { width: 24px; height: 24px; font-size: 12px; }
   .flood-sw-1 { background: var(--flood-1); opacity: .7; } .flood-sw-2 { background: var(--flood-2); opacity: .7; } .flood-sw-3 { background: var(--flood-3); opacity: .7; }
@@ -613,6 +637,8 @@
       </div>
     </section>
   </main>
+  <!-- ヘヤまるのヒアリング（ログインしたあとなどに出る） -->
+  <div class="hearing" id="hearing" role="dialog" aria-modal="true" aria-labelledby="hearingQ" hidden><div class="hearing-card" id="hearingCard"></div></div>
 </div>
 
 <script>
@@ -2296,7 +2322,7 @@
         <div class="theme-grid">${HEAT_THEMES.map(themeBtn).join("")}</div>
         <div class="weights">
           <div class="sheet-head"><b>あなた向けの総合：何を大事にする？</b>
-            <span class="row u-m0"><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
+            <span class="row u-m0"><button class="linkbtn" data-hearing="1">ヘヤまるに聞いて決める</button><button class="linkbtn" data-preset="persona">おすすめ</button><button class="linkbtn" data-preset="reset">元に戻す</button></span></div>
           ${HEAT_THEMES.filter((t) => t.k in DEFAULT_WEIGHTS).map((t) => `<div class="w-row"><span>${t.label}</span><span class="seg" role="group" aria-label="${t.label}の大事さ">${WEIGHT_STEPS.map(([v, l]) => `<button data-w="${t.k}" data-v="${v}" aria-pressed="${state.weights[t.k] === v}">${l}</button>`).join("")}</span></div>`).join("")}
           <p class="note">「大事」は「ふつう」の3倍の重さで平均します。選ぶと「あなた向け」の総合に切り替わります。「おすすめ」は、ペルソナ（親も一緒に決める新入生）に合わせて、買い物・浸水しにくさ・防犯を大事にした設定です。</p>
         </div>
@@ -3040,6 +3066,12 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       $("acctPop").hidden = !open; $("acctBtn").setAttribute("aria-expanded", String(open));
       if (open) $("acctPop").querySelector("input")?.focus();
     });
+    $("hearing").addEventListener("click", onHearingClick);
+    $("hearing").addEventListener("keydown", (e) => { if (e.key === "Escape") closeHearing(); });
+    document.addEventListener("click", (e) => {
+      const hb = e.target.closest("[data-hearing]");
+      if (hb) { e.preventDefault(); $("acctPop").hidden = true; state.sheet = null; renderLayerChips?.(); startHearing(); }
+    });
     $("acctPop").addEventListener("click", async (e) => {
       const m = e.target.closest("[data-acctmode]");
       if (m) { renderAcct(m.dataset.acctmode); $("acctPop").querySelector("input")?.focus(); return; }
@@ -3115,12 +3147,120 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
   }
 
   // ---------- 起動 ----------
+  // ---------- ヘヤまるのヒアリング ----------
+  // 暮らし方を5つ聞いて、ヒートマップの「あなた向け」の重みを決める。
+  // ログインしていて Gemini が使えるときは、自由に書いた文も Gemini に読ませて決める（サーバーの /api/hearing）。
+  // 使えないときは、選んだ答えから決まり（HEARING_RULES）に沿って決める。質問の id と選択肢はサーバーの lib/hearing.ts と同じ
+  const HEARING = [
+    { id: "meal", q: "ごはんはどうすることが多そう？", options: [["cook", "自炊が多い"], ["out", "外食やコンビニが多い"], ["mix", "半々くらい"]] },
+    { id: "commute", q: "大学へはどうやって通う？", options: [["walk", "歩いて"], ["bike", "自転車で"], ["bus", "バスや電車で"]] },
+    { id: "night", q: "夜はどう過ごしそう？", options: [["quiet", "静かじゃないと眠れない"], ["late", "夜ふかしが多め"], ["any", "どちらでもない"]] },
+    { id: "worry", q: "家族がいちばん心配していることは？", options: [["crime", "防犯"], ["disaster", "災害"], ["money", "お金"], ["none", "特にない"]] },
+    { id: "health", q: "病院にはよく行く？", options: [["often", "よく行く・持病がある"], ["sometimes", "ときどき"], ["rarely", "ほとんど行かない"]] },
+  ];
+  const HEARING_RULES = {
+    meal: { cook: { shop: 3 }, out: { food: 3, conv: 3 }, mix: { shop: 1, food: 1 } },
+    commute: { walk: { commute: 3 }, bike: { commute: 1, crime: 3 }, bus: { bus: 3 } },
+    night: { quiet: { quiet: 3 }, late: { conv: 3, quiet: 0 }, any: {} },
+    worry: { crime: { crime: 3 }, disaster: { safety: 3 }, money: {}, none: {} },
+    health: { often: { med: 3 }, sometimes: { med: 1 }, rarely: { med: 0 } },
+  };
+  const WEIGHT_WORD = { 0: "気にしない", 1: "ふつう", 3: "大事" };
+  function rulesWeights(answers) {
+    const w = { ...DEFAULT_WEIGHTS };
+    for (const [q, a] of Object.entries(answers)) for (const [k, v] of Object.entries(HEARING_RULES[q]?.[a] || {})) w[k] = v;
+    return w;
+  }
+  function rulesSummary(answers, w) {
+    const label = (k) => HEAT_THEMES.find((t) => t.k === k).label;
+    const big = Object.keys(w).filter((k) => w[k] === 3).map(label), off = Object.keys(w).filter((k) => w[k] === 0).map(label);
+    const why = [answers.meal === "cook" && "自炊が多い", answers.meal === "out" && "外食が多め", answers.commute === "walk" && "歩いて通う", answers.commute === "bike" && "自転車で通う",
+      answers.night === "quiet" && "静かな夜がいい", answers.worry === "crime" && "家族が防犯を心配", answers.worry === "disaster" && "家族が災害を心配", answers.health === "often" && "病院によく行く"].filter(Boolean);
+    return `${why.length ? why.slice(0, 3).join("・") + "から、" : ""}${big.length ? `${big.join("・")}を大事に` : "どれも同じくらいに"}${off.length ? `、${off.join("・")}は気にしない設定` : ""}にしたよ！`;
+  }
+  const hearingState = () => { try { return JSON.parse(localStorage.getItem("heyakarte.hearing") || "null"); } catch { return null; } };
+  const hearingDone = () => hearingState()?.done === true;
+  const hearing = { step: 0, answers: {}, note: "", ai: false, auto: false };
+  async function startHearing({ auto = false } = {}) {
+    Object.assign(hearing, { step: 0, answers: {}, note: "", auto, ai: false });
+    if (backend.user) { try { hearing.ai = (await (await fetch("/api/hearing", { cache: "no-store" })).json()).ai === true; } catch { hearing.ai = false; } }
+    $("hearing").hidden = false;
+    renderHearing();
+  }
+  function closeHearing() { $("hearing").hidden = true; }
+  function renderHearing(result) {
+    const card = $("hearingCard"), n = HEARING.length, st = hearing.step;
+    const progress = `<div class="hearing-progress" aria-hidden="true">${Array.from({ length: n + 1 }, (_, i) => `<i class="${i < st ? "on" : ""}"></i>`).join("")}</div>`;
+    const top = (face, text) => `<div class="hearing-top">${mascotSVG(72, "hop", face)}<div class="bubble" id="hearingQ">${esc(text)}</div></div>`;
+    if (result) {
+      card.innerHTML = `${top("happy", result.summary)}
+        <div class="hearing-result">${HEAT_THEMES.filter((t) => t.k in DEFAULT_WEIGHTS).map((t) => `<span>${t.label}<b class="w${result.weights[t.k]}">${WEIGHT_WORD[result.weights[t.k]]}</b></span>`).join("")}</div>
+        <p class="note u-m0">${result.source === "gemini" ? "答えと書いてくれた内容から、Google の Gemini と一緒に決めました。" : result.fallback ? "うまく考えられなかったので、選んだ答えから決めました。" : "選んだ答えから決めました。"}重みはヒートマップの「あなた向けの総合」でいつでも変えられます。</p>
+        <div class="hearing-foot"><button class="linkbtn" data-hq="restart" type="button">もう一度答える</button><button class="btn" data-hq="done" type="button">地図で見る →</button></div>`;
+      return;
+    }
+    if (st === 0) {
+      card.innerHTML = `${top("happy", hearing.auto ? "ログインありがとう！ぼく、ヘヤまる。5つだけ質問させてね。答えから、地図で何を大事にするかを決めるよ" : "5つだけ質問させてね。答えから、地図で何を大事にするかを決めるよ")}
+        <div class="hearing-foot"><button class="linkbtn" data-hq="later" type="button">あとで</button><button class="btn" data-hq="next" type="button">はじめる</button></div>`;
+    } else if (st <= n) {
+      const h = HEARING[st - 1];
+      card.innerHTML = `${progress}${top("think", `${st}. ${h.q}`)}
+        <div class="hearing-options" role="group" aria-label="${esc(h.q)}">${h.options.map(([v, l]) => `<button type="button" data-ha="${h.id}:${v}" aria-pressed="${hearing.answers[h.id] === v}">${esc(l)}</button>`).join("")}</div>
+        <div class="hearing-foot"><button class="linkbtn" data-hq="back" type="button">← 戻る</button><button class="linkbtn" data-hq="skip" type="button">分からない</button></div>`;
+    } else {
+      card.innerHTML = `${progress}${top("smile", "さいごに、ほかに部屋選びで大事にしたいことがあれば書いてね（なくてもいいよ）")}
+        <textarea id="hearingNote" maxlength="300" placeholder="例：バイト先が駅前なので駅に近いほうがいい／虫が苦手">${esc(hearing.note)}</textarea>
+        <p class="note u-m0">${hearing.ai ? "書いた内容と答えは、重みを決めるために Google の Gemini に送ります。ヘヤカルテには保存しません。" : "いまは選んだ答えから決めます（書いた内容は使いません）。"}</p>
+        <div class="hearing-foot"><button class="linkbtn" data-hq="back" type="button">← 戻る</button><button class="btn" data-hq="finish" type="button">決める</button></div>`;
+    }
+  }
+  async function finishHearing() {
+    hearing.note = ($("hearingNote")?.value || "").slice(0, 300);
+    const baseline = rulesWeights(hearing.answers);
+    let result = { weights: baseline, summary: rulesSummary(hearing.answers, baseline), source: "rules" };
+    if (hearing.ai && backend.user) {
+      $("hearingCard").innerHTML = `<div class="hearing-top">${mascotSVG(72, "hop", "think")}<div class="bubble" id="hearingQ">考えてるよ…</div></div>`;
+      try {
+        const r = await fetch("/api/hearing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: hearing.answers, note: hearing.note, baseline }) });
+        const data = await r.json();
+        const ok = r.ok && data?.weights && Object.keys(DEFAULT_WEIGHTS).every((k) => [0, 1, 3].includes(data.weights[k])) && typeof data.summary === "string";
+        if (ok) result = { weights: data.weights, summary: data.summary.slice(0, 140), source: "gemini" };
+        else result.fallback = true;
+      } catch { result.fallback = true; }
+    }
+    // 重みを入れて、あなた向けの総合で塗る。結果はアカウントにも保存する（自由に書いた文は保存しない）
+    state.weights = { ...DEFAULT_WEIGHTS, ...result.weights };
+    saveWeights();
+    try { localStorage.setItem("heyakarte.hearing", JSON.stringify({ done: true, at: new Date().toISOString(), answers: hearing.answers, summary: result.summary, source: result.source })); } catch { /* 保存できない環境 */ }
+    heatField(); computeOverall();
+    state.heatTheme = "all"; state.layers.add("heat");
+    hearing.result = result;
+    if (backend.user) renderAcct(); // メニューの「やり直す」の表示を合わせる
+    renderHearing(result);
+  }
+  function onHearingClick(e) {
+    const a = e.target.closest("[data-ha]"), q = e.target.closest("[data-hq]");
+    if (a) { const [id, v] = a.dataset.ha.split(":"); hearing.answers[id] = v; hearing.step++; renderHearing(); return; }
+    if (!q) return;
+    const act = q.dataset.hq;
+    if (act === "next" || act === "skip") { hearing.step++; renderHearing(); }
+    else if (act === "back") { hearing.step = Math.max(0, hearing.step - 1); renderHearing(); }
+    else if (act === "later") closeHearing();
+    else if (act === "restart") startHearing();
+    else if (act === "finish") finishHearing();
+    else if (act === "done") {
+      closeHearing();
+      if (state.screen !== "map") go("map"); else { renderBigMap(); renderSide(); }
+      setMapGuide("happy", hearing.result?.summary || "あなた向けに塗り直したよ", { temporary: true });
+    }
+  }
+
   // ---------- バックエンド（Next.js 版のみ） ----------
   // ログインすると、この端末の「heyakarte.」で始まる保存内容（お気に入り・優先順位・重み・置いた家具）をサーバーと同じにする。
   // Claude Artifact 版やデータベースのない環境では、何もしない（今までどおりこの端末だけに保存）
   const backend = { ready: false, user: null, timer: null, applying: false };
   // サーバーと同期するのは、この決まった項目だけ（サーバー側でも同じ形かを確かめる）
-  const SYNC_KEY_RE = /^heyakarte\.(favs|favRanks|weights|furniture\.[a-z0-9]{1,20})$/;
+  const SYNC_KEY_RE = /^heyakarte\.(favs|favRanks|weights|hearing|furniture\.[a-z0-9]{1,20})$/;
   const localSnapshot = () => {
     const out = {};
     try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && SYNC_KEY_RE.test(k)) out[k] = localStorage.getItem(k); } } catch { /* 読めない環境 */ }
@@ -3165,9 +3305,36 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
     const u = backend.user;
     $("acctLabel").textContent = u ? u.username : "ログイン";
     if (u) {
+      const back = `<button class="linkbtn u-p0" data-acctmode="menu" type="button">← 戻る</button>`;
+      if (mode === "password") {
+        $("acctPop").innerHTML = `${back}<div class="eyebrow">パスワードを変える</div>
+          <form id="acctForm" data-mode="password">
+            <label>いまのパスワード<input type="password" name="current" autocomplete="current-password" required maxlength="128"></label>
+            <label>新しいパスワード<input type="password" name="next" autocomplete="new-password" required minlength="8" maxlength="128" placeholder="8文字以上"></label>
+            <div class="err" role="alert">${esc(error)}</div>
+            <button class="btn" type="submit">変える</button>
+          </form>
+          <p class="note u-m0">変えると、ほかの端末ではログインし直しになります。</p>`;
+        return;
+      }
+      if (mode === "delete") {
+        $("acctPop").innerHTML = `${back}<div class="eyebrow">アカウントを削除する</div>
+          <p class="small u-m0">アカウントと、保存してあるお気に入り・優先順位・重み・置いた家具・ヒアリングの結果を消します。元には戻せません。</p>
+          <form id="acctForm" data-mode="delete">
+            <label>確認のためパスワード<input type="password" name="password" autocomplete="current-password" required maxlength="128"></label>
+            <div class="err" role="alert">${esc(error)}</div>
+            <button class="btn danger-btn" type="submit">削除する</button>
+          </form>`;
+        return;
+      }
       $("acctPop").innerHTML = `<div class="eyebrow">ログイン中</div><div><b>${esc(u.username)}</b>${u.role === "admin" ? ` <span class="kind">管理者</span>` : ""}</div>
-        <p class="small muted u-m0">お気に入り・優先順位・重み・置いた家具は、ほかの端末でログインしても同じになります。</p>
-        <p class="small muted u-m0" id="acctNoteText">${esc(acctNote)}</p>
+        <p class="small muted u-m0">お気に入り・優先順位・重み・置いた家具・ヒアリングの結果は、ほかの端末でログインしても同じになります。</p>
+        <p class="small muted u-m0" id="acctNoteText">${esc(info || acctNote)}</p>
+        <div class="acct-menu">
+          <button type="button" data-hearing="1">🏠 ヘヤまるのヒアリング${hearingDone() ? "をやり直す" : "を受ける"}</button>
+          <button type="button" data-acctmode="password">パスワードを変える</button>
+          ${u.role === "admin" ? "" : `<button type="button" class="danger" data-acctmode="delete">アカウントを削除する</button>`}
+        </div>
         <div class="row">${u.role === "admin" ? `<a class="linkbtn u-p0" href="/admin">物件の管理画面へ →</a>` : "<span></span>"}<button class="btn ghost u-btn-sm" id="logoutBtn">ログアウト</button></div>`;
       return;
     }
@@ -3181,9 +3348,24 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       </form>
       <p class="note u-m0">ログインすると、お気に入りや置いた家具をスマホとパソコンで同じにできます。${reg ? "登録すると、いまこの端末にあるお気に入りなどがそのまま引き継がれます。" : ""}</p>`;
   }
-  const ACCT_ERRORS = { bad_username: "ユーザー名は半角英数字と _ - の3〜24文字にしてください", bad_password: "パスワードは8文字以上にしてください", username_taken: "そのユーザー名はもう使われています", wrong_credentials: "ユーザー名かパスワードが違います" };
+  const ACCT_ERRORS = { wrong_password: "パスワードが違います", bad_username: "ユーザー名は半角英数字と _ - の3〜24文字にしてください", bad_password: "パスワードは8文字以上にしてください", username_taken: "そのユーザー名はもう使われています", wrong_credentials: "ユーザー名かパスワードが違います" };
   async function submitAcct(form) {
     const mode = form.dataset.mode, fd = new FormData(form);
+    if (mode === "password" || mode === "delete") {
+      const body = mode === "password" ? { current: fd.get("current"), next: fd.get("next") } : { password: fd.get("password") };
+      let r, data;
+      try {
+        r = await fetch(`/api/account/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        data = await r.json();
+      } catch { renderAcct(mode, "サーバーにつながりませんでした"); return; }
+      if (!r.ok) { renderAcct(mode, ACCT_ERRORS[data?.error] || "うまくいきませんでした。もう一度お試しください"); return; }
+      if (mode === "password") { renderAcct("menu", "", "パスワードを変えました。ほかの端末ではログインし直しになります"); return; }
+      clearTimeout(backend.timer);
+      backend.user = null;
+      applyServerState({});
+      renderAcct("login", "", "アカウントを削除しました。保存してあった内容も消しました");
+      return;
+    }
     const body = JSON.stringify({ username: fd.get("username"), password: fd.get("password") });
     let r, data;
     try {
@@ -3205,6 +3387,8 @@ ${Object.entries(facts).map(([k, v]) => `- ${k}: ${v}`).join("\n")}
       applyServerState({}); setAcctNote("この端末の内容を消して、空のアカウントで始めました");
     }
     renderAcct();
+    // まだヒアリングを受けていなければ、ヘヤまるが暮らし方を聞いて重みを決める
+    if (!hearingDone()) { $("acctPop").hidden = true; $("acctBtn").setAttribute("aria-expanded", "false"); startHearing({ auto: true }); }
   }
   async function initBackend() {
     if (!window.__HEYAKARTE_SERVER__) return;

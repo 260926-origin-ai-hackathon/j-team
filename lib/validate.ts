@@ -1,6 +1,7 @@
+import { cleanAnswers } from "./hearing";
 // 画面から送られてくる保存内容（お気に入り・優先順位・重み・置いた家具）を確かめる。
 // 決まったキーで、決まった形のものだけを残し、整えた JSON に書き直して保存する（画面側の SYNC_KEY_RE と同じ範囲）
-const KEY_RE = /^heyakarte\.(favs|favRanks|weights|furniture\.[a-z0-9]{1,20})$/;
+const KEY_RE = /^heyakarte\.(favs|favRanks|weights|hearing|furniture\.[a-z0-9]{1,20})$/;
 const PROPERTY_ID_RE = /^[a-z0-9]{1,20}$/;
 const FURN_ID_RE = /^f[a-z0-9]{4,24}$/;
 const FURN_KINDS = new Set(["bed", "desk", "table", "lowtable", "sofa", "counter", "tub", "washer", "closet", "fridge", "tvstand", "shelf", "chest", "box"]);
@@ -22,6 +23,19 @@ function cleanValue(key: string, text: string): unknown | undefined {
   if (key === "heyakarte.weights") {
     if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
     return Object.fromEntries(Object.entries(v).filter(([k, n]) => WEIGHT_KEYS.has(k) && [0, 1, 3].includes(n as number)));
+  }
+  if (key === "heyakarte.hearing") {
+    // ヒアリングの結果：終わったか・いつ・選んだ答え・ひとこと・決め方（自由に書いた文は保存しない）
+    if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+    const h = v as Record<string, unknown>;
+    const answers = cleanAnswers(h.answers) || {};
+    return {
+      done: h.done === true,
+      at: typeof h.at === "string" && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(h.at) ? h.at : undefined,
+      answers,
+      summary: typeof h.summary === "string" ? h.summary.slice(0, 200) : "",
+      source: h.source === "gemini" ? "gemini" : "rules",
+    };
   }
   // heyakarte.furniture.<物件ID>
   if (!Array.isArray(v)) return undefined;
